@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostgresSample", "PostgresSample\PostgresSample.csproj", "{B751BBCF-1551-4D84-A94A-56A656D2E561}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KeyMapSync", "..\..\src\KeyMapSync\KeyMapSync\KeyMapSync.csproj", "{6F2896ED-B293-4C0B-81FD-2207A4168AF5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B751BBCF-1551-4D84-A94A-56A656D2E561}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B751BBCF-1551-4D84-A94A-56A656D2E561}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B751BBCF-1551-4D84-A94A-56A656D2E561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B751BBCF-1551-4D84-A94A-56A656D2E561}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F2896ED-B293-4C0B-81FD-2207A4168AF5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F2896ED-B293-4C0B-81FD-2207A4168AF5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F2896ED-B293-4C0B-81FD-2207A4168AF5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F2896ED-B293-4C0B-81FD-2207A4168AF5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FA511999-7DF5-47AA-8DE9-D4D45E08D1B1}
+	EndGlobalSection
+EndGlobal
