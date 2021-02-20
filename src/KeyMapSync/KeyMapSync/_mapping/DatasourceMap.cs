@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync
 {
-    public class Datasource : IDatasource
+    public class DatasourceMap : IDatasourceMap
     {
+        public string DestinationTableName { get; set; }
+
         public string MappingName { get; set; }
 
         public IEnumerable<string> DatasourceKeyColumns { get; set; }

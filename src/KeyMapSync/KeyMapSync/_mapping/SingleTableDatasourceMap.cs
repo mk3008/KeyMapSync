@@ -9,8 +9,10 @@ namespace KeyMapSync
     /// <summary>
     /// single table datasource
     /// </summary>
-    public abstract class SingleTableDatasource : IDatasource
+    public abstract class SingleTableDatasourceMap : IDatasourceMap
     {
+        public abstract string DestinationTableName { get; }
+
         public virtual string DatasourceTableName { get; }
 
         public abstract string MappingName { get; }

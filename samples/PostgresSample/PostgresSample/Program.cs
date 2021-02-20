@@ -22,8 +22,8 @@ namespace PostgresSample
                 cn.Open();
 
                 var exe = new DbExecutor(new PostgresDB(), cn);
-                var builder = new MappingDefinitionBuilder() { DbExecutor = exe, Destination = "client" };
-                var dsList = new IDatasource[] { new CustomerDatasource(), new CorporationDatasource() };
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var dsList = new IDatasourceMap[] { new CustomerDatasourceMap(), new CorporationDatasourceMap() };
                 foreach (var ds in dsList)
                 {
                     var def = builder.Build(ds);

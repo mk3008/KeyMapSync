@@ -4,8 +4,10 @@ using System.Collections.Generic;
 
 namespace PostgresSample
 {
-    internal class CorporationDatasource : IDatasource
+    internal class CorporationDatasourceMap : IDatasourceMap
     {
+        public string DestinationTableName => "client";
+
         public string MappingName => "corporation";
 
         public IEnumerable<string> DatasourceKeyColumns => new string[] { "corporation_id" };

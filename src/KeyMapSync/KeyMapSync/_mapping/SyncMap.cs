@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync
 {
-    public class MappingDefinition
+    /// <summary>
+    /// Manages mapping information used for <code>Synchronizer</code>
+    /// </summary>
+    public class SyncMap
     {
         public string MappingName { get; set; }
 

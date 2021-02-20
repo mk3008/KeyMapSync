@@ -111,7 +111,7 @@ namespace KeyMapSync
         /// create temporary table.
         /// </summary>
         /// <param name="def"></param>
-        public int CreateTemporay(MappingDefinition def)
+        public int CreateTemporay(SyncMap def)
         {
             var tmp = def.TemporaryTable;
             var map = def.MappingTable;
@@ -147,7 +147,7 @@ order by
         /// <param name="trn"></param>
         /// <param name="tmp"></param>
         /// <param name="dest"></param>
-        public int InsertDestinationTable(MappingDefinition def)
+        public int InsertDestinationTable(SyncMap def)
         {
             var dest = def.Destination;
             var tmp = ReadTable(def.TemporaryTable.TableName);
@@ -168,7 +168,7 @@ order by
             return Connection.Execute(sql, commandTimeout: CommandTimeout);
         }
 
-        public long InsertVersionTable(MappingDefinition def)
+        public long InsertVersionTable(SyncMap def)
         {
             var version = def.VersionTable;
 
@@ -183,7 +183,7 @@ order by
         /// </summary>
         /// <param name="def"></param>
         /// <param name="versionNo"></param>
-        public int InsertSyncTable(MappingDefinition def, long versionNo)
+        public int InsertSyncTable(SyncMap def, long versionNo)
         {
             var sync = def.SyncTable;
             var version = def.VersionTable;
@@ -225,7 +225,7 @@ from
         /// insert into map table.
         /// </summary>
         /// <param name="def"></param>
-        public int InsertMappingTable(MappingDefinition def)
+        public int InsertMappingTable(SyncMap def)
         {
             var map = def.MappingTable;
             var tmp = def.TemporaryTable;
