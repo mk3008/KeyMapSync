@@ -47,6 +47,13 @@ namespace KeyMapSync
             return Build(ds);
         }
 
+        public SyncMap Build(ITableDatasourceMap tableDs)
+        {
+            var source = DbExecutor.ReadTable(tableDs.DatasourceTableName);
+            var ds = new DatasourceMap { DestinationTableName = tableDs.DestinationTableName, MappingName = tableDs.MappingName, DatasourceQuery = tableDs.DatasourceQuery, DatasourceAliasName = tableDs.DatasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = tableDs.ParameterGenerator };
+            return Build(ds);
+        }
+
         public SyncMap Build(IDatasourceMap ds)
         {
             // argument, property check
@@ -57,12 +64,6 @@ namespace KeyMapSync
 
             if (ds == null) throw new InvalidOperationException("'IDatasourceMap' is null.");
             if (string.IsNullOrEmpty(ds.DatasourceQuery)) throw new InvalidOperationException("'DatasourceQuery' property is null.");
-
-            if (ds.DatasourceKeyColumns.Any() == false)
-            {
-                var singleDs = ds as SingleTableDatasourceMap;
-                ds = ConvertToDatasourceMap(singleDs);
-            }
 
             // destination table exists check
             var dest = DbExecutor.ReadTable(ds.DestinationTableName);
@@ -135,13 +136,6 @@ namespace KeyMapSync
                 table = DbExecutor.ReadMappingTableInfo(name);
             }
             return table;
-        }
-
-        public IDatasourceMap ConvertToDatasourceMap(SingleTableDatasourceMap singleDs)
-        {
-            var source = DbExecutor.ReadTable(singleDs.DatasourceTableName);
-            var ds = new DatasourceMap { DestinationTableName = singleDs.DestinationTableName, MappingName = singleDs.MappingName, DatasourceQuery = singleDs.DatasourceQuery, DatasourceAliasName = singleDs.DatasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = singleDs.ParameterGenerator };
-            return ds;
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Linq;
 namespace KeyMapSync
 {
     /// <summary>
-    /// Interface that guarantees that it can be converted to SyncMap
+    /// Manage data source queries and forwarding destinations.
     /// </summary>
     public interface IDatasourceMap
     {

@@ -4,15 +4,15 @@ using System.Collections.Generic;
 
 namespace PostgresSample
 {
-    internal class CustomerDatasourceMap : SingleTableDatasourceMap
+    internal class CustomerDatasourceMap : ITableDatasourceMap
     {
-        public override string DestinationTableName => "client";
+        public string DestinationTableName => "client";
 
-        public override string MappingName => "customer";
+        public string MappingName => "customer";
 
-        public override string DatasourceTableName => "customer";
+        public string DatasourceTableName => "customer";
 
-        public override string DatasourceQuery => @"
+        public string DatasourceQuery => @"
 with datasource as (
     select
         customer_name as client_name
@@ -26,6 +26,8 @@ with datasource as (
         customer_id
 )";
 
-        public override Func<object> ParameterGenerator => () => new { name = "1" };
+        public Func<object> ParameterGenerator => () => new { name = "1" };
+
+        public string DatasourceAliasName => "datasource";
     }
 }

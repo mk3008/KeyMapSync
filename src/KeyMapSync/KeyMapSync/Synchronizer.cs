@@ -8,12 +8,45 @@ namespace KeyMapSync
 {
     public class Synchronizer
     {
+        public Synchronizer(DbExecutor executor)
+        {
+            DbExecutor = executor;
+        }
+
+        public Synchronizer(SyncMapBuilder builder)
+        {
+            DbExecutor = builder.DbExecutor;
+            Builder = builder;
+        }
+
         /// <summary>
         /// database command executor
         /// </summary>
-        public DbExecutor DbExecutor { private get; set; }
+        private DbExecutor DbExecutor { get; set; }
+
+        private SyncMapBuilder Builder { get; set; }
 
         public Result Result { get; private set; }
+
+        public void Insert(ITableDatasourceMap map)
+        {
+            // argument, property check
+            if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
+            if (Builder == null) throw new InvalidOperationException("'Builder' property is null.");
+
+            var def = Builder.Build(map);
+            Insert(def);
+        }
+
+        public void Insert(IDatasourceMap map)
+        {
+            // argument, property check
+            if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
+            if (Builder == null) throw new InvalidOperationException("'Builder' property is null.");
+
+            var def = Builder.Build(map);
+            Insert(def);
+        }
 
         public void Insert(SyncMap def)
         {

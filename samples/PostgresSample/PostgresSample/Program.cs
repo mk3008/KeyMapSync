@@ -23,13 +23,10 @@ namespace PostgresSample
 
                 var exe = new DbExecutor(new PostgresDB(), cn);
                 var builder = new SyncMapBuilder() { DbExecutor = exe };
-                var dsList = new IDatasourceMap[] { new CustomerDatasourceMap(), new CorporationDatasourceMap() };
-                foreach (var ds in dsList)
-                {
-                    var def = builder.Build(ds);
-                    var sync = new Synchronizer() { DbExecutor = exe };
-                    sync.Insert(def);
-                }
+                var sync = new Synchronizer(builder);
+
+                sync.Insert(new CustomerDatasourceMap());
+                sync.Insert(new CorporationDatasourceMap());
             }
         }
 
