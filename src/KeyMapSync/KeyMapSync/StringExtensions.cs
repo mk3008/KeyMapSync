@@ -17,7 +17,7 @@ namespace KeyMapSync
         /// <returns></returns>
         public static TableNameInfo ToTableInfo(this string source)
         {
-            var prms = source.Split(".");
+            var prms = source.Split('.');
             var info = new TableNameInfo();
             if (prms.Length == 1)
             {

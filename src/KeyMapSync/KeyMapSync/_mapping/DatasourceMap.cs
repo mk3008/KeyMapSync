@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync
 {
-    public class DatasourceMap : IDatasourceMap
+    /// <summary>
+    /// A class that just implements IDatasourceMap. For internal processing.
+    /// </summary>
+    internal class DatasourceMap : IDatasourceMap
     {
         public string DestinationTableName { get; set; }
 
