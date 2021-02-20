@@ -170,12 +170,9 @@ order by
 
         public long InsertVersionTable(SyncMap def)
         {
-            var version = def.VersionTable;
-
-            var sql = $"insert into {version.TableFullName}(mapping_name) values (:mapping_name) returning {version.SequenceColumn.ColumnName};";
-            var prm = new { mapping_name = def.MappingName };
-            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
-            return (long)Connection.ExecuteScalar(sql, prm, commandTimeout: CommandTimeout);
+            var args = DB.GetInsertVersionTableScalar(def);
+            OnBeforeExecute?.Invoke(this, args);
+            return (long)Connection.ExecuteScalar(args.Sql, args.Param, commandTimeout: CommandTimeout);
         }
 
         /// <summary>

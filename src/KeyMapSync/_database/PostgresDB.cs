@@ -121,5 +121,14 @@ create table {tableName}
 ;
             return new SqlEventArgs(sql);
         }
+
+        public SqlEventArgs GetInsertVersionTableScalar(SyncMap def)
+        {
+            var version = def.VersionTable;
+
+            var sql = $"insert into {version.TableFullName}(mapping_name) values (:mapping_name) returning {version.SequenceColumn.ColumnName};";
+            var prm = new { mapping_name = def.MappingName };
+            return new SqlEventArgs(sql, prm);
+        }
     }
 }
