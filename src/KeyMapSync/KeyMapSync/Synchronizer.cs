@@ -15,7 +15,7 @@ namespace KeyMapSync
 
         public Result Result { get; private set; }
 
-        public void Insert(MappingDefinition def)
+        public void Insert(SyncMap def)
         {
             Result = null;
 

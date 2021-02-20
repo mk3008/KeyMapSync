@@ -4,8 +4,10 @@ using System.Collections.Generic;
 
 namespace PostgresSample
 {
-    internal class CustomerDatasource : SingleTableDatasource
+    internal class CustomerDatasourceMap : SingleTableDatasourceMap
     {
+        public override string DestinationTableName => "client";
+
         public override string MappingName => "customer";
 
         public override string DatasourceTableName => "customer";
