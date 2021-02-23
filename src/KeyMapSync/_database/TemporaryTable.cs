@@ -5,7 +5,7 @@ namespace KeyMapSync
 {
     public class TemporaryTable
     {
-        public string TableName { get; set; } = $"keymapsync_{DateTime.Now.ToString("yyyy_MM_dd_HH24_mm_ss_fff")}";
+        public string TableName { get; set; }
 
         public SequenceColumn DestinationSequence { get; set; }
 
