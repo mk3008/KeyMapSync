@@ -13,7 +13,7 @@ namespace KeyMapSync
     {
         public string MappingName { get; set; }
 
-        public Table Destination { get; set; }
+        public Table DestinationTable { get; set; }
 
         public Table VersionTable { get; set; }
 

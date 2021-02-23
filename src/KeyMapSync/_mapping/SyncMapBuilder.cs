@@ -40,10 +40,9 @@ namespace KeyMapSync
         /// <param name="mappingName">any name.used for management table name</param>
         /// <param name="datasourceQuery">With clause that defines an alias called 'datasource'. ex.<code>with datasource as (select * from client)</code></param>
         /// <param name="datasourceName">datasource table name. get sequence information from table name.</param>
-        public SyncMap Build(string mappingName, string datasourceQuery, string datasourceName, string datasourceAliasName = "datasource", Func<object> paramGenerator = null)
+        public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<object> paramGenerator = null)
         {
-            var source = DbExecutor.ReadTable(datasourceName);
-            var ds = new DatasourceMap { MappingName = mappingName, DatasourceQuery = datasourceQuery, DatasourceAliasName = datasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = paramGenerator };
+            var ds = new DatasourceMap { DestinationTableName = destination, MappingName = mappingName, DatasourceQuery = datasourceQuery, DatasourceAliasName = datasourceAliasName, DatasourceKeyColumns = datasourceKeys, ParameterGenerator = paramGenerator };
             return Build(ds);
         }
 
@@ -74,6 +73,7 @@ namespace KeyMapSync
 
             // automatic generation of syncTable
             var sync = ReadOrCreateSyncTable(version, dest);
+            sync.SequenceColumn = null;
 
             // automatic generation of mappingTable
             var map = ReadOrCreateMappingTable(ds.MappingName, dest, ds.DatasourceKeyColumns);
@@ -81,7 +81,7 @@ namespace KeyMapSync
             // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
             var tmp = new TemporaryTable()
             {
-                TableName = $"{map.TableName}_{DateTime.Now.ToString("mmffffff")}",
+                TableName = $"{map.TableName}_{DateTime.Now.ToString("mmFFFFFFF")}",
                 DatasourceQuery = ds.DatasourceQuery,
                 DatasourceAliasName = ds.DatasourceAliasName,
                 DestinationSequence = dest.SequenceColumn,
@@ -92,7 +92,7 @@ namespace KeyMapSync
             var def = new SyncMap
             {
                 MappingName = ds.MappingName,
-                Destination = dest,
+                DestinationTable = dest,
                 VersionTable = version,
                 SyncTable = sync,
                 MappingTable = map,

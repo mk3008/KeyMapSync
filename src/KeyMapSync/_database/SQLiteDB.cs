@@ -36,7 +36,7 @@ select '' as schemaname ,tbl_name as tablename from sqlite_temp_master where typ
 
         public SqlEventArgs GetSequenceNameScalar(IDbConnection cn, TableNameInfo info, string columnName)
         {
-            var sql = "select '(select max(seq) from (select seq from sqlite_sequence where name = ''' || :table_name || '''  union all select 0))'";
+            var sql = "select '(select max(seq) from (select seq from sqlite_sequence where name = ''' || :table_name || ''' union all select 0))'";
             return new SqlEventArgs(sql, new { table_name = info.TableName });
         }
 

@@ -5,6 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="KeyMapSync\**" />
+    <EmbeddedResource Remove="KeyMapSync\**" />
+    <None Remove="KeyMapSync\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="ICustomDatasource.cs" />
   </ItemGroup>
 

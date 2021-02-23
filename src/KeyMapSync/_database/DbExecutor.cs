@@ -149,7 +149,7 @@ order by
         /// <param name="dest"></param>
         public int InsertDestinationTable(SyncMap def)
         {
-            var dest = def.Destination;
+            var dest = def.DestinationTable;
             var tmp = ReadTable(def.TemporaryTable.TableName);
 
             var sql = @$"
