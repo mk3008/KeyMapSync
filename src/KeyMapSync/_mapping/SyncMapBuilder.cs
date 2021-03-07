@@ -40,16 +40,16 @@ namespace KeyMapSync
         /// <param name="mappingName">any name.used for management table name</param>
         /// <param name="datasourceQuery">With clause that defines an alias called 'datasource'. ex.<code>with datasource as (select * from client)</code></param>
         /// <param name="datasourceName">datasource table name. get sequence information from table name.</param>
-        public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<object> paramGenerator = null)
+        public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<object> paramGenerator = null, bool isNeedExistsCheck = true)
         {
-            var ds = new DatasourceMap { DestinationTableName = destination, MappingName = mappingName, DatasourceQuery = datasourceQuery, DatasourceAliasName = datasourceAliasName, DatasourceKeyColumns = datasourceKeys, ParameterGenerator = paramGenerator };
+            var ds = new DatasourceMap { DestinationTableName = destination, MappingName = mappingName, DatasourceQuery = datasourceQuery, DatasourceAliasName = datasourceAliasName, DatasourceKeyColumns = datasourceKeys, ParameterGenerator = paramGenerator, IsNeedExistsCheck = isNeedExistsCheck };
             return Build(ds);
         }
 
         public SyncMap Build(ITableDatasourceMap tableDs)
         {
             var source = DbExecutor.ReadTable(tableDs.DatasourceTableName);
-            var ds = new DatasourceMap { DestinationTableName = tableDs.DestinationTableName, MappingName = tableDs.MappingName, DatasourceQuery = tableDs.DatasourceQuery, DatasourceAliasName = tableDs.DatasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = tableDs.ParameterGenerator };
+            var ds = new DatasourceMap { DestinationTableName = tableDs.DestinationTableName, MappingName = tableDs.MappingName, DatasourceQuery = tableDs.DatasourceQuery, DatasourceAliasName = tableDs.DatasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = tableDs.ParameterGenerator, IsNeedExistsCheck = true };
             return Build(ds);
         }
 
@@ -97,6 +97,7 @@ namespace KeyMapSync
                 SyncTable = sync,
                 MappingTable = map,
                 TemporaryTable = tmp,
+                IsNeedExistsCheck = ds.IsNeedExistsCheck
             };
 
             return def;
