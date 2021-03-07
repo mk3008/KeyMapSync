@@ -69,6 +69,8 @@ namespace KeyMapSync.Test
         [Fact]
         public void SingleRowSync()
         {
+            var name = "SingleRowSync";
+
             using (var cn = new SQLiteConnection(CnString))
             {
                 cn.Open();
@@ -77,10 +79,10 @@ namespace KeyMapSync.Test
                 var builder = new SyncMapBuilder() { DbExecutor = exe };
                 var sync = new Synchronizer(builder);
 
-                var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                var def = builder.Build("client", "customer", $"with datasource as (select customer_id, customer_name as client_name from customer where customer_name = '{name}')", new string[] { "customer_id" });
 
                 //datasource 1row inserted
-                cn.Execute("insert into customer(customer_name) values('test')");
+                cn.Execute($"insert into customer(customer_name) values('{name}')");
                 sync.Insert(def);
 
                 var res = sync.Result;
@@ -101,7 +103,7 @@ where
                 var q = cn.Query(sql, new { version = res.Version });
                 foreach (var row in q)
                 {
-                    Assert.Equal("test", row.client_name);
+                    Assert.Equal(name, row.client_name);
                     cnt++;
                 }
                 Assert.Equal(1, cnt);
@@ -119,10 +121,10 @@ where
                 var builder = new SyncMapBuilder() { DbExecutor = exe };
                 var sync = new Synchronizer(builder);
 
-                var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name like 'ManyRowsSync%')", new string[] { "customer_id" });
 
                 //datasource 2rows inserted
-                cn.Execute("insert into customer(customer_name) values('test1'), ('test2')");
+                cn.Execute("insert into customer(customer_name) values('ManyRowsSync1'), ('ManyRowsSync2')");
                 sync.Insert(def);
 
                 var res = sync.Result;
@@ -145,8 +147,8 @@ order by
                 var q = cn.Query(sql, new { version = res.Version });
                 foreach (var row in q)
                 {
-                    if (cnt == 0) Assert.Equal("test1", row.client_name);
-                    if (cnt == 1) Assert.Equal("test2", row.client_name);
+                    if (cnt == 0) Assert.Equal("ManyRowsSync1", row.client_name);
+                    if (cnt == 1) Assert.Equal("ManyRowsSync2", row.client_name);
                     cnt++;
                 }
                 Assert.Equal(2, cnt);
@@ -176,6 +178,41 @@ order by
                     sync.Insert(def);
                 });
             }
+        }
+
+        [Fact]
+        public void KeyExistsException()
+        {
+            //Suppose there is one or more data to be transferred
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute("insert into customer(customer_name) values('KeyExistsException')");
+            }
+
+            void fn()
+            {
+                using (var cn = new SQLiteConnection(CnString))
+                {
+                    cn.Open();
+
+                    var exe = new DbExecutor(new SQLiteDB(), cn);
+                    var builder = new SyncMapBuilder() { DbExecutor = exe };
+                    var sync = new Synchronizer(builder);
+
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'KeyExistsException')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                    sync.Insert(def);
+                }
+            }
+
+            fn();
+
+            Assert.ThrowsAny<Exception>(() =>
+            {
+                //If you try to insert twice with "isNeedExistsCheck = false" without implementing existence check,
+                //you will always get an error.
+                fn();
+            });
         }
     }
 }

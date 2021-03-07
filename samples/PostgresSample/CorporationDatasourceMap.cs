@@ -26,5 +26,7 @@ with datasource as (
         public string DatasourceAliasName => "datasource";
 
         public Func<object> ParameterGenerator => () => null;
+
+        public bool IsNeedExistsCheck => true;
     }
 }

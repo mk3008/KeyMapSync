@@ -55,7 +55,7 @@ namespace KeyMapSync.Test
                 Assert.Null(def.MappingTable.SequenceColumn);
 
                 //option
-                Assert.True(def.HasKeycheck);
+                Assert.True(def.IsNeedExistsCheck);
 
                 //temporary
                 Assert.StartsWith("builder_test_destination_map_builder_test_source", def.TemporaryTable.TableName);
@@ -95,6 +95,21 @@ namespace KeyMapSync.Test
                 var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, paramGenerator: () => prm);
 
                 Assert.Equal(prm, def.TemporaryTable.ParamGenerator.Invoke());
+            }
+        }
+
+        [Fact]
+        public void ExistsCheck()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var isNeedExistsCheck = false;
+                var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, isNeedExistsCheck: isNeedExistsCheck);
+
+                Assert.Equal(isNeedExistsCheck, def.IsNeedExistsCheck);
             }
         }
     }

@@ -116,7 +116,7 @@ namespace KeyMapSync
             var tmp = def.TemporaryTable;
             var map = def.MappingTable;
 
-            var where = !def.HasKeycheck ? "" : $"where not exists (select * from {map.TableFullName} x where {tmp.SourceKeyColumns.ToString(" and ", x => $"x.{x} = {tmp.DatasourceAliasName}.{x}")})";
+            var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {tmp.SourceKeyColumns.ToString(" and ", x => $"x.{x} = {tmp.DatasourceAliasName}.{x}")})";
 
             var sql = @$"
 create temporary table {tmp.TableName}
