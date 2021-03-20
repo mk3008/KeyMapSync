@@ -23,6 +23,6 @@ namespace KeyMapSync
 
         public TemporaryTable TemporaryTable { get; set; }
 
-        public bool HasKeycheck { get; set; } = true;
+        public bool IsNeedExistsCheck { get; set; } = true;
     }
 }

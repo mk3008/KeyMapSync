@@ -39,5 +39,7 @@ namespace KeyMapSync
         /// </summary>
         /// <returns></returns>
         Func<object> ParameterGenerator { get; }
+
+        public bool IsNeedExistsCheck { get; }
     }
 }

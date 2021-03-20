@@ -22,5 +22,7 @@ namespace KeyMapSync
         public string DatasourceAliasName { get; set; }
 
         public Func<object> ParameterGenerator { get; set; }
+
+        public bool IsNeedExistsCheck { get; set; }
     }
 }
