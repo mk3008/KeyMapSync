@@ -177,5 +177,71 @@ order by
                 });
             }
         }
+
+        [Fact]
+        public void ManualTransaction()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var sql = $@"
+select
+    count(*)
+from
+    client c
+    inner join client_sync s on c.client_id = s.client_id
+    inner join client_sync_version v on s.client_sync_version_id = v.client_sync_version_id
+    inner join client_map_customer map on c.client_id = map.customer_id
+where
+    v.client_sync_version_id = :version
+order by
+    c.client_name
+";
+
+                //1row
+                cn.Execute("insert into customer(customer_name) values('tran1')");
+
+                using (var tran = cn.BeginTransaction())
+                {
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    sync.Insert(def, tran);
+                    tran.Commit();
+                }
+
+                var res = sync.Result;
+                var cnt = cn.ExecuteScalar<int>(sql, new { version = res.Version });
+                Assert.Equal(1, cnt);
+
+                //1row
+                cn.Execute("insert into customer(customer_name) values('tran2')");
+
+                using (var tran = cn.BeginTransaction())
+                {
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    sync.Insert(def, tran);
+                    // not comiit
+                }
+
+                res = sync.Result;
+                cnt = cn.ExecuteScalar<int>(sql, new { version = res.Version });
+                Assert.Equal(0, cnt);
+
+                using (var tran = cn.BeginTransaction())
+                {
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    sync.Insert(def, tran);
+                    tran.Commit();
+                }
+
+                res = sync.Result;
+                cnt = cn.ExecuteScalar<int>(sql, new { version = res.Version });
+                Assert.Equal(1, cnt);
+            }
+        }
     }
 }
