@@ -6,6 +6,8 @@ namespace KeyMapSync
 {
     public class SQLiteDB : IDBMS
     {
+        public int TableNameMaxLength => 128;
+
         public SqlEventArgs GetFindTableNameInfoQuery(string name)
         {
             return GetFindTableNameInfoQuery(string.Empty, name);

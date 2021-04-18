@@ -112,5 +112,22 @@ namespace KeyMapSync.Test
                 Assert.Equal(isNeedExistsCheck, def.IsNeedExistsCheck);
             }
         }
+
+        [Fact]
+        public void LongMappingName()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var def = builder.Build("builder_test_destination", "builder_test_source_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooong_name", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" });
+                var sync = new Synchronizer(builder);
+
+                //temporary
+                Assert.StartsWith("builder_test_destination_map_builder_test_source_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooon_", def.TemporaryTable.TableName);
+                Assert.Equal(exe.DB.TableNameMaxLength, def.TemporaryTable.TableName.Length);
+            }
+        }
     }
 }

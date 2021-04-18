@@ -79,9 +79,11 @@ namespace KeyMapSync
             var map = ReadOrCreateMappingTable(ds.MappingName, dest, ds.DatasourceKeyColumns);
 
             // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
+            var db = DbExecutor.DB;
+            var sufix = $"_{DateTime.Now.ToString("mmffff")}";
             var tmp = new TemporaryTable()
             {
-                TableName = $"{map.TableName}_{DateTime.Now.ToString("mmFFFFFFF")}",
+                TableName = $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}{sufix}",
                 DatasourceQuery = ds.DatasourceQuery,
                 DatasourceAliasName = ds.DatasourceAliasName,
                 DestinationSequence = dest.SequenceColumn,
