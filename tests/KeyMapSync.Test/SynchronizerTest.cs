@@ -40,7 +40,8 @@ namespace KeyMapSync.Test
                 var res = sync.Result;
 
                 //result
-                Assert.Null(res);
+                Assert.Equal(0, res.Count);
+                Assert.Null(res.Version);
 
                 //no data
                 var cnt = cn.Execute("select count(*) from client");

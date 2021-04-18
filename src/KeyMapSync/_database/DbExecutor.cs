@@ -7,7 +7,7 @@ using System.Text;
 
 namespace KeyMapSync
 {
-    public class DbExecutor
+    public partial class DbExecutor
     {
         public static event EventHandler<SqlEventArgs> OnBeforeExecute;
 

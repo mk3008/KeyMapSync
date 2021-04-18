@@ -4,6 +4,6 @@
     {
         public int Count { get; set; }
 
-        public long Version { get; set; }
+        public int? Version { get; set; }
     }
 }

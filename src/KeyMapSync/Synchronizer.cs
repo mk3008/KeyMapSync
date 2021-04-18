@@ -80,7 +80,11 @@ namespace KeyMapSync
             if (def == null) throw new ArgumentNullException("def");
 
             var count = DbExecutor.CreateTemporay(def);
-            if (count == 0) return;
+            if (count == 0)
+            {
+                Result = new Result() { Count = count };
+                return;
+            }
 
             var versionNo = DbExecutor.InsertVersionTable(def);
             var n = DbExecutor.InsertDestinationTable(def);
@@ -92,7 +96,83 @@ namespace KeyMapSync
             n = DbExecutor.InsertMappingTable(def);
             if (count != n) throw new InvalidOperationException($"mapping-table insert fail.(expect count:{count}, actual:{n}");
 
-            Result = new Result() { Count = count, Version = versionNo };
+            Result = new Result() { Count = count, Version = (int?)versionNo };
+        }
+
+        public void DeleteByDestinationId(SyncMap def, int destinationId, IDbTransaction trn = null)
+        {
+            // argument, property check
+            if (def == null) throw new ArgumentNullException("def");
+
+            // delete destination-table, sync-table, mapping-table.
+            if (trn == null)
+            {
+                using (var t = DbExecutor.Connection.BeginTransaction())
+                {
+                    DeleteByDestinationIdCore(def, destinationId);
+                    t.Commit();
+                }
+            }
+            else
+            {
+                DeleteByDestinationIdCore(def, destinationId);
+            }
+        }
+
+        private void DeleteByDestinationIdCore(SyncMap def, int destinationId)
+        {
+            Result = null;
+
+            // argument, property check
+            if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
+            if (def == null) throw new ArgumentNullException("def");
+
+            var count = DbExecutor.DeleteDestinationTableByDestinationId(def, destinationId);
+            if (count != 0)
+            {
+                DbExecutor.DeleteMappingTableByDestinationId(def, destinationId);
+                DbExecutor.DeleteSyncTableByDestinationId(def, destinationId);
+            }
+
+            Result = new Result() { Count = count };
+        }
+
+        public void DeleteByVersionId(SyncMap def, int versionId, IDbTransaction trn = null)
+        {
+            // argument, property check
+            if (def == null) throw new ArgumentNullException("def");
+
+            // delete destination-table, sync-table, mapping-table.
+            if (trn == null)
+            {
+                using (var t = DbExecutor.Connection.BeginTransaction())
+                {
+                    DeleteByVersionIdCore(def, versionId);
+                    t.Commit();
+                }
+            }
+            else
+            {
+                DeleteByVersionIdCore(def, versionId);
+            }
+        }
+
+        private void DeleteByVersionIdCore(SyncMap def, int versionId)
+        {
+            Result = null;
+
+            // argument, property check
+            if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
+            if (def == null) throw new ArgumentNullException("def");
+
+            var count = DbExecutor.DeleteDestinationTableByVersionId(def, versionId);
+            if (count != 0)
+            {
+                DbExecutor.DeleteMappingTableByVersionId(def, versionId);
+                DbExecutor.DeleteSyncTableByVersionId(def, versionId);
+            }
+
+            Result = new Result() { Count = count };
         }
     }
 }
