@@ -46,5 +46,11 @@ namespace KeyMapSync
             }
             return s.ToString();
         }
+
+        public static string Left(this string source, int length)
+        {
+            if (source.Length < length) return source;
+            return source.Substring(0, length);
+        }
     }
 }

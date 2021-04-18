@@ -24,5 +24,10 @@ namespace KeyMapSync
         public SqlEventArgs GetCreateSyncTableDDL(string tableName, Table dest, Table version);
 
         public SqlEventArgs GetCreateMappingTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns);
+
+        /// <summary>
+        /// table name max length.
+        /// </summary>
+        public int TableNameMaxLength { get; }
     }
 }

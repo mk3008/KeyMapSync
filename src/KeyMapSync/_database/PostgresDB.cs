@@ -6,6 +6,8 @@ namespace KeyMapSync
 {
     public class PostgresDB : IDBMS
     {
+        public int TableNameMaxLength => 63;
+
         public SqlEventArgs GetFindTableNameInfoQuery(string name)
         {
             var info = name.ToTableInfo();
