@@ -20,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="database_delete.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="database.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
