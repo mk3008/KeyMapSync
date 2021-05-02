@@ -47,7 +47,7 @@ namespace KeyMapSync.Test
                 Assert.Equal(1, cnt);
 
                 //delete
-                sync.DeleteByDestinationId(def, destinationId);
+                sync.Delete(def, destinationId);
                 Assert.Equal(1, sync.Result.Count);
 
                 //row deleted
@@ -109,7 +109,7 @@ namespace KeyMapSync.Test
                 Assert.Equal(1, cnt);
 
                 //delete
-                sync.DeleteByVersionId(def, versionId);
+                sync.DeleteVersion(def, versionId);
                 Assert.Equal(sync.Result.Count, syncCount);
 
                 //row deleted

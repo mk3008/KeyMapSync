@@ -7,7 +7,7 @@ namespace KeyMapSync
     /// <summary>
     ///
     /// </summary>
-    public class SyncMapBuilder
+    public partial class SyncMapBuilder
     {
         /// <summary>
         /// database command executor
