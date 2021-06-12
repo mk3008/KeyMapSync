@@ -9,7 +9,7 @@ namespace KeyMapSync
     /// <summary>
     /// A class that just implements IDatasourceMap. For internal processing.
     /// </summary>
-    internal class DatasourceMap : IDatasourceMap
+    internal class DatasourceMapWrap : IDatasourceMap
     {
         public string DestinationTableName { get; set; }
 
@@ -17,12 +17,20 @@ namespace KeyMapSync
 
         public IEnumerable<string> DatasourceKeyColumns { get; set; }
 
-        public string DatasourceQuery { get; set; }
-
         public string DatasourceAliasName { get; set; }
+
+        public string DatasourceQuery { get; set; }
 
         public Func<object> ParameterGenerator { get; set; }
 
         public bool IsNeedExistsCheck { get; set; }
+
+        public bool IsExtension { get; set; }
+
+        public IList<IDatasourceMap> Cascades { get; } = new List<IDatasourceMap>();
+
+        public SyncMap Sender { get; set; }
+
+        public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
     }
 }

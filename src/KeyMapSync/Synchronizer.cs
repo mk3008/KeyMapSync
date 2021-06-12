@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -9,10 +10,10 @@ namespace KeyMapSync
 {
     public class Synchronizer
     {
-        public Synchronizer(DbExecutor executor)
-        {
-            DbExecutor = executor;
-        }
+        //public Synchronizer(DbExecutor executor)
+        //{
+        //    DbExecutor = executor;
+        //}
 
         public Synchronizer(SyncMapBuilder builder)
         {
@@ -61,42 +62,70 @@ namespace KeyMapSync
             {
                 using (var t = DbExecutor.Connection.BeginTransaction())
                 {
-                    InsertCore(def);
+                    Result = InsertMain(def);
                     t.Commit();
                 }
             }
             else
             {
-                InsertCore(def);
+                Result = InsertMain(def);
             }
         }
 
-        private void InsertCore(SyncMap def)
+        private Result InsertMain(SyncMap def)
+        {
+            var r = InsertCore(def);
+
+            if (r.Count == 0) return r;
+
+            // cascade
+            foreach (var item in def.DatasourceMap.Cascades)
+            {
+                var d = Builder.Build(item, def);
+                var ir = InsertMain(d);
+                r.InnerResults.Add(ir);
+            }
+
+            return r;
+        }
+
+        private Result InsertCore(SyncMap def)
         {
             Result = null;
+
+            var sw = new Stopwatch();
+            sw.Start();
 
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
             if (def == null) throw new ArgumentNullException("def");
 
-            var count = DbExecutor.CreateTemporay(def);
+            var count = DbExecutor.CreateTemporayOfDefault(def);
             if (count == 0)
             {
-                Result = new Result() { Count = count };
-                return;
+                sw.Stop();
+                return new Result() { Definition = def, Count = count, Elapsed = sw.Elapsed };
             }
 
-            var versionNo = DbExecutor.InsertVersionTable(def);
+            var versionNo = DbExecutor.InsertVersionTableOrDefault(def);
+
             var n = DbExecutor.InsertDestinationTable(def);
             if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
 
-            n = DbExecutor.InsertSyncTable(def, versionNo);
-            if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
+            if (versionNo.HasValue)
+            {
+                n = DbExecutor.InsertSyncTable(def, versionNo.Value);
+                if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
+            }
 
-            n = DbExecutor.InsertMappingTable(def);
-            if (count != n) throw new InvalidOperationException($"mapping-table insert fail.(expect count:{count}, actual:{n}");
+            if (def.MappingTable != null)
+            {
+                n = DbExecutor.InsertMappingTable(def);
+                if (count != n) throw new InvalidOperationException($"mapping-table insert fail.(expect count:{count}, actual:{n}");
+            }
 
-            Result = new Result() { Count = count, Version = (int?)versionNo };
+            sw.Stop();
+            return new Result() { Definition = def, Count = count, Version = versionNo, Elapsed = sw.Elapsed };
         }
 
         public void DeleteByDestinationId(SyncMap def, int destinationId, IDbTransaction trn = null)

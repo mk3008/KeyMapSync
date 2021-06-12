@@ -37,23 +37,47 @@ namespace KeyMapSync
         /// <summary>
         /// load <code>datasourceQuery</code> to <code>Destination</code>.
         /// </summary>
-        /// <param name="mappingName">any name.used for management table name</param>
-        /// <param name="datasourceQuery">With clause that defines an alias called 'datasource'. ex.<code>with datasource as (select * from client)</code></param>
-        /// <param name="datasourceName">datasource table name. get sequence information from table name.</param>
         public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<object> paramGenerator = null, bool isNeedExistsCheck = true)
         {
-            var ds = new DatasourceMap { DestinationTableName = destination, MappingName = mappingName, DatasourceQuery = datasourceQuery, DatasourceAliasName = datasourceAliasName, DatasourceKeyColumns = datasourceKeys, ParameterGenerator = paramGenerator, IsNeedExistsCheck = isNeedExistsCheck };
+            var ds = new DatasourceMapWrap
+            {
+                DestinationTableName = destination,
+                MappingName = mappingName,
+                DatasourceAliasName = datasourceAliasName,
+                DatasourceQuery = datasourceQuery,
+                DatasourceKeyColumns = datasourceKeys,
+                ParameterGenerator = paramGenerator,
+                IsNeedExistsCheck = isNeedExistsCheck,
+                IsExtension = false
+            };
+
             return Build(ds);
         }
 
         public SyncMap Build(ITableDatasourceMap tableDs)
         {
             var source = DbExecutor.ReadTable(tableDs.DatasourceTableName);
-            var ds = new DatasourceMap { DestinationTableName = tableDs.DestinationTableName, MappingName = tableDs.MappingName, DatasourceQuery = tableDs.DatasourceQuery, DatasourceAliasName = tableDs.DatasourceAliasName, DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName }, ParameterGenerator = tableDs.ParameterGenerator, IsNeedExistsCheck = true };
+            var ds = new DatasourceMapWrap
+            {
+                DestinationTableName = tableDs.DestinationTableName,
+                MappingName = tableDs.MappingName,
+                DatasourceQuery = tableDs.DatasourceQuery,
+                DatasourceAliasName = tableDs.DatasourceAliasName,
+                DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName },
+                ParameterGenerator = tableDs.ParameterGenerator,
+                IsNeedExistsCheck = true,
+                IsExtension = false
+            };
+
+            foreach (var item in tableDs?.Cascades)
+            {
+                ds.Cascades.Add(item);
+            }
+
             return Build(ds);
         }
 
-        public SyncMap Build(IDatasourceMap ds)
+        public SyncMap Build(IDatasourceMap ds, SyncMap sender = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
@@ -62,51 +86,77 @@ namespace KeyMapSync
             if (string.IsNullOrEmpty(SequenceColumnSuffix)) throw new InvalidOperationException("'SequenceTableSuffix' property is null.");
 
             if (ds == null) throw new InvalidOperationException("'IDatasourceMap' is null.");
-            if (string.IsNullOrEmpty(ds.DatasourceQuery)) throw new InvalidOperationException("'DatasourceQuery' property is null.");
+
+            if (sender == null && ds.IsExtension) throw new InvalidOperationException("extension datasource must have sender.");
 
             // destination table exists check
             var dest = DbExecutor.ReadTable(ds.DestinationTableName);
             if (dest == null) throw new InvalidOperationException($"Destination table ({ds.DestinationTableName}) is not exists.");
 
-            // automatic generation of versionTable
-            var version = ReadOrCreateVersionTable(dest);
-
-            // automatic generation of syncTable
-            var sync = ReadOrCreateSyncTable(version, dest);
-            sync.SequenceColumn = null;
-
-            // automatic generation of mappingTable
-            var map = ReadOrCreateMappingTable(ds.MappingName, dest, ds.DatasourceKeyColumns);
-
-            // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
-            var db = DbExecutor.DB;
-            var sufix = $"_{DateTime.Now.ToString("mmffff")}";
-            var tmp = new TemporaryTable()
+            if (ds.IsExtension)
             {
-                TableName = $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}{sufix}",
-                DatasourceQuery = ds.DatasourceQuery,
-                DatasourceAliasName = ds.DatasourceAliasName,
-                DestinationSequence = dest.SequenceColumn,
-                SourceKeyColumns = ds.DatasourceKeyColumns,
-                ParamGenerator = ds.ParameterGenerator
-            };
+                var datasource = new DatasourceTable
+                {
+                    TableName = sender.DatasourceTable.TableName,
+                    IsMustCreate = false
+                };
 
-            var def = new SyncMap
+                var def = new SyncMap
+                {
+                    MappingName = null,
+                    DestinationTable = dest,
+                    VersionTable = null,
+                    SyncTable = null,
+                    MappingTable = null,
+                    DatasourceTable = datasource,
+                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
+                    DatasourceMap = ds,
+                    Sender = sender
+                };
+
+                return def;
+            }
+            else
             {
-                MappingName = ds.MappingName,
-                DestinationTable = dest,
-                VersionTable = version,
-                SyncTable = sync,
-                MappingTable = map,
-                TemporaryTable = tmp,
-                IsNeedExistsCheck = ds.IsNeedExistsCheck
-            };
+                // automatic generation of versionTable
+                Table version = ReadOrCreateVersionTableOrDefault(dest);
 
-            return def;
+                // automatic generation of syncTable
+                Table sync = ReadOrCreateSyncTableOrDefault(version, dest);
+
+                // automatic generation of mappingTable
+                Table map = ReadOrCreateMappingTableOrDefault(ds.MappingName, dest, ds.DatasourceKeyColumns); ;
+
+                // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
+                var db = DbExecutor.DB;
+                var sufix = $"_{DateTime.Now.ToString("mmffff")}";
+                var datasource = new DatasourceTable
+                {
+                    TableName = $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}{sufix}",
+                    IsMustCreate = true
+                };
+
+                var def = new SyncMap
+                {
+                    MappingName = ds.MappingName,
+                    DestinationTable = dest,
+                    VersionTable = version,
+                    SyncTable = sync,
+                    MappingTable = map,
+                    DatasourceTable = datasource,
+                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
+                    DatasourceMap = ds,
+                    Sender = sender
+                };
+
+                return def;
+            }
         }
 
-        private Table ReadOrCreateVersionTable(Table dest)
+        private Table ReadOrCreateVersionTableOrDefault(Table dest)
         {
+            if (dest.SequenceColumn == null) return null;
+
             var name = $"{dest.TableName}_{SyncVersionTableSuffix}";
             var table = DbExecutor.ReadTable(name);
             if (table == null)
@@ -117,8 +167,10 @@ namespace KeyMapSync
             return table;
         }
 
-        private Table ReadOrCreateSyncTable(Table version, Table dest)
+        private Table ReadOrCreateSyncTableOrDefault(Table version, Table dest)
         {
+            if (version == null) return null;
+
             var name = $"{dest.TableName}_{SyncTableSuffix}";
             var table = DbExecutor.ReadTable(name);
             if (table == null)
@@ -126,11 +178,19 @@ namespace KeyMapSync
                 DbExecutor.CreateSyncTable(name, dest, version);
                 table = DbExecutor.ReadTable(name);
             }
+
+            //sync-table has not sequence column.
+            table.SequenceColumn = null;
+
             return table;
         }
 
-        private Table ReadOrCreateMappingTable(string mappingName, Table dest, IEnumerable<string> uniqueKeyColumns)
+        private Table ReadOrCreateMappingTableOrDefault(string mappingName, Table dest, IEnumerable<string> uniqueKeyColumns)
         {
+            if (mappingName == null) return null;
+            if (dest.SequenceColumn == null) return null;
+            if (!uniqueKeyColumns.Any()) return null;
+
             var name = $"{dest.TableName}_{KeyMapTablePrefix}_{mappingName}";
             var table = DbExecutor.ReadMappingTableInfo(name);
             if (table == null)
@@ -138,6 +198,7 @@ namespace KeyMapSync
                 DbExecutor.CreateMappingTable(name, dest, uniqueKeyColumns);
                 table = DbExecutor.ReadMappingTableInfo(name);
             }
+
             return table;
         }
     }
