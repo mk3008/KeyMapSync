@@ -32,7 +32,7 @@ namespace KeyMapSync
         /// <summary>
         /// select datasource sql
         /// </summary>
-        string DatasourceQuery { get; }
+        Func<SyncMap, string> DatasourceQueryGenarator { get; }
 
         /// <summary>
         /// generate datasource query parameter.<code>new() { id = 1}</code>
@@ -40,6 +40,10 @@ namespace KeyMapSync
         /// <returns></returns>
         Func<object> ParameterGenerator { get; }
 
-        public bool IsNeedExistsCheck { get; }
+        bool IsNeedExistsCheck { get; }
+
+        bool IsExtension { get; }
+
+        IList<IDatasourceMap> Cascades { get; }
     }
 }

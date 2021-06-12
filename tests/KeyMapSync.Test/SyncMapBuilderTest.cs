@@ -58,12 +58,11 @@ namespace KeyMapSync.Test
                 Assert.True(def.IsNeedExistsCheck);
 
                 //temporary
-                Assert.StartsWith("builder_test_destination_map_builder_test_source", def.TemporaryTable.TableName);
-                Assert.Equal("with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", def.TemporaryTable.DatasourceQuery);
-                Assert.Equal("datasource", def.TemporaryTable.DatasourceAliasName);
-                Assert.Equal(def.DestinationTable.SequenceColumn, def.TemporaryTable.DestinationSequence);
-                Assert.Null(def.TemporaryTable.ParamGenerator);
-                Assert.Equal("builder_test_source_id", string.Join(',', def.TemporaryTable.SourceKeyColumns));
+                Assert.StartsWith("builder_test_destination_map_builder_test_source", def.DatasourceTable.TableName);
+                Assert.Equal("with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", def.DatasourceMap.DatasourceQueryGenarator(null));
+                Assert.Equal("datasource", def.DatasourceMap.DatasourceAliasName);
+                Assert.Null(def.DatasourceMap.ParameterGenerator);
+                Assert.Equal("builder_test_source_id", string.Join(',', def.DatasourceMap.DatasourceKeyColumns));
             }
         }
 
@@ -78,8 +77,8 @@ namespace KeyMapSync.Test
                 var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource1 as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, "datasource1");
 
                 //temporary
-                Assert.Equal("with datasource1 as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", def.TemporaryTable.DatasourceQuery);
-                Assert.Equal("datasource1", def.TemporaryTable.DatasourceAliasName);
+                Assert.Equal("with datasource1 as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", def.DatasourceMap.DatasourceQueryGenarator(null));
+                Assert.Equal("datasource1", def.DatasourceMap.DatasourceAliasName);
             }
         }
 
@@ -94,7 +93,7 @@ namespace KeyMapSync.Test
                 var prm = new { value = 1 };
                 var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, paramGenerator: () => prm);
 
-                Assert.Equal(prm, def.TemporaryTable.ParamGenerator.Invoke());
+                Assert.Equal(prm, def.DatasourceMap.ParameterGenerator.Invoke());
             }
         }
 
@@ -125,8 +124,8 @@ namespace KeyMapSync.Test
                 var sync = new Synchronizer(builder);
 
                 //temporary
-                Assert.StartsWith("builder_test_destination_map_builder_test_source_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooon_", def.TemporaryTable.TableName);
-                Assert.Equal(exe.DB.TableNameMaxLength, def.TemporaryTable.TableName.Length);
+                Assert.StartsWith("builder_test_destination_map_builder_test_source_loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooon_", def.DatasourceTable.TableName);
+                Assert.Equal(exe.DB.TableNameMaxLength, def.DatasourceTable.TableName.Length);
             }
         }
     }

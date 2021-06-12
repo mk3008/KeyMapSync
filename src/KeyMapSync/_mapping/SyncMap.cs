@@ -11,6 +11,8 @@ namespace KeyMapSync
     /// </summary>
     public class SyncMap
     {
+        public SyncMap Sender { get; set; }
+
         public string MappingName { get; set; }
 
         public Table DestinationTable { get; set; }
@@ -21,8 +23,10 @@ namespace KeyMapSync
 
         public Table MappingTable { get; set; }
 
-        public TemporaryTable TemporaryTable { get; set; }
+        public DatasourceTable DatasourceTable { get; set; }
 
         public bool IsNeedExistsCheck { get; set; } = true;
+
+        public IDatasourceMap DatasourceMap { get; set; }
     }
 }

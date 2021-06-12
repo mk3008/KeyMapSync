@@ -28,5 +28,11 @@ with datasource as (
         public Func<object> ParameterGenerator => () => null;
 
         public bool IsNeedExistsCheck => true;
+
+        public bool IsExtension => false;
+
+        public IList<IDatasourceMap> Cascades => new List<IDatasourceMap>();
+
+        public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
     }
 }

@@ -89,10 +89,18 @@ namespace KeyMapSync
 
             var table = new Table(info);
             var column = ReadSequenceColumn(info);
-            var name = ReadSequenceName(info, column);
-            var command = DB.GetSequenceNextValueCommand(name);
 
-            table.SequenceColumn = new SequenceColumn() { ColumnName = column, NextValCommand = command };
+            if (column != null)
+            {
+                var name = ReadSequenceName(info, column);
+                var command = DB.GetSequenceNextValueCommand(name);
+                table.SequenceColumn = new SequenceColumn()
+                {
+                    ColumnName = column,
+                    NextValCommand = command
+                };
+            }
+
             table.Columns = ReadColumns(info).ToList();
             return table;
         }
@@ -111,31 +119,39 @@ namespace KeyMapSync
         /// create temporary table.
         /// </summary>
         /// <param name="def"></param>
-        public int CreateTemporay(SyncMap def)
+        public int CreateTemporayOfDefault(SyncMap def)
         {
-            var tmp = def.TemporaryTable;
-            var map = def.MappingTable;
+            if (def.DatasourceTable.IsMustCreate == false)
+            {
+                var s = $"{def.DatasourceMap.DatasourceQueryGenarator(def.Sender)} select count(*) from {def.DatasourceMap.DatasourceAliasName}";
+                OnBeforeExecute?.Invoke(this, new SqlEventArgs(s));
+                return Connection.ExecuteScalar<int>(s, commandTimeout: CommandTimeout);
+            }
 
-            var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {tmp.SourceKeyColumns.ToString(" and ", x => $"x.{x} = {tmp.DatasourceAliasName}.{x}")})";
+            var dsmap = def.DatasourceMap;
+            var map = def.MappingTable;
+            var dst = def.DestinationTable;
+
+            var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
             var sql = @$"
-create temporary table {tmp.TableName}
+create temporary table {def.DatasourceTable.TableName}
 as
-{tmp.DatasourceQuery}
+{dsmap.DatasourceQueryGenarator(def.Sender)}
 select
-    {tmp.DestinationSequence.NextValCommand} as {tmp.DestinationSequence.ColumnName}, {tmp.DatasourceAliasName}.*
+    {dst.SequenceColumn.NextValCommand} as {dst.SequenceColumn.ColumnName}, {dsmap.DatasourceAliasName}.*
 from
-    {tmp.DatasourceAliasName}
+    {dsmap.DatasourceAliasName}
 {where}
 order by
-    {tmp.SourceKeyColumns.ToString(", ", x => $"{tmp.DatasourceAliasName}.{x}")}
+    {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}
 ";
-            var param = tmp.ParamGenerator?.Invoke();
+            var param = dsmap.ParameterGenerator?.Invoke();
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, param));
             Connection.Execute(sql, param, commandTimeout: CommandTimeout);
 
             //retrun insert count
-            var cntSql = $"select count(*) from {tmp.TableName}";
+            var cntSql = $"select count(*) from {def.DatasourceTable.TableName}";
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(cntSql));
 
             return Connection.ExecuteScalar<int>(cntSql, commandTimeout: CommandTimeout);
@@ -150,9 +166,33 @@ order by
         public int InsertDestinationTable(SyncMap def)
         {
             var dest = def.DestinationTable;
-            var tmp = ReadTable(def.TemporaryTable.TableName);
 
-            var sql = @$"
+            if (def.DatasourceTable.IsMustCreate == false)
+            {
+                var tmp = ReadTable(def.DatasourceTable.TableName);
+                var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
+
+                var sql = @$"
+insert into {dest.TableFullName}(
+{dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
+)
+{def.DatasourceMap.DatasourceQueryGenarator(def.Sender)}
+select
+{dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
+from
+{def.DatasourceMap.DatasourceAliasName}
+{orderSql}
+;";
+
+                OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql));
+                return Connection.Execute(sql, commandTimeout: CommandTimeout);
+            }
+            else
+            {
+                var tmp = ReadTable(def.DatasourceTable.TableName);
+                var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
+
+                var sql = @$"
 insert into {dest.TableFullName}(
 {dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
 )
@@ -160,19 +200,21 @@ select
 {dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
 from
 {tmp.TableName}
-order by
-{dest.SequenceColumn.ColumnName}
-; ";
+{orderSql}
+;";
 
-            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql));
-            return Connection.Execute(sql, commandTimeout: CommandTimeout);
+                OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql));
+                return Connection.Execute(sql, commandTimeout: CommandTimeout);
+            }
         }
 
-        public long InsertVersionTable(SyncMap def)
+        public int? InsertVersionTableOrDefault(SyncMap def)
         {
+            if (def.VersionTable == null) return null;
+
             var args = DB.GetInsertVersionTableScalar(def);
             OnBeforeExecute?.Invoke(this, args);
-            return (long)Connection.ExecuteScalar(args.Sql, args.Param, commandTimeout: CommandTimeout);
+            return Connection.ExecuteScalar<int>(args.Sql, args.Param, commandTimeout: CommandTimeout);
         }
 
         /// <summary>
@@ -184,7 +226,7 @@ order by
         {
             var sync = def.SyncTable;
             var version = def.VersionTable;
-            var tmp = def.TemporaryTable;
+            var datasource = def.DatasourceTable;
             var columnsSql = new StringBuilder();
 
             foreach (var item in sync.Columns)
@@ -209,7 +251,7 @@ insert into {sync.TableFullName}
 select distinct
     {columnsSql}
 from
-    {tmp.TableName}
+    {datasource.TableName}
 ;
 ";
 
@@ -225,14 +267,14 @@ from
         public int InsertMappingTable(SyncMap def)
         {
             var map = def.MappingTable;
-            var tmp = def.TemporaryTable;
+            var datasource = def.DatasourceTable;
 
             var sql = @$"
 insert into {map.TableFullName}
 select
     {map.Columns.ToString(",")}
 from
-    {tmp.TableName}
+    {datasource.TableName}
 order by
     {map.Columns.ToString(",")}
 ;

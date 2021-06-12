@@ -23,5 +23,7 @@ namespace KeyMapSync
         string DatasourceAliasName { get; }
 
         abstract Func<object> ParameterGenerator { get; }
+
+        IList<IDatasourceMap> Cascades { get; }
     }
 }

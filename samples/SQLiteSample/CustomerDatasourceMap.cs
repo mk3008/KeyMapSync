@@ -29,5 +29,9 @@ with datasource as (
         public Func<object> ParameterGenerator => () => new { name = "1" };
 
         public string DatasourceAliasName => "datasource";
+
+        public bool IsExtension => false;
+
+        public IList<IDatasourceMap> Cascades => new List<IDatasourceMap>();
     }
 }
