@@ -132,6 +132,8 @@ namespace KeyMapSync
             var map = def.MappingTable;
             var dst = def.DestinationTable;
 
+            var destIdColumn = (dst?.SequenceColumn == null) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
+
             var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
             var sql = @$"
@@ -139,7 +141,7 @@ create temporary table {def.DatasourceTable.TableName}
 as
 {dsmap.DatasourceQueryGenarator(def.Sender)}
 select
-    {dst.SequenceColumn.NextValCommand} as {dst.SequenceColumn.ColumnName}, {dsmap.DatasourceAliasName}.*
+    {destIdColumn}{dsmap.DatasourceAliasName}.*
 from
     {dsmap.DatasourceAliasName}
 {where}
@@ -166,6 +168,7 @@ order by
         public int InsertDestinationTable(SyncMap def)
         {
             var dest = def.DestinationTable;
+            if (dest == null) return 0;
 
             if (def.DatasourceTable.IsMustCreate == false)
             {

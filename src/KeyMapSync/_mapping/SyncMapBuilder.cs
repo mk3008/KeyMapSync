@@ -51,7 +51,7 @@ namespace KeyMapSync
                 IsExtension = false
             };
 
-            return Build(ds);
+            return Build(ds, datasoruceName: "");
         }
 
         public SyncMap Build(ITableDatasourceMap tableDs)
@@ -66,7 +66,7 @@ namespace KeyMapSync
                 DatasourceKeyColumns = new string[] { source.SequenceColumn.ColumnName },
                 ParameterGenerator = tableDs.ParameterGenerator,
                 IsNeedExistsCheck = true,
-                IsExtension = false
+                IsExtension = false,
             };
 
             foreach (var item in tableDs?.Cascades)
@@ -74,10 +74,10 @@ namespace KeyMapSync
                 ds.Cascades.Add(item);
             }
 
-            return Build(ds);
+            return Build(ds, datasoruceName: tableDs.GetType().FullName);
         }
 
-        public SyncMap Build(IDatasourceMap ds, SyncMap sender = null)
+        public SyncMap Build(IDatasourceMap ds, SyncMap sender = null, string datasoruceName = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
@@ -91,7 +91,11 @@ namespace KeyMapSync
 
             // destination table exists check
             var dest = DbExecutor.ReadTable(ds.DestinationTableName);
-            if (dest == null) throw new InvalidOperationException($"Destination table ({ds.DestinationTableName}) is not exists.");
+            
+            //if (dest == null) throw new InvalidOperationException($"Destination table ({ds.DestinationTableName}) is not exists.");
+
+            // datasoruceName
+            if (datasoruceName == null) datasoruceName = ds.GetType().FullName;
 
             if (ds.IsExtension)
             {
@@ -111,7 +115,8 @@ namespace KeyMapSync
                     DatasourceTable = datasource,
                     IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
-                    Sender = sender
+                    Sender = sender,
+                    DatasourceName = datasoruceName
                 };
 
                 return def;
@@ -129,10 +134,11 @@ namespace KeyMapSync
 
                 // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
                 var db = DbExecutor.DB;
-                var sufix = $"_{DateTime.Now.ToString("mmffff")}";
+                var sufix = $"_{DateTime.Now.ToString("ssffff")}";
+                var tblName = (map == null) ? "keymapsync" : $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
                 var datasource = new DatasourceTable
                 {
-                    TableName = $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}{sufix}",
+                    TableName = $"{tblName}{sufix}",
                     IsMustCreate = true
                 };
 
@@ -146,7 +152,8 @@ namespace KeyMapSync
                     DatasourceTable = datasource,
                     IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
-                    Sender = sender
+                    Sender = sender,
+                    DatasourceName = datasoruceName
                 };
 
                 return def;
@@ -155,7 +162,7 @@ namespace KeyMapSync
 
         private Table ReadOrCreateVersionTableOrDefault(Table dest)
         {
-            if (dest.SequenceColumn == null) return null;
+            if (dest?.SequenceColumn == null) return null;
 
             var name = $"{dest.TableName}_{SyncVersionTableSuffix}";
             var table = DbExecutor.ReadTable(name);
@@ -188,7 +195,7 @@ namespace KeyMapSync
         private Table ReadOrCreateMappingTableOrDefault(string mappingName, Table dest, IEnumerable<string> uniqueKeyColumns)
         {
             if (mappingName == null) return null;
-            if (dest.SequenceColumn == null) return null;
+            if (dest?.SequenceColumn == null) return null;
             if (!uniqueKeyColumns.Any()) return null;
 
             var name = $"{dest.TableName}_{KeyMapTablePrefix}_{mappingName}";

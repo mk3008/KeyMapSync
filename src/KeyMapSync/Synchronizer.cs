@@ -109,8 +109,16 @@ namespace KeyMapSync
 
             var versionNo = DbExecutor.InsertVersionTableOrDefault(def);
 
-            var n = DbExecutor.InsertDestinationTable(def);
-            if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
+            var n = 0;
+            if (def.DestinationTable == null)
+            {
+                count = 0;
+            }
+            else
+            {
+                n = DbExecutor.InsertDestinationTable(def);
+                if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
+            }
 
             if (versionNo.HasValue)
             {

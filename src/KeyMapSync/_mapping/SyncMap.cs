@@ -28,5 +28,7 @@ namespace KeyMapSync
         public bool IsNeedExistsCheck { get; set; } = true;
 
         public IDatasourceMap DatasourceMap { get; set; }
+
+        public string DatasourceName { get; set; }
     }
 }
