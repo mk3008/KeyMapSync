@@ -77,5 +77,14 @@ namespace KeyMapSync
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
             return Connection.Execute(sql, prm);
         }
+
+        public int OffsetMapping(SyncMap def)
+        {
+            var idName = def.DestinationTable.SequenceColumn.ColumnName;
+            var sql = $"delete from {def.MappingTable.TableFullName} where exists (select * from {def.DestinationTable.TableName}_map_offset x where x.offset_{idName} = {def.MappingTable.TableFullName}.{idName})";
+
+            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, null));
+            return Connection.Execute(sql);
+        }
     }
 }
