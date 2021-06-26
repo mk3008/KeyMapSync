@@ -53,6 +53,7 @@ select '' as schemaname ,tbl_name as tablename from sqlite_temp_master where typ
 create table {tableName}
 (
 {sequenceColumnName} integer primary key autoincrement
+, datasource_name text not null
 , mapping_name text not null
 , create_timestamp timestamp not null default current_timestamp
 )"
@@ -89,8 +90,12 @@ create table {tableName}
         {
             var version = def.VersionTable;
 
-            var sql = $"insert into {version.TableFullName}(mapping_name) values (:mapping_name); select last_insert_rowid();";
-            var prm = new { mapping_name = def.MappingName };
+            var sql = $"insert into {version.TableFullName}(datasource_name, mapping_name) values (:datasource_name, :mapping_name); select last_insert_rowid();";
+            var prm = new
+            {
+                datasource_name = (def?.DatasourceName == null) ? "" : def.DatasourceName,
+                mapping_name = (def?.MappingName == null) ? "" : def.MappingName,
+            };
             return new SqlEventArgs(sql, prm);
         }
     }

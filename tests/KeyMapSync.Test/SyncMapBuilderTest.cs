@@ -44,7 +44,7 @@ namespace KeyMapSync.Test
 
                 //sync_version
                 Assert.Equal("builder_test_destination_sync_version", def.VersionTable.TableFullName);
-                Assert.Equal("builder_test_destination_sync_version_id,mapping_name,create_timestamp", string.Join(',', def.VersionTable.Columns));
+                Assert.Equal("builder_test_destination_sync_version_id,datasource_name,mapping_name,create_timestamp", string.Join(',', def.VersionTable.Columns));
                 Assert.Equal("builder_test_destination_sync_version_id", def.VersionTable.SequenceColumn.ColumnName);
                 Assert.Equal("row_number() over() + (select max(seq) from (select seq from sqlite_sequence where name = 'builder_test_destination_sync_version' union all select 0))", def.VersionTable.SequenceColumn.NextValCommand);
 

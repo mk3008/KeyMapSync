@@ -92,9 +92,14 @@ where
 create table {tableName}
 (
 {sequenceColumnName} serial8 primary key
+, datasource_name text not null
 , mapping_name text not null
 , create_timestamp timestamp not null default current_timestamp
-)"
+)
+;
+create index on {tableName}(datasource_name)
+;
+"
 ;
             return new SqlEventArgs(sql);
         }
@@ -106,7 +111,11 @@ create table {tableName}
 (
 {dest.SequenceColumn.ColumnName} int8 primary key
 , {version.SequenceColumn.ColumnName} int8 not null
-)"
+)
+;
+create index on {tableName}({version.SequenceColumn.ColumnName})
+;
+"
 ;
             return new SqlEventArgs(sql);
         }
@@ -128,8 +137,13 @@ create table {tableName}
         {
             var version = def.VersionTable;
 
-            var sql = $"insert into {version.TableFullName}(mapping_name) values (:mapping_name) returning {version.SequenceColumn.ColumnName};";
-            var prm = new { mapping_name = def.MappingName };
+            var sql = $"insert into {version.TableFullName}(datasource_name, mapping_name) values (:datasource_name, :mapping_name) returning {version.SequenceColumn.ColumnName};";
+
+            var prm = new
+            {
+                datasource_name = (def?.DatasourceName == null) ? "" : def.DatasourceName,
+                mapping_name = (def?.MappingName == null) ? "" : def.MappingName,
+            };
             return new SqlEventArgs(sql, prm);
         }
     }

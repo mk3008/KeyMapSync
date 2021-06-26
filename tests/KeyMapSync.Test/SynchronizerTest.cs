@@ -34,6 +34,9 @@ namespace KeyMapSync.Test
                 var builder = new SyncMapBuilder() { DbExecutor = exe };
                 var sync = new Synchronizer(builder);
 
+                //initialize datasource 0row
+                cn.Execute("delete from customer");
+
                 var def = builder.Build("client", "customer", "with datasource as (select * from customer)", new string[] { "customer_id" });
 
                 sync.Insert(def);
@@ -63,7 +66,7 @@ namespace KeyMapSync.Test
 
                 var res = sync.Result;
                 Assert.Equal(1, res.Count);
-                Assert.Equal(1, res.Version);
+                Assert.True(1 <= res.Version);
             }
         }
 
@@ -211,7 +214,7 @@ order by
 
                 using (var tran = cn.BeginTransaction())
                 {
-                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name like 'tran%')", new string[] { "customer_id" });
                     sync.Insert(def, tran);
                     tran.Commit();
                 }
@@ -225,7 +228,7 @@ order by
 
                 using (var tran = cn.BeginTransaction())
                 {
-                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name like 'tran%')", new string[] { "customer_id" });
                     sync.Insert(def, tran);
                     // not comiit
                 }
@@ -236,7 +239,7 @@ order by
 
                 using (var tran = cn.BeginTransaction())
                 {
-                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer)", new string[] { "customer_id" });
+                    var def = builder.Build("client", "customer", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name like 'tran%')", new string[] { "customer_id" });
                     sync.Insert(def, tran);
                     tran.Commit();
                 }
@@ -280,6 +283,105 @@ order by
                 //you will always get an error.
                 fn();
             });
+        }
+
+        [Fact]
+        public void NoMap()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute("insert into customer(customer_name) values('no map')");
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var def = builder.Build("client", null, "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'no map')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                sync.Insert(def);
+            }
+        }
+
+        [Fact]
+        public void NoDestinationNoMap()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute("insert into customer(customer_name) values('no destination')");
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var def = builder.Build(null, null, "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'no destination')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                sync.Insert(def);
+
+                Assert.Equal(0, sync.Result.Count);
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var def = builder.Build("client", null, "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'no destination')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                sync.Insert(def);
+
+                Assert.Equal(1, sync.Result.Count);
+            }
+        }
+
+        [Fact]
+        public void NoDestinationHasMap()
+        {
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute("insert into customer(customer_name) values('no destination has map')");
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var def = builder.Build(null, "no_dest_has_map", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'no destination has map')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                sync.Insert(def);
+
+                // no destination(no destination sequence column), cannot mapping
+                Assert.Equal(0, sync.Result.Count);
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var def = builder.Build("client", "no_dest_has_map", "with datasource as (select customer_id, customer_name as client_name from customer where customer_name = 'no destination has map')", new string[] { "customer_id" }, isNeedExistsCheck: false);
+                sync.Insert(def);
+
+                Assert.Equal(1, sync.Result.Count);
+            }
         }
     }
 }
