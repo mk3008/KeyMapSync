@@ -56,7 +56,7 @@ namespace KeyMapSync
         {
             var r = InsertCore(def);
 
-            if (r.Count == 0) return r;
+            if (def.DestinationTable?.TableFullName != null && r.Count == 0) return r;
 
             // cascade
             foreach (var item in def.DatasourceMap.Cascades)
@@ -90,7 +90,7 @@ namespace KeyMapSync
             var versionNo = DbExecutor.InsertVersionTableOrDefault(def);
 
             var n = 0;
-            if (def.DestinationTable == null)
+            if (def.DestinationTable == null || def.DestinationTable.TableFullName == null)
             {
                 count = 0;
             }
@@ -98,12 +98,12 @@ namespace KeyMapSync
             {
                 n = DbExecutor.InsertDestinationTable(def);
                 if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
-            }
 
-            if (versionNo.HasValue)
-            {
-                n = DbExecutor.InsertSyncTable(def, versionNo.Value);
-                if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
+                if (versionNo.HasValue)
+                {
+                    n = DbExecutor.InsertSyncTable(def, versionNo.Value);
+                    if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
+                }
             }
 
             if (def.MappingTable != null)

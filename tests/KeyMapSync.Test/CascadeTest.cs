@@ -77,9 +77,79 @@ values
             }
         }
 
-        //private void OnBeforeExecute(object sender, SqlEventArgs e)
-        //{
-        //    Output.WriteLine(e.Sql);
-        //}
+        [Fact]
+        public void ValidateUpdate()
+        {
+            //DbExecutor.OnBeforeExecute += OnBeforeExecute;
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailDatasource();
+                var def = builder.Build(ds);
+
+                sync.Insert(def);
+                var res = sync.Result;
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute(@"
+update sales_data set sales_date = '9999/12/01'
+;
+update sales_data set price = price * 2 where sales_data_seq = 2
+;
+update sales_data set product = product || '2' where sales_data_seq = 3
+;
+delete from sales_data where sales_data_seq = 4
+;
+");
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailDatasource();
+                var opt = new ValidateOption();
+                opt.IgnoreColumnList.Add("sales_id");
+                opt.IgnoreColumnList.Add("sales_date");
+                opt.PriceColumnList.Add("price");
+                sync.Offset(ds, opt);
+                var res = sync.Result;
+
+                Assert.Equal(3, res.InnerResults.First().Count);
+            }
+
+            using (var cn = new SQLiteConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new SQLiteDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailDatasource();
+                var def = builder.Build(ds);
+
+                sync.Insert(def);
+                var res = sync.Result;
+
+                Assert.Equal(2, res.Count);
+            }
+        }
+
+        private void OnBeforeExecute(object sender, SqlEventArgs e)
+        {
+            Output.WriteLine(e.Sql);
+            if (e.Param != null) Output.WriteLine(e.Param.ToString());
+        }
     }
 }

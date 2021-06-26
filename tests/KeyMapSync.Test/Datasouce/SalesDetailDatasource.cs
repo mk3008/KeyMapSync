@@ -21,7 +21,7 @@ namespace KeyMapSync.Test.Datasouce
 
         public override IEnumerable<string> DatasourceKeyColumns => new string[] { "sales_data_seq" };
 
-        public override bool IsNeedExistsCheck => false; // manual exists.
+        public override bool IsNeedExistsCheck => true;
 
         public override string DatasourceQuery => $@"
 with
@@ -30,9 +30,6 @@ sales_data_ds as (
         *
     from
         sales_data d
-    where
-        --manual exists
-        not exists (select * from sales_detail_map_sales_data x where x.sales_data_seq = d.sales_data_seq)
 ),
 header_ds as (
     select

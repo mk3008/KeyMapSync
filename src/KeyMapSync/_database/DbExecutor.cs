@@ -134,6 +134,9 @@ namespace KeyMapSync
 
             var destIdColumn = (dst?.SequenceColumn == null) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
 
+            var orderText = (dsmap?.DatasourceKeyColumns == null) ? "": $"order by {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}";
+
+
             var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
             var sql = @$"
@@ -145,8 +148,7 @@ select
 from
     {dsmap.DatasourceAliasName}
 {where}
-order by
-    {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}
+{orderText}
 ";
             var param = dsmap.ParameterGenerator?.Invoke();
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, param));
@@ -168,7 +170,7 @@ order by
         public int InsertDestinationTable(SyncMap def)
         {
             var dest = def.DestinationTable;
-            if (dest == null) return 0;
+            if (dest == null || dest.TableFullName == null) return 0;
 
             if (def.DatasourceTable.IsMustCreate == false)
             {
