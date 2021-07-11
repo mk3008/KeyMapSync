@@ -13,6 +13,7 @@ namespace KeyMapSync.Test.Datasouce
             //cascade datasource
             Cascades.Add(new SalesDetailExtensionRemarks());
             Cascades.Add(new SalesDatasource());
+            Cascades.Add(new StockDetailDatasource());
         }
 
         public override string DestinationTableName => "sales_detail";
@@ -50,6 +51,7 @@ datasource as (
         h.sales_id
         , h.sales_date
         , d.product
+        , d.amount
         , d.price
         , d.remarks
         , d.sales_data_seq

@@ -134,8 +134,7 @@ namespace KeyMapSync
 
             var destIdColumn = (dst?.SequenceColumn == null) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
 
-            var orderText = (dsmap?.DatasourceKeyColumns == null) ? "": $"order by {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}";
-
+            var orderText = (dsmap?.DatasourceKeyColumns == null) ? "" : $"order by {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}";
 
             var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
