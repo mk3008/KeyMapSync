@@ -10,6 +10,6 @@ namespace KeyMapSync
     {
         IEnumerable<String> IgnoreColumns { get; }
 
-        IEnumerable<String> PriceColumns { get; }
+        IEnumerable<String> ValueColumns { get; }
     }
 }

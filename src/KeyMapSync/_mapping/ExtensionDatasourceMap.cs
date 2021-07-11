@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync
 {
+    /// <summary>
+    /// Simple implementation of extended datasource.
+    ///
+    /// Features
+    /// - There is no point in managing mapping.
+    /// - There is no need to check for existence.
+    /// </summary>
     public abstract class ExtensionDatasourceMap : IDatasourceMap
     {
         public abstract string DestinationTableName { get; }

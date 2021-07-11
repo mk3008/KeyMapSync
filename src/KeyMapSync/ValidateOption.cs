@@ -10,10 +10,10 @@ namespace KeyMapSync
     {
         public IList<String> IgnoreColumnList { get; } = new List<string>();
 
-        public IList<String> PriceColumnList { get; } = new List<string>();
+        public IList<String> ValueColumnList { get; } = new List<string>();
 
         public IEnumerable<string> IgnoreColumns => IgnoreColumnList;
 
-        public IEnumerable<string> PriceColumns => PriceColumnList;
+        public IEnumerable<string> ValueColumns => ValueColumnList;
     }
 }

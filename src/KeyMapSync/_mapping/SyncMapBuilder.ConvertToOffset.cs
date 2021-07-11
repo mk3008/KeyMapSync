@@ -10,16 +10,26 @@ namespace KeyMapSync
     /// </summary>
     public partial class SyncMapBuilder
     {
+        /// <summary>
+        /// Temporarily export your changes and transfer them as a data source.
+        /// The transfer result is recorded in the mapping table for offset.
+        /// </summary>
+        /// <param name="origindef"></param>
+        /// <param name="opt"></param>
+        /// <param name="version">validate this sync version or later</param>
+        /// <returns></returns>
         public SyncMap ConvertToOffset(SyncMap origindef, IValidateOption opt, long version)
         {
-            var def = GenerateValidateSyncMap(origindef, version);
+            var def = GenerateValidateTemporarycMap(origindef, version);
             var offsetmap = GenerateOffsetDatasource(origindef, def.DatasourceTable.TableName, opt);
+
+            //add
             def.DatasourceMap.Cascades.Add(offsetmap);
 
             return def;
         }
 
-        private SyncMap GenerateValidateSyncMap(SyncMap origindef, long version)
+        private SyncMap GenerateValidateTemporarycMap(SyncMap origindef, long version)
         {
             var destId = origindef.DestinationTable.SequenceColumn.ColumnName;
             var verId = origindef.VersionTable.SequenceColumn.ColumnName;
@@ -89,8 +99,11 @@ _validate_datasource as (
 with
 datasource as (
     select
-        {def.DestinationTable.Columns.Where((x) => !opt.PriceColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
-        , {def.DestinationTable.Columns.Where((x) => opt.PriceColumns.Contains(x)).Select((x) => $"d.{x} * -1 as {x}").ToString(",")}
+        --key columns
+        {def.DestinationTable.Columns.Where((x) => !opt.ValueColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
+        --value columns
+        , {def.DestinationTable.Columns.Where((x) => opt.ValueColumns.Contains(x)).Select((x) => $"d.{x} * -1 as {x}").ToString(",")}
+        --offsetted id
         , d.{idName} as offset_{idName}
     from
         {def.DestinationTable.TableFullName} d
@@ -110,6 +123,58 @@ datasource as (
                 DatasourceQuery = sql,
                 DatasourceAliasName = "datasource",
                 DatasourceKeyColumns = new string[] { $"offset_{idName}" },
+                ParameterGenerator = null,
+                IsNeedExistsCheck = false,
+                IsExtension = false,
+            };
+
+            var offsetdef = Build(ds);
+
+            //cascade datasource convert
+            foreach (var item in def.DatasourceMap.Cascades.Where(x => x.IsExtension == false))
+            {
+                if (item.IsExtension == false)
+                {
+                    ds.Cascades.Add(item);
+                }
+                else
+                {
+                    var m = GenerateOffsetExtensionDatasource(def, offsetdef.MappingTable.TableFullName, item);
+                    if (m != null) ds.Cascades.Add(m);
+                }
+            }
+
+            return ds;
+        }
+
+        private IDatasourceMap GenerateOffsetExtensionDatasource(SyncMap def, string maptable, IDatasourceMap extensionmap)
+        {
+            var dest = DbExecutor.ReadTable(extensionmap.DestinationTableName);
+            var idName = def.DestinationTable.SequenceColumn.ColumnName;
+
+            // upper cascade is not supported.
+            if (dest.Columns.Where(x => x == idName).Any() == false) return null;
+
+            var sql = @$"
+with
+datasource as (
+    select
+        d.{idName}
+        , {dest.Columns.Where(x => x != idName).Select(x => $"e.{x}").ToString(",")}
+    from
+        {def.DatasourceTable.TableName} d
+        inner join {maptable} q on d.{idName} = q.{idName}
+        inner join {extensionmap.DestinationTableName} e on q.offset_{idName} = e.{idName}
+    where
+        {dest.Columns.Where(x => x != idName).Select(x => $"e.{x} is not null").ToString(" and ")}
+)";
+            var ds = new DatasourceMapWrap()
+            {
+                DestinationTableName = extensionmap.DestinationTableName,
+                MappingName = null,
+                DatasourceQuery = sql,
+                DatasourceAliasName = "datasource",
+                DatasourceKeyColumns = null,
                 ParameterGenerator = null,
                 IsNeedExistsCheck = false,
                 IsExtension = false,

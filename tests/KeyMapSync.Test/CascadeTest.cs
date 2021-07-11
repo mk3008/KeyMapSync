@@ -23,26 +23,27 @@ namespace KeyMapSync.Test
                 cn.Open();
 
                 //datasource
-                cn.Execute("create table if not exists sales_data(sales_data_seq integer primary key autoincrement not null, sales_data_id integer not null, sales_data_row_id integer not null, sales_date date not null, product text not null, price integer not null, remarks text)");
+                cn.Execute("create table if not exists sales_data(sales_data_seq integer primary key autoincrement not null, sales_data_id integer not null, sales_data_row_id integer not null, sales_date date not null, product text not null, amount integer not null, price integer not null, remarks text)");
 
                 cn.Execute("delete from sales_data");
                 cn.Execute(@"
 insert into sales_data (
-sales_data_id, sales_data_row_id, sales_date, product, price, remarks
+sales_data_id, sales_data_row_id, sales_date, product, amount, price, remarks
 )
 values
-  (1, 1, '2020/01/01', 'apple', 100, null)
-, (1, 2, '2020/01/01', 'orange', 150, null)
-, (1, 3, '2020/01/01', 'tomato', 1000, null)
-, (2, 1, '2020/01/02', 'black tea', 100, 'assam')
-, (2, 1, '2020/01/02', 'green tea', 100, null)
-, (2, 2, '2020/01/02', 'coffee', 150, null)
+  (1, 1, '2020/01/01', 'apple'    ,  1,  100, null)
+, (1, 2, '2020/01/01', 'orange'   ,  3,  150, 'valencia')
+, (1, 3, '2020/01/01', 'tomato'   , 10, 1000, null)
+, (2, 1, '2020/01/02', 'black tea',  2,  100, 'assam')
+, (2, 2, '2020/01/02', 'green tea',  4,  100, null)
+, (2, 3, '2020/01/02', 'coffee'   ,  5,  150, null)
 ;");
 
                 //destination
                 cn.Execute("create table if not exists sales (sales_id integer primary key autoincrement, sales_date date not null)");
-                cn.Execute("create table if not exists sales_detail (sales_detail_id integer primary key autoincrement, sales_id integer not null, product text not null, price integer not null)");
+                cn.Execute("create table if not exists sales_detail (sales_detail_id integer primary key autoincrement, sales_id integer not null, product text not null, amount integer not null, price integer not null)");
                 cn.Execute("create table if not exists sales_detail_ext_remarks (sales_detail_id integer not null, remarks not null)");
+                cn.Execute("create table if not exists stock_detail (stock_detail_id integer primary key autoincrement, sales_date date not null, product text not null, amount integer not null)");
 
                 cn.Execute("delete from sales");
                 cn.Execute("delete from sales_detail");
@@ -72,7 +73,7 @@ values
                 var res = sync.Result;
 
                 Assert.Equal(6, res.Count);
-                Assert.Equal(1, res.InnerResults.Where(x => x.Definition.DestinationTable.TableName == "sales_detail_ext_remarks").First().Count);
+                Assert.Equal(2, res.InnerResults.Where(x => x.Definition.DestinationTable.TableName == "sales_detail_ext_remarks").First().Count);
                 Assert.Equal(2, res.InnerResults.Where(x => x.Definition.DestinationTable.TableName == "sales").First().Count);
             }
         }
@@ -80,7 +81,7 @@ values
         [Fact]
         public void ValidateUpdate()
         {
-            //DbExecutor.OnBeforeExecute += OnBeforeExecute;
+            DbExecutor.OnBeforeExecute += OnBeforeExecute;
 
             using (var cn = new SQLiteConnection(CnString))
             {
@@ -102,7 +103,7 @@ values
                 cn.Execute(@"
 update sales_data set sales_date = '9999/12/01'
 ;
-update sales_data set price = price * 2 where sales_data_seq = 2
+update sales_data set price = price * 2, remarks = 'navel' where sales_data_seq = 2
 ;
 update sales_data set product = product || '2' where sales_data_seq = 3
 ;
@@ -119,14 +120,11 @@ delete from sales_data where sales_data_seq = 4
                 var sync = new Synchronizer(builder);
 
                 var ds = new Datasouce.SalesDetailDatasource();
-                var opt = new ValidateOption();
-                opt.IgnoreColumnList.Add("sales_id");
-                opt.IgnoreColumnList.Add("sales_date");
-                opt.PriceColumnList.Add("price");
-                sync.Offset(ds, opt);
+
+                sync.Offset(ds, new Datasouce.SalesDetailValidate());
                 var res = sync.Result;
 
-                Assert.Equal(3, res.InnerResults.First().Count);
+                //Assert.Equal(3, res.InnerResults.First().Count);
             }
 
             using (var cn = new SQLiteConnection(CnString))
@@ -148,6 +146,8 @@ delete from sales_data where sales_data_seq = 4
 
         private void OnBeforeExecute(object sender, SqlEventArgs e)
         {
+            //if (e.Sql.IndexOf("insert into") == -1) return;
+
             Output.WriteLine(e.Sql);
             if (e.Param != null) Output.WriteLine(e.Param.ToString());
         }

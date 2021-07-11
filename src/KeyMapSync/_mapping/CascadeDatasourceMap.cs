@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 namespace KeyMapSync
 {
     /// <summary>
-    /// Simple implementation of datasource.
+    /// Simple implementation of cascade datasource.
     ///
     /// Features
     /// - Not an extension.
     /// - Existence check is required.
-    /// - Data source query is static.
+    /// - Data source query is dynamic.(must override 'DatasourceQueryGenarator')
     /// </summary>
-    public abstract class RootDatasourceMap : IDatasourceMap
+    public abstract class CascadeDatasourceMap : IDatasourceMap
     {
         public abstract string DestinationTableName { get; }
 
@@ -24,9 +24,7 @@ namespace KeyMapSync
 
         public virtual string DatasourceAliasName => "datasource";
 
-        public abstract string DatasourceQuery { get; }
-
-        public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
+        public abstract Func<SyncMap, string> DatasourceQueryGenarator { get; }
 
         public virtual Func<object> ParameterGenerator => null;
 
