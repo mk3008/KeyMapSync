@@ -11,7 +11,7 @@ namespace KeyMapSync
     /// Manage data source queries and forwarding destinations.
     /// Key information is not managed, so get it from the <code>DatasourceTableName</code>.
     /// </summary>
-    public interface ITableDatasourceMap
+    public interface ITableDatasourceMap : IDatasourceMappable
     {
         string DestinationTableName { get; }
 

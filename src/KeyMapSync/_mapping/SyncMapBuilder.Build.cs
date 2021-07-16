@@ -30,7 +30,15 @@ namespace KeyMapSync
             return Build(ds, datasoruceName: "");
         }
 
-        public SyncMap Build(ITableDatasourceMap tableDs)
+        public SyncMap Build(IDatasourceMappable ds)
+        {
+            if (ds is ITableDatasourceMap) return Build(ds as ITableDatasourceMap);
+            if (ds is IDatasourceMap) return Build(ds as IDatasourceMap);
+
+            throw new NotSupportedException();
+        }
+
+        private SyncMap Build(ITableDatasourceMap tableDs)
         {
             var source = DbExecutor.ReadTable(tableDs.DatasourceTableName);
             var ds = new DatasourceMapWrap
@@ -53,7 +61,7 @@ namespace KeyMapSync
             return Build(ds, datasoruceName: tableDs.GetType().FullName);
         }
 
-        public SyncMap Build(IDatasourceMap ds, SyncMap sender = null, string datasoruceName = null)
+        internal SyncMap Build(IDatasourceMap ds, SyncMap sender = null, string datasoruceName = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
