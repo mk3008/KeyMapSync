@@ -8,7 +8,7 @@ namespace KeyMapSync
     /// <summary>
     /// Manage data source queries and forwarding destinations.
     /// </summary>
-    public interface IDatasourceMap
+    public interface IDatasourceMap : IDatasourceMappable
     {
         /// <summary>
         /// destination table name
