@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 
 namespace KeyMapSync
@@ -12,7 +13,7 @@ namespace KeyMapSync
         /// <summary>
         /// load <code>datasourceQuery</code> to <code>Destination</code>.
         /// </summary>
-        public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<object> paramGenerator = null, bool isNeedExistsCheck = true)
+        public SyncMap Build(string destination, string mappingName, string datasourceQuery, string[] datasourceKeys, string datasourceAliasName = "datasource", Func<ExpandoObject> paramGenerator = null, bool isNeedExistsCheck = true)
         {
             var ds = new DatasourceMapWrap
             {

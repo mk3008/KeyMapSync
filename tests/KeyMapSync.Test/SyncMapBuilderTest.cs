@@ -2,6 +2,7 @@
 using System;
 using System.Data;
 using System.Data.SQLite;
+using System.Dynamic;
 using System.Linq;
 using Xunit;
 
@@ -90,7 +91,7 @@ namespace KeyMapSync.Test
                 cn.Open();
                 var exe = new DbExecutor(new SQLiteDB(), cn);
                 var builder = new SyncMapBuilder() { DbExecutor = exe };
-                var prm = new { value = 1 };
+                dynamic prm = new ExpandoObject(); prm.value = 1;
                 var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, paramGenerator: () => prm);
 
                 Assert.Equal(prm, def.DatasourceMap.ParameterGenerator.Invoke());
