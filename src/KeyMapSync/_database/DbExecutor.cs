@@ -138,7 +138,7 @@ namespace KeyMapSync
 
             var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
-            var sql = @$"
+            var sql = $@"
 create temporary table {def.DatasourceTable.TableName}
 as
 {dsmap.DatasourceQueryGenarator(def.Sender)}
@@ -176,7 +176,7 @@ from
                 var tmp = ReadTable(def.DatasourceTable.TableName);
                 var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
 
-                var sql = @$"
+                var sql = $@"
 insert into {dest.TableFullName}(
 {dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
 )
@@ -196,7 +196,7 @@ from
                 var tmp = ReadTable(def.DatasourceTable.TableName);
                 var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
 
-                var sql = @$"
+                var sql = $@"
 insert into {dest.TableFullName}(
 {dest.Columns.Where(x => tmp.Columns.Contains(x)).ToString(",")}
 )
@@ -250,7 +250,7 @@ from
                 }
             }
 
-            var sql = @$"
+            var sql = $@"
 insert into {sync.TableFullName}
 select distinct
     {columnsSql}
@@ -273,7 +273,7 @@ from
             var map = def.MappingTable;
             var datasource = def.DatasourceTable;
 
-            var sql = @$"
+            var sql = $@"
 insert into {map.TableFullName}
 select
     {map.Columns.ToString(",")}

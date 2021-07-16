@@ -95,7 +95,7 @@ _validate_datasource as (
         private IDatasourceMap GenerateOffsetDatasource(SyncMap def, string tmpName, IValidateOption opt)
         {
             var idName = def.DestinationTable.SequenceColumn.ColumnName;
-            var sql = @$"
+            var sql = $@"
 with
 datasource as (
     select
@@ -155,7 +155,7 @@ datasource as (
             // upper cascade is not supported.
             if (dest.Columns.Where(x => x == idName).Any() == false) return null;
 
-            var sql = @$"
+            var sql = $@"
 with
 datasource as (
     select
