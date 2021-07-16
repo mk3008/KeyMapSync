@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace KeyMapSync
 
         string DatasourceAliasName { get; }
 
-        abstract Func<object> ParameterGenerator { get; }
+        abstract Func<ExpandoObject> ParameterGenerator { get; }
 
         IList<IDatasourceMap> Cascades { get; }
     }

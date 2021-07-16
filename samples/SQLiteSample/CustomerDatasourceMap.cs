@@ -1,6 +1,7 @@
 ﻿using KeyMapSync;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 
 namespace SQLiteSample
 {
@@ -26,7 +27,7 @@ with datasource as (
         customer_id
 )";
 
-        public Func<object> ParameterGenerator => () => new { name = "1" };
+        public Func<ExpandoObject> ParameterGenerator => () => { dynamic prm = new ExpandoObject(); prm.name = "1"; return prm; };
 
         public string DatasourceAliasName => "datasource";
 

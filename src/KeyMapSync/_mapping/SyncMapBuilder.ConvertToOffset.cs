@@ -63,7 +63,7 @@ _validate_datasource as (
     where
         exists (select * from _validate_target x where x._{destId} = q._{destId})
 )";
-            Func<object> pgen = () =>
+            Func<ExpandoObject> pgen = () =>
             {
                 dynamic prm = (origindef.DatasourceMap.ParameterGenerator == null) ? new ExpandoObject() : origindef.DatasourceMap.ParameterGenerator();
                 prm._version = version;

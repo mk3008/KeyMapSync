@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 
 namespace KeyMapSync
@@ -38,7 +39,7 @@ namespace KeyMapSync
         /// generate datasource query parameter.<code>new() { id = 1}</code>
         /// </summary>
         /// <returns></returns>
-        Func<object> ParameterGenerator { get; }
+        Func<ExpandoObject> ParameterGenerator { get; }
 
         bool IsNeedExistsCheck { get; }
 

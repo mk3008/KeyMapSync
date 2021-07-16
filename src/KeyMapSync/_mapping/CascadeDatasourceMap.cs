@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ namespace KeyMapSync
 
         public abstract Func<SyncMap, string> DatasourceQueryGenarator { get; }
 
-        public virtual Func<object> ParameterGenerator => null;
+        public virtual Func<ExpandoObject> ParameterGenerator => null;
 
         public virtual bool IsNeedExistsCheck => true;
 
