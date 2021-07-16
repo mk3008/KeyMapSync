@@ -14,5 +14,18 @@ namespace KeyMapSync
         public int? Version { get; set; }
 
         public IList<Result> InnerResults { get; } = new List<Result>();
+
+        public IEnumerable<Result> All()
+        {
+            yield return this;
+
+            foreach (var res in InnerResults)
+            {
+                foreach (var item in res.All())
+                {
+                    yield return item;
+                } 
+            }
+        }
     }
 }

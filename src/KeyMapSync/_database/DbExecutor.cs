@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 
@@ -10,6 +11,8 @@ namespace KeyMapSync
     public partial class DbExecutor
     {
         public static event EventHandler<SqlEventArgs> OnBeforeExecute;
+
+        public static event EventHandler<SqlResultArgs> OnAfterExecute;
 
         public int? CommandTimeout { get; set; }
 
@@ -121,7 +124,7 @@ namespace KeyMapSync
         /// <param name="def"></param>
         public int CreateTemporayOfDefault(SyncMap def)
         {
-            if (def.DatasourceTable.IsMustCreate == false)
+            if (def.DatasourceMap.IsExtension)
             {
                 var s = $"{def.DatasourceMap.DatasourceQueryGenarator(def.Sender)} select count(*) from {def.DatasourceMap.DatasourceAliasName}";
                 OnBeforeExecute?.Invoke(this, new SqlEventArgs(s));
@@ -132,32 +135,36 @@ namespace KeyMapSync
             var map = def.MappingTable;
             var dst = def.DestinationTable;
 
-            var destIdColumn = (dst?.SequenceColumn == null) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
+            var seq = (dst?.SequenceColumn == null || def.DatasourceMap.IsBridge) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
 
             var orderText = (dsmap?.DatasourceKeyColumns == null) ? "" : $"order by {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}";
 
             var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
             var sql = $@"
-create temporary table {def.DatasourceTable.TableName}
+--{def.BridgeChainName}
+create temporary table {def.BridgeTableName}
 as
 {dsmap.DatasourceQueryGenarator(def.Sender)}
 select
-    {destIdColumn}{dsmap.DatasourceAliasName}.*
+    {seq}{dsmap.DatasourceAliasName}.*
 from
     {dsmap.DatasourceAliasName}
 {where}
 {orderText}
 ";
-            var param = dsmap.ParameterGenerator?.Invoke();
-            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, param));
-            Connection.Execute(sql, param, commandTimeout: CommandTimeout);
+            ExpandoObject prm = dsmap.ParameterGenerator?.Invoke();
+            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
+            Connection.Execute(sql, prm, commandTimeout: CommandTimeout);
 
             //retrun insert count
-            var cntSql = $"select count(*) from {def.DatasourceTable.TableName}";
+            var cntSql = $"select count(*) from {def.BridgeTableName}";
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(cntSql));
 
-            return Connection.ExecuteScalar<int>(cntSql, commandTimeout: CommandTimeout);
+            var cnt = Connection.ExecuteScalar<int>(cntSql, commandTimeout: CommandTimeout);
+            OnAfterExecute?.Invoke(this, new SqlResultArgs(sql, cnt, prm) { TableName = def.BridgeTableName });
+
+            return cnt;
         }
 
         /// <summary>
@@ -171,9 +178,9 @@ from
             var dest = def.DestinationTable;
             if (dest == null || dest.TableFullName == null) return 0;
 
-            if (def.DatasourceTable.IsMustCreate == false)
+            if (def.DatasourceMap.IsExtension)
             {
-                var tmp = ReadTable(def.DatasourceTable.TableName);
+                var tmp = ReadTable(def.BridgeTableName);
                 var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
 
                 var sql = $@"
@@ -189,11 +196,13 @@ from
 ;";
 
                 OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql));
-                return Connection.Execute(sql, commandTimeout: CommandTimeout);
+                var cnt = Connection.Execute(sql, commandTimeout: CommandTimeout);
+                OnAfterExecute?.Invoke(this, new SqlResultArgs(sql, cnt) { TableName = dest.TableFullName });
+                return cnt;
             }
             else
             {
-                var tmp = ReadTable(def.DatasourceTable.TableName);
+                var tmp = ReadTable(def.BridgeTableName);
                 var orderSql = dest.SequenceColumn == null ? "" : $"order by {dest.SequenceColumn.ColumnName}";
 
                 var sql = $@"
@@ -208,7 +217,9 @@ from
 ;";
 
                 OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql));
-                return Connection.Execute(sql, commandTimeout: CommandTimeout);
+                var cnt = Connection.Execute(sql, commandTimeout: CommandTimeout);
+                OnAfterExecute?.Invoke(this, new SqlResultArgs(sql, cnt) { TableName = dest.TableFullName });
+                return cnt;
             }
         }
 

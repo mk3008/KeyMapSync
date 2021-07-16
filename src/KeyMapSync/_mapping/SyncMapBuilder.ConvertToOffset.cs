@@ -21,7 +21,7 @@ namespace KeyMapSync
         public SyncMap ConvertToOffset(SyncMap origindef, IValidateOption opt, long version)
         {
             var def = GenerateValidateTemporarycMap(origindef, version);
-            var offsetmap = GenerateOffsetDatasource(origindef, def.DatasourceTable.TableName, opt);
+            var offsetmap = GenerateOffsetDatasource(origindef, def.BridgeTableName, opt);
 
             //add
             def.DatasourceMap.Cascades.Add(offsetmap);
@@ -67,7 +67,7 @@ _validate_datasource as (
             {
                 dynamic prm = (origindef.DatasourceMap.ParameterGenerator == null) ? new ExpandoObject() : origindef.DatasourceMap.ParameterGenerator();
                 prm._version = version;
-                prm._datasource_name = origindef.DatasourceName;
+                prm._datasource_name = origindef.DatasourceMap.ActualDatasourceType.FullName;
                 return prm;
             };
 
@@ -82,12 +82,10 @@ _validate_datasource as (
                 ParameterGenerator = pgen,
                 IsNeedExistsCheck = false,
                 IsExtension = false,
+                IsBridge = true
             };
 
             var def = Build(ds);
-
-            //no insert destination
-            def.DestinationTable.TableName = null;
 
             return def;
         }
@@ -100,7 +98,7 @@ with
 datasource as (
     select
         --key columns
-        {def.DestinationTable.Columns.Where((x) => !opt.ValueColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
+        {def.DestinationTable.Columns.Where((x) => idName != x).Where((x) => !opt.ValueColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
         --value columns
         , {def.DestinationTable.Columns.Where((x) => opt.ValueColumns.Contains(x)).Select((x) => $"d.{x} * -1 as {x}").ToString(",")}
         --offsetted id
@@ -118,7 +116,7 @@ datasource as (
 )";
             var ds = new DatasourceMapWrap()
             {
-                DestinationTableName = def.DestinationTable.TableFullName,
+                DestinationTableName = def.DestinationTable.TableName,
                 MappingName = "offset",
                 DatasourceQuery = sql,
                 DatasourceAliasName = "datasource",
@@ -131,8 +129,10 @@ datasource as (
             var offsetdef = Build(ds);
 
             //cascade datasource convert
-            foreach (var item in def.DatasourceMap.Cascades.Where(x => x.IsExtension == false))
+            foreach (var item in def.DatasourceMap.Cascades.Where(x => x.IsUpperCascade == false))
             {
+                if (item.GetType() == def.DatasourceMap.ActualDatasourceType) continue;
+
                 if (item.IsExtension == false)
                 {
                     ds.Cascades.Add(item);
@@ -162,7 +162,7 @@ datasource as (
         d.{idName}
         , {dest.Columns.Where(x => x != idName).Select(x => $"e.{x}").ToString(",")}
     from
-        {def.DatasourceTable.TableName} d
+        {def.BridgeTableName} d
         inner join {maptable} q on d.{idName} = q.{idName}
         inner join {extensionmap.DestinationTableName} e on q.offset_{idName} = e.{idName}
     where

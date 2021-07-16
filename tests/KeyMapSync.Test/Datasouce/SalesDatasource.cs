@@ -6,18 +6,24 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Test.Datasouce
 {
-    internal class SalesDatasource : ExtensionDatasourceMap
+    internal class SalesDatasource : CascadeDatasourceMap
     {
         public override string DestinationTableName => "sales";
+
+        public override string MappingName => "sales_data";
+
+        public override IEnumerable<string> DatasourceKeyColumns => new string[] { "sales_data_id" };
 
         public override Func<SyncMap, string> DatasourceQueryGenarator => (def) => $@"
 with
 datasource as (
     select distinct
-        sales_id
-        , sales_date
+        sales_date
+        , sales_data_id
     from
-        {def.DatasourceTable.TableName}
+        {def.BridgeTableName}
 )";
+
+        public override bool IsUpperCascade => true;
     }
 }

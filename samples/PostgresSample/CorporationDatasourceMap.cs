@@ -35,5 +35,13 @@ with datasource as (
         public IList<IDatasourceMap> Cascades => new List<IDatasourceMap>();
 
         public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
+
+        public bool IsBridge => false;
+
+        public Type ActualDatasourceType => null;
+
+        public bool IsOffset => false;
+
+        public bool IsUpperCascade => false;
     }
 }

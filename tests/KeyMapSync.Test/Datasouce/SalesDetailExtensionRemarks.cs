@@ -17,7 +17,7 @@ datasource as (
         sales_detail_id
         , remarks
     from
-        {def.DatasourceTable.TableName}
+        {def.BridgeTableName}
     where
         remarks is not null
 )";

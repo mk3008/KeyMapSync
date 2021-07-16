@@ -7,15 +7,7 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync
 {
-    /// <summary>
-    /// Simple implementation of datasource.
-    ///
-    /// Features
-    /// - Not an extension.
-    /// - Existence check is required.
-    /// - Data source query is static.
-    /// </summary>
-    public abstract class RootDatasourceMap : IDatasourceMap
+    public abstract class BridgeDatasourceMap : IDatasourceMap
     {
         public abstract string DestinationTableName { get; }
 
@@ -35,15 +27,13 @@ namespace KeyMapSync
 
         public bool IsExtension => false;
 
-        public bool IsBridge => false;
+        public bool IsBridge => true;
 
         public IList<IDatasourceMap> Cascades { get; } = new List<IDatasourceMap>();
 
         public SyncMap Sender { get; set; }
 
-        public Type ActualDatasourceType => null;
-
-        public bool IsOffset => false;
+        public abstract Type ActualDatasourceType { get; }
 
         public bool IsUpperCascade => false;
     }
