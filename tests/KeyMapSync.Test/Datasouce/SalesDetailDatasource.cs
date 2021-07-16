@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Test.Datasouce
 {
-    internal class SalesDetailDatasource : RootDatasourceMap
+    internal class SalesDetailDatasource : CascadeDatasourceMap
     {
         public SalesDetailDatasource()
         {
             //cascade datasource
             Cascades.Add(new SalesDetailExtensionRemarks());
-            Cascades.Add(new SalesDatasource());
             Cascades.Add(new StockDetailDatasource());
         }
 
@@ -24,41 +23,28 @@ namespace KeyMapSync.Test.Datasouce
 
         public override bool IsNeedExistsCheck => true;
 
-        public override string DatasourceQuery => $@"
+        public override Func<SyncMap, string> DatasourceQueryGenarator => (def) => $@"
 with
-sales_data_ds as (
-    select
-        *
-    from
-        sales_data d
-),
-header_ds as (
-    select
-        sales_data_id
-        , sales_date
-        , row_number() over() + (select max(seq) from (select seq from sqlite_sequence where name = 'sales' union all select 0)) as sales_id
-    from
-        (
-            select distinct
-                sales_data_id
-                , sales_date
-            from
-                sales_data_ds
-        ) q
-),
 datasource as (
     select
-        h.sales_id
-        , h.sales_date
-        , d.product
-        , d.amount
-        , d.price
-        , d.remarks
-        , d.sales_data_seq
+          h.sales_id
+        , d.*
     from
-        sales_data_ds as d
-        inner join header_ds as h on d.sales_data_id = h.sales_data_id and d.sales_date = h.sales_date
+        {def.BridgeTableName} as d
+        inner join (
+            select
+                s.sales_id
+                , s.sales_date
+                , m.sales_data_id
+            from
+                sales s
+                inner join sales_map_sales_data m on s.sales_id = m.sales_id
+        ) h on d.sales_data_id = h.sales_data_id and d.sales_date = h.sales_date
 )
 ";
+
+        //private string GetDatasourceQuery(SyncMap def)
+        //{
+        //}
     }
 }

@@ -81,7 +81,7 @@ namespace KeyMapSync
             if (def == null) throw new ArgumentNullException("def");
 
             var count = DbExecutor.CreateTemporayOfDefault(def);
-            if (count == 0)
+            if (count == 0 || def.DatasourceMap.IsBridge)
             {
                 sw.Stop();
                 return new Result() { Definition = def, Count = count, Elapsed = sw.Elapsed };

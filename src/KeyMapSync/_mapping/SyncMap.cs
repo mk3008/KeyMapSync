@@ -23,12 +23,31 @@ namespace KeyMapSync
 
         public Table MappingTable { get; set; }
 
-        public DatasourceTable DatasourceTable { get; set; }
+        [Obsolete("use BridgeTableName")]
+        public DatasourceTable DatasourceTable => new DatasourceTable() { TableName = BridgeTableName };
+
+        public string BridgeTableName { get; set; }
 
         public bool IsNeedExistsCheck { get; set; } = true;
 
         public IDatasourceMap DatasourceMap { get; set; }
 
         public string DatasourceName { get; set; }
+
+        public string BridgeChainName => GetBridgeChainName();
+
+        public string GetBridgeChainName()
+        {
+            var s = BridgeTableName;
+
+            if (DestinationTable != null)
+            {
+                s = $"{s}->{DestinationTable.TableName}";
+            }
+
+            if (Sender == null) return s;
+
+            return $"{Sender.BridgeChainName}->{s}";
+        }
     }
 }

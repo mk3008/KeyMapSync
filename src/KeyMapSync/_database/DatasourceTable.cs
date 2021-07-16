@@ -10,7 +10,5 @@ namespace KeyMapSync
     public class DatasourceTable
     {
         public string TableName { get; set; }
-
-        public bool IsMustCreate { get; set; }
     }
 }

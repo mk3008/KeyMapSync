@@ -76,19 +76,16 @@ namespace KeyMapSync
             // destination table exists check
             var dest = DbExecutor.ReadTable(ds.DestinationTableName);
 
-            //if (dest == null) throw new InvalidOperationException($"Destination table ({ds.DestinationTableName}) is not exists.");
+            if (dest == null)
+            {
+                throw new InvalidOperationException($"Destination table ({ds.DestinationTableName}) is not exists.");
+            }
 
             // datasoruceName
             if (datasoruceName == null) datasoruceName = ds.GetType().FullName;
 
             if (ds.IsExtension)
             {
-                var datasource = new DatasourceTable
-                {
-                    TableName = sender.DatasourceTable.TableName,
-                    IsMustCreate = false
-                };
-
                 var def = new SyncMap
                 {
                     MappingName = null,
@@ -96,7 +93,7 @@ namespace KeyMapSync
                     VersionTable = null,
                     SyncTable = null,
                     MappingTable = null,
-                    DatasourceTable = datasource,
+                    BridgeTableName = sender.BridgeTableName,
                     IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
                     Sender = sender,
@@ -118,13 +115,9 @@ namespace KeyMapSync
 
                 // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
                 var db = DbExecutor.DB;
-                var sufix = $"_{DateTime.Now.ToString("ssffff")}";
-                var tblName = (map == null) ? "keymapsync" : $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
-                var datasource = new DatasourceTable
-                {
-                    TableName = $"{tblName}{sufix}",
-                    IsMustCreate = true
-                };
+                var sufix = $"_tmp_{DateTime.Now.ToString("ssffff")}";
+                //var tblName = (map == null) ? "keymapsync" : $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
+                var tblName = $"{dest.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
 
                 var def = new SyncMap
                 {
@@ -133,7 +126,7 @@ namespace KeyMapSync
                     VersionTable = version,
                     SyncTable = sync,
                     MappingTable = map,
-                    DatasourceTable = datasource,
+                    BridgeTableName = $"{tblName}{sufix}",
                     IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
                     Sender = sender,

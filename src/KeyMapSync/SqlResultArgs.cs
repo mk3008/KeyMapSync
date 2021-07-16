@@ -5,18 +5,21 @@ namespace KeyMapSync
     /// <summary>
     /// sql info
     /// </summary>
-    public class SqlEventArgs : EventArgs
+    public class SqlResultArgs : EventArgs
     {
-        public SqlEventArgs(string sql, object param = null)
+        public SqlResultArgs(string sql, int count, object param = null)
         {
             Sql = sql;
             Param = param;
+            Count = count;
         }
 
-        public string Name { get; set; }
+        public string TableName { get; set; }
 
         public string Sql { get; set; }
 
         public object Param { get; set; }
+
+        public int Count { get; set; }
     }
 }

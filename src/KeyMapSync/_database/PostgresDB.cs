@@ -88,7 +88,7 @@ where
 
         public SqlEventArgs GetCreateSyncVersionTableDDL(string tableName, string sequenceColumnName)
         {
-            var sql = @$"
+            var sql = $@"
 create table {tableName}
 (
 {sequenceColumnName} serial8 primary key
@@ -106,7 +106,7 @@ create index on {tableName}(datasource_name)
 
         public SqlEventArgs GetCreateSyncTableDDL(string tableName, Table dest, Table version)
         {
-            var sql = @$"
+            var sql = $@"
 create table {tableName}
 (
 {dest.SequenceColumn.ColumnName} int8 primary key
@@ -122,7 +122,7 @@ create index on {tableName}({version.SequenceColumn.ColumnName})
 
         public SqlEventArgs GetCreateMappingTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns)
         {
-            var sql = @$"
+            var sql = $@"
 create table {tableName}
 (
 {datasourceKeyColumns.ToString(",", x => $"{x} int8 not null")}

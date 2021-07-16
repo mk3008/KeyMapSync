@@ -47,7 +47,7 @@ namespace KeyMapSync
             {
                 using (var t = DbExecutor.Connection.BeginTransaction())
                 {
-                    OffsetMain(def, opt, version, trn);
+                    OffsetMain(def, opt, version, t);
                     t.Commit();
                 }
             }
@@ -64,6 +64,13 @@ namespace KeyMapSync
 
             //delete origin map.
             if (def.MappingTable != null) DbExecutor.OffsetMapping(def);
+
+            //foreach (var item in def.DatasourceMap.Cascades.Where((x) => x.IsUpperCascade))
+            //{
+            //    //delete upper map
+            //    var d = Builder.Build(item);
+            //    DbExecutor.OffsetMapping(d);
+            //}
         }
 
         private void OffsetCore(SyncMap origindef, IValidateOption opt, long version, IDbTransaction trn)

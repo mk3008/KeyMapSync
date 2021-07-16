@@ -25,7 +25,7 @@ datasource as (
         , d.amount
         , d.sales_detail_id --mapping
     from
-        {def.DatasourceTable.TableName} d
+        {def.BridgeTableName} d
         inner join sales h on d.sales_id = h.sales_id
 )
 ";

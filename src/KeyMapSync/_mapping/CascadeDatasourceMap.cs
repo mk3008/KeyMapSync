@@ -33,8 +33,14 @@ namespace KeyMapSync
 
         public bool IsExtension => false;
 
+        public bool IsBridge => false;
+
         public IList<IDatasourceMap> Cascades { get; } = new List<IDatasourceMap>();
 
         public SyncMap Sender { get; set; }
+
+        public Type ActualDatasourceType => null;
+
+        public virtual bool IsUpperCascade => false;
     }
 }

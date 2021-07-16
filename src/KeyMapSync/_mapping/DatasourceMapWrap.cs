@@ -12,6 +12,11 @@ namespace KeyMapSync
     /// </summary>
     internal class DatasourceMapWrap : IDatasourceMap
     {
+        public DatasourceMapWrap()
+        {
+            DatasourceQueryGenarator = (x) => DatasourceQuery;
+        }
+
         public string DestinationTableName { get; set; }
 
         public string MappingName { get; set; }
@@ -28,10 +33,16 @@ namespace KeyMapSync
 
         public bool IsExtension { get; set; }
 
+        public bool IsBridge { get; set; } = false;
+
         public IList<IDatasourceMap> Cascades { get; } = new List<IDatasourceMap>();
 
         public SyncMap Sender { get; set; }
 
-        public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
+        public Func<SyncMap, string> DatasourceQueryGenarator { get; set; }
+
+        public Type ActualDatasourceType => null;
+
+        public bool IsUpperCascade => false;
     }
 }
