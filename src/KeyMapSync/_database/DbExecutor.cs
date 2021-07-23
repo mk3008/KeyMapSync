@@ -122,7 +122,7 @@ namespace KeyMapSync
         /// create temporary table.
         /// </summary>
         /// <param name="def"></param>
-        public int CreateTemporayOfDefault(SyncMap def)
+        public int CreateBridgeOrDefault(SyncMap def)
         {
             if (def.DatasourceMap.IsExtension)
             {
@@ -139,10 +139,9 @@ namespace KeyMapSync
 
             var orderText = (dsmap?.DatasourceKeyColumns == null) ? "" : $"order by {dsmap.DatasourceKeyColumns.ToString(", ", x => $"{dsmap.DatasourceAliasName}.{x}")}";
 
-            var where = !def.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
+            var where = !def.DatasourceMap.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {dsmap.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {dsmap.DatasourceAliasName}.{x}")})";
 
             var sql = $@"
---{def.BridgeChainName}
 create temporary table {def.BridgeTableName}
 as
 {dsmap.DatasourceQueryGenarator(def.Sender)}

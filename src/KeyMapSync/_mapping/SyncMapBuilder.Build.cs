@@ -94,7 +94,6 @@ namespace KeyMapSync
                     SyncTable = null,
                     MappingTable = null,
                     BridgeTableName = sender.BridgeTableName,
-                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
                     Sender = sender,
                     DatasourceName = datasoruceName
@@ -127,7 +126,6 @@ namespace KeyMapSync
                     SyncTable = sync,
                     MappingTable = map,
                     BridgeTableName = $"{tblName}{sufix}",
-                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
                     DatasourceMap = ds,
                     Sender = sender,
                     DatasourceName = datasoruceName

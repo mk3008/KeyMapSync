@@ -80,7 +80,7 @@ namespace KeyMapSync
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
             if (def == null) throw new ArgumentNullException("def");
 
-            var count = DbExecutor.CreateTemporayOfDefault(def);
+            var count = DbExecutor.CreateBridgeOrDefault(def);
             if (count == 0 || def.DatasourceMap.IsBridge)
             {
                 sw.Stop();
