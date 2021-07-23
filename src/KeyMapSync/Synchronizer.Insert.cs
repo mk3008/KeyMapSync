@@ -10,7 +10,24 @@ namespace KeyMapSync
 {
     public partial class Synchronizer
     {
-        public void Insert(ITableDatasourceMap map, IDbTransaction trn = null)
+        public void Insert(IDatasourceMappable map, IDbTransaction trn = null)
+        {
+            if (map is ITableDatasourceMap)
+            {
+                Insert(map as ITableDatasourceMap, trn);
+                return;
+            }
+
+            if (map is IDatasourceMap)
+            {
+                Insert(map as IDatasourceMap, trn);
+                return;
+            }
+
+            throw new NotSupportedException();
+        }
+
+        private void Insert(ITableDatasourceMap map, IDbTransaction trn = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
@@ -21,7 +38,7 @@ namespace KeyMapSync
             Insert(def, trn);
         }
 
-        public void Insert(IDatasourceMap map, IDbTransaction trn = null)
+        private void Insert(IDatasourceMap map, IDbTransaction trn = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
@@ -59,12 +76,13 @@ namespace KeyMapSync
             if (def.DestinationTable?.TableFullName != null && r.Count == 0) return r;
 
             // cascade
-            foreach (var item in def.DatasourceMap.Cascades)
+            foreach (var item in def.Cascades)
             {
-                var d = Builder.Build(item, def);
-                var ir = InsertMain(d);
+                var ir = InsertMain(item);
                 r.InnerResults.Add(ir);
             }
+
+            DeleteMapMain(def);
 
             return r;
         }
@@ -114,6 +132,32 @@ namespace KeyMapSync
 
             sw.Stop();
             return new Result() { Definition = def, Count = count, Version = versionNo, Elapsed = sw.Elapsed };
+        }
+
+        private void DeleteMapMain(SyncMap def)
+        {
+            if (def.Origin != null && def.Origin.MappingTable != null)
+            {
+                DeleteMapCore(def.Origin);
+            }
+
+            foreach (var item in def.Cascades)
+            {
+                DeleteMapMain(item);
+            }
+        }
+
+        private Result DeleteMapCore(SyncMap def)
+        {
+            Result = null;
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            var count = DbExecutor.OffsetMapping(def);
+
+            sw.Stop();
+            return new Result() { Definition = def, Count = count, Elapsed = sw.Elapsed };
         }
     }
 }

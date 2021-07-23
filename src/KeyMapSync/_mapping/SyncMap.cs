@@ -32,20 +32,72 @@ namespace KeyMapSync
 
         public string DatasourceName { get; set; }
 
-        public string BridgeChainName => GetBridgeChainName();
+        /// <summary>
+        /// For Offset
+        /// </summary>
+        public SyncMap Origin { get; set; }
 
-        public string GetBridgeChainName()
+        public IList<SyncMap> Cascades { get; } = new List<SyncMap>();
+
+        public string GetSummary(int nest = 0)
         {
-            var s = BridgeTableName;
+            var s = GetSummaryCore(nest);
 
-            if (DestinationTable != null)
+            foreach (var item in Cascades)
             {
-                s = $"{s}->{DestinationTable.TableName}";
+                var level = nest + 1;
+                s += item.GetSummary(level);
             }
 
-            if (Sender == null) return s;
+            return s;
+        }
 
-            return $"{Sender.BridgeChainName}->{s}";
+        private string GetSummaryCore(int nest)
+        {
+            var datasource = (Sender == null) ? DatasourceName : Sender.BridgeTableName;
+
+            var s = new StringBuilder();
+            var indent = Space(nest * 3);
+
+            if (nest == 0) s.AppendLine($"datasource:{datasource}");
+
+            if (DatasourceMap.IsExtension)
+            {
+                s.AppendLine($"{indent}-> destination:{DestinationTable.TableName}");
+                return s.ToString();
+            }
+
+            if (DatasourceMap.IsBridge)
+            {
+                s.AppendLine($"{indent}-> bridge:{BridgeTableName}");
+                return s.ToString();
+            }
+
+            if (MappingTable == null)
+            {
+                s.AppendLine($"{indent}-> bridge:{BridgeTableName}");
+                s.AppendLine($"{indent}   -> destination:{DestinationTable.TableName}");
+                s.AppendLine($"{indent}   -> sync:{SyncTable.TableName}");
+                s.AppendLine($"{indent}   -> syncversion:{VersionTable.TableName}");
+                return s.ToString();
+            }
+
+            s.AppendLine($"{indent}-> bridge:{BridgeTableName}");
+            s.AppendLine($"{indent}   -> destination:{DestinationTable.TableName}");
+            s.AppendLine($"{indent}   -> sync:{SyncTable.TableName}");
+            s.AppendLine($"{indent}   -> syncversion:{VersionTable.TableName}");
+            s.AppendLine($"{indent}   -> map:{MappingTable.TableName}");
+            return s.ToString();
+        }
+
+        private string Space(int length)
+        {
+            var s = string.Empty;
+            for (int i = 0; i < length; i++)
+            {
+                s += " ";
+            }
+            return s;
         }
     }
 }

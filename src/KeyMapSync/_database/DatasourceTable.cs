@@ -7,6 +7,7 @@ using System.Text;
 
 namespace KeyMapSync
 {
+    [Obsolete]
     public class DatasourceTable
     {
         public string TableName { get; set; }

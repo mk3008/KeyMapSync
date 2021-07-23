@@ -83,10 +83,12 @@ values
                 var sync = new Synchronizer(builder);
 
                 //log
-                DbExecutor.OnBeforeExecute += OnBeforeExecute;
+                //DbExecutor.OnBeforeExecute += OnBeforeExecute;
 
                 var ds = new Datasouce.SalesDetailBridgeDatasource();
                 var def = builder.Build(ds);
+
+                //var summary = builder.GetSummary(def);
 
                 sync.Insert(def);
                 var res = sync.Result;
@@ -100,8 +102,8 @@ values
         [Fact]
         public void ValidateUpdate()
         {
-            DbExecutor.OnBeforeExecute += OnBeforeExecute;
-            DbExecutor.OnAfterExecute += OnAfterExecute;
+            //DbExecutor.OnBeforeExecute += OnBeforeExecute;
+            //DbExecutor.OnAfterExecute += OnAfterExecute;
 
             using (var cn = new NpgsqlConnection(CnString))
             {
@@ -139,7 +141,11 @@ delete from sales_data where sales_data_seq = 4
 
                 var ds = new Datasouce.SalesDetailBridgeDatasource();
 
-                sync.Offset(ds, new Datasouce.SalesDetailValidate());
+                var validator = new Datasouce.SalesDetailValidate();
+                var def = builder.BuildAsOffset(ds, validator);
+
+                var summary = def.GetSummary();
+                sync.Offset(ds, validator);
                 var res = sync.Result;
 
                 //Assert.Equal(3, res.InnerResults.First().Count);
