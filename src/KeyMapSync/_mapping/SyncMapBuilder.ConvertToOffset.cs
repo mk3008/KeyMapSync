@@ -28,7 +28,7 @@ namespace KeyMapSync
         public SyncMap ConvertToOffset(SyncMap origindef, IValidateOption opt, int version)
         {
             var def = GenerateExpectBridge(origindef, version);
-            var offsetdef = GenerateOffset(origindef, def.BridgeTableName, opt);
+            var offsetdef = GenerateOffset(origindef, def.BridgeTableName, opt, version);
 
             //add
             //def.DatasourceMap.Cascades.Add(offsetmap);
@@ -44,6 +44,7 @@ namespace KeyMapSync
             var verId = origindef.VersionTable.SequenceColumn.ColumnName;
 
             var mapping = origindef.MappingTable;
+
             var sql = $@"
 {origindef.DatasourceMap.DatasourceQueryGenarator(null)},
 _validate_target as (
@@ -56,6 +57,7 @@ _validate_target as (
     where
         s.{verId} >= :_version
         and v.datasource_name = :_datasource_name
+        and exists (select * from {mapping.TableFullName} x where d.{destId} = x.{destId})
 ),
 _validate_datasource as (
     select
@@ -99,11 +101,28 @@ _validate_datasource as (
             return def;
         }
 
-        private SyncMap GenerateOffset(SyncMap origindef, string tmpName, IValidateOption opt)
+        private SyncMap GenerateOffset(SyncMap origindef, string tmpName, IValidateOption opt, int version)
         {
+            var destId = origindef.DestinationTable.SequenceColumn.ColumnName;
+            var verId = origindef.VersionTable.SequenceColumn.ColumnName;
+
+            var mapping = origindef.MappingTable;
+
             var idName = origindef.DestinationTable.SequenceColumn.ColumnName;
             var sql = $@"
 with
+_validate_target as (
+    select
+        d.{destId} as _{destId}
+    from
+        {origindef.DestinationTable.TableFullName} d
+        inner join {origindef.SyncTable.TableFullName} s on d.{destId} = s.{destId}
+        inner join {origindef.VersionTable.TableFullName} v on s.{verId} = v.{verId}
+    where
+        s.{verId} >= :_version
+        and v.datasource_name = :_datasource_name
+        and exists (select * from {mapping.TableFullName} x where d.{destId} = x.{destId})
+),
 datasource as (
     select
         --key columns
@@ -113,7 +132,9 @@ datasource as (
         --offsetted id
         , d.{idName} as offset_{idName}
     from
-        {origindef.DestinationTable.TableFullName} d
+        (
+            select * from {origindef.DestinationTable.TableFullName} d where exists (select * from _validate_target x where x._{destId} = d.{destId})
+        ) d
         left join {tmpName} q on d.{idName} = q._{idName}
     where
         not (
@@ -123,6 +144,14 @@ datasource as (
         or
         q._{idName} is null
 )";
+            Func<ExpandoObject> pgen = () =>
+            {
+                dynamic prm = (origindef.DatasourceMap.ParameterGenerator == null) ? new ExpandoObject() : origindef.DatasourceMap.ParameterGenerator();
+                prm._version = version;
+                prm._datasource_name = origindef.DatasourceMap.ActualDatasourceType.FullName;
+                return prm;
+            };
+
             var ds = new DatasourceMapWrap()
             {
                 DestinationTableName = origindef.DestinationTable.TableName,
@@ -130,7 +159,7 @@ datasource as (
                 DatasourceQuery = sql,
                 DatasourceAliasName = "datasource",
                 DatasourceKeyColumns = new string[] { $"offset_{idName}" },
-                ParameterGenerator = null,
+                ParameterGenerator = pgen,
                 IsNeedExistsCheck = false,
                 IsExtension = false,
             };
