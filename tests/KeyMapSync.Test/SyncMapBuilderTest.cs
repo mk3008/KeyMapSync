@@ -56,10 +56,10 @@ namespace KeyMapSync.Test
                 Assert.Null(def.MappingTable.SequenceColumn);
 
                 //option
-                Assert.True(def.IsNeedExistsCheck);
+                Assert.True(def.DatasourceMap.IsNeedExistsCheck);
 
                 //temporary
-                Assert.StartsWith("builder_test_destination_tmp_", def.DatasourceTable.TableName);
+                Assert.StartsWith("builder_test_destination_tmp_", def.BridgeTableName);
                 Assert.Equal("with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", def.DatasourceMap.DatasourceQueryGenarator(null));
                 Assert.Equal("datasource", def.DatasourceMap.DatasourceAliasName);
                 Assert.Null(def.DatasourceMap.ParameterGenerator);
@@ -109,7 +109,7 @@ namespace KeyMapSync.Test
                 var isNeedExistsCheck = false;
                 var def = builder.Build("builder_test_destination", "builder_test_source", "with datasource as (select builder_test_source_id, builder_test_source_name as builder_test_destination_name from builder_test_source)", new string[] { "builder_test_source_id" }, isNeedExistsCheck: isNeedExistsCheck);
 
-                Assert.Equal(isNeedExistsCheck, def.IsNeedExistsCheck);
+                Assert.Equal(isNeedExistsCheck, def.DatasourceMap.IsNeedExistsCheck);
             }
         }
     }

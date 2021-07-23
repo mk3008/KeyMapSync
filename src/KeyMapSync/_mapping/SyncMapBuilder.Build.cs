@@ -61,7 +61,7 @@ namespace KeyMapSync
             return Build(ds, datasoruceName: tableDs.GetType().FullName);
         }
 
-        internal SyncMap Build(IDatasourceMap ds, SyncMap sender = null, string datasoruceName = null)
+        internal SyncMap Build(IDatasourceMap ds, SyncMap sender = null, string datasoruceName = null, string prefix = null)
         {
             // argument, property check
             if (DbExecutor == null) throw new InvalidOperationException("'DbExecutor' property is null.");
@@ -84,57 +84,74 @@ namespace KeyMapSync
             // datasoruceName
             if (datasoruceName == null) datasoruceName = ds.GetType().FullName;
 
+            SyncMap def = null;
             if (ds.IsExtension)
             {
-                var def = new SyncMap
-                {
-                    MappingName = null,
-                    DestinationTable = dest,
-                    VersionTable = null,
-                    SyncTable = null,
-                    MappingTable = null,
-                    BridgeTableName = sender.BridgeTableName,
-                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
-                    DatasourceMap = ds,
-                    Sender = sender,
-                    DatasourceName = datasoruceName
-                };
-
-                return def;
+                def = BuildExtension(ds, sender, datasoruceName, dest);
             }
             else
             {
-                // automatic generation of versionTable
-                Table version = ReadOrCreateVersionTableOrDefault(dest);
-
-                // automatic generation of syncTable
-                Table sync = ReadOrCreateSyncTableOrDefault(version, dest);
-
-                // automatic generation of mappingTable
-                Table map = ReadOrCreateMappingTableOrDefault(ds.MappingName, dest, ds.DatasourceKeyColumns); ;
-
-                // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
-                var db = DbExecutor.DB;
-                var sufix = $"_tmp_{DateTime.Now.ToString("ssffff")}";
-                //var tblName = (map == null) ? "keymapsync" : $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
-                var tblName = $"{dest.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
-
-                var def = new SyncMap
-                {
-                    MappingName = ds.MappingName,
-                    DestinationTable = dest,
-                    VersionTable = version,
-                    SyncTable = sync,
-                    MappingTable = map,
-                    BridgeTableName = $"{tblName}{sufix}",
-                    IsNeedExistsCheck = ds.IsNeedExistsCheck,
-                    DatasourceMap = ds,
-                    Sender = sender,
-                    DatasourceName = datasoruceName
-                };
-
-                return def;
+                def = Build(ds, sender, datasoruceName, dest, prefix);
             }
+
+            //cascade
+            foreach (var item in ds.Cascades)
+            {
+                def.Cascades.Add(Build(item, def));
+            }
+
+            return def;
+        }
+
+        private SyncMap BuildExtension(IDatasourceMap ds, SyncMap sender, string datasoruceName, Table dest)
+        {
+            var def = new SyncMap
+            {
+                MappingName = null,
+                DestinationTable = dest,
+                VersionTable = null,
+                SyncTable = null,
+                MappingTable = null,
+                BridgeTableName = sender.BridgeTableName,
+                DatasourceMap = ds,
+                Sender = sender,
+                DatasourceName = datasoruceName
+            };
+            return def;
+        }
+
+        private SyncMap Build(IDatasourceMap ds, SyncMap sender, string datasoruceName, Table dest, string prefix)
+        {
+            // automatic generation of versionTable
+            Table version = ReadOrCreateVersionTableOrDefault(dest);
+
+            // automatic generation of syncTable
+            Table sync = ReadOrCreateSyncTableOrDefault(version, dest);
+
+            // automatic generation of mappingTable
+            Table map = ReadOrCreateMappingTableOrDefault(ds.MappingName, dest, ds.DatasourceKeyColumns); ;
+
+            // ceate temporary table, and insert 'DestinationTable', 'SyncTable', 'MappingTable'.
+            var db = DbExecutor.DB;
+            var sufix = $"_tmp_{DateTime.Now.ToString("ssffff")}";
+            //var tblName = (map == null) ? "keymapsync" : $"{map.TableName.Left(db.TableNameMaxLength - sufix.Length)}";
+            var tblName = $"{prefix}{dest.TableName}";
+            tblName = tblName.Left(db.TableNameMaxLength - sufix.Length);
+
+            var def = new SyncMap
+            {
+                MappingName = ds.MappingName,
+                DestinationTable = dest,
+                VersionTable = version,
+                SyncTable = sync,
+                MappingTable = map,
+                BridgeTableName = $"{tblName}{sufix}",
+                DatasourceMap = ds,
+                Sender = sender,
+                DatasourceName = datasoruceName
+            };
+
+            return def;
         }
     }
 }

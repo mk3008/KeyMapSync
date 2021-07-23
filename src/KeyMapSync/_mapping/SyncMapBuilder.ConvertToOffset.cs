@@ -10,6 +10,13 @@ namespace KeyMapSync
     /// </summary>
     public partial class SyncMapBuilder
     {
+        public SyncMap BuildAsOffset(IDatasourceMappable ds, IValidateOption opt, int version = 0)
+        {
+            var origindef = Build(ds);
+            var def = ConvertToOffset(origindef, opt, version);
+            return def;
+        }
+
         /// <summary>
         /// Temporarily export your changes and transfer them as a data source.
         /// The transfer result is recorded in the mapping table for offset.
@@ -18,18 +25,20 @@ namespace KeyMapSync
         /// <param name="opt"></param>
         /// <param name="version">validate this sync version or later</param>
         /// <returns></returns>
-        public SyncMap ConvertToOffset(SyncMap origindef, IValidateOption opt, long version)
+        public SyncMap ConvertToOffset(SyncMap origindef, IValidateOption opt, int version)
         {
-            var def = GenerateValidateTemporarycMap(origindef, version);
-            var offsetmap = GenerateOffsetDatasource(origindef, def.BridgeTableName, opt);
+            var def = GenerateExpectBridge(origindef, version);
+            var offsetdef = GenerateOffset(origindef, def.BridgeTableName, opt);
 
             //add
-            def.DatasourceMap.Cascades.Add(offsetmap);
+            //def.DatasourceMap.Cascades.Add(offsetmap);
+
+            def.Cascades.Add(offsetdef);
 
             return def;
         }
 
-        private SyncMap GenerateValidateTemporarycMap(SyncMap origindef, long version)
+        private SyncMap GenerateExpectBridge(SyncMap origindef, int version)
         {
             var destId = origindef.DestinationTable.SequenceColumn.ColumnName;
             var verId = origindef.VersionTable.SequenceColumn.ColumnName;
@@ -85,38 +94,38 @@ _validate_datasource as (
                 IsBridge = true
             };
 
-            var def = Build(ds);
+            var def = Build(ds, prefix: "expect_");
 
             return def;
         }
 
-        private IDatasourceMap GenerateOffsetDatasource(SyncMap def, string tmpName, IValidateOption opt)
+        private SyncMap GenerateOffset(SyncMap origindef, string tmpName, IValidateOption opt)
         {
-            var idName = def.DestinationTable.SequenceColumn.ColumnName;
+            var idName = origindef.DestinationTable.SequenceColumn.ColumnName;
             var sql = $@"
 with
 datasource as (
     select
         --key columns
-        {def.DestinationTable.Columns.Where((x) => idName != x).Where((x) => !opt.ValueColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
+        {origindef.DestinationTable.Columns.Where((x) => idName != x).Where((x) => !opt.ValueColumns.Contains(x)).Select((x) => $"d.{x}").ToString(",")}
         --value columns
-        , {def.DestinationTable.Columns.Where((x) => opt.ValueColumns.Contains(x)).Select((x) => $"d.{x} * -1 as {x}").ToString(",")}
+        , {origindef.DestinationTable.Columns.Where((x) => opt.ValueColumns.Contains(x)).Select((x) => $"d.{x} * -1 as {x}").ToString(",")}
         --offsetted id
         , d.{idName} as offset_{idName}
     from
-        {def.DestinationTable.TableFullName} d
+        {origindef.DestinationTable.TableFullName} d
         left join {tmpName} q on d.{idName} = q._{idName}
     where
         not (
             --validate
-            {def.DestinationTable.Columns.Where((x) => x != idName && !opt.IgnoreColumns.Contains(x)).Select((x) => $"q.{x} = d.{x}").ToString(" and ")}
+            {origindef.DestinationTable.Columns.Where((x) => x != idName && !opt.IgnoreColumns.Contains(x)).Select((x) => $"q.{x} = d.{x}").ToString(" and ")}
         )
         or
         q._{idName} is null
 )";
             var ds = new DatasourceMapWrap()
             {
-                DestinationTableName = def.DestinationTable.TableName,
+                DestinationTableName = origindef.DestinationTable.TableName,
                 MappingName = "offset",
                 DatasourceQuery = sql,
                 DatasourceAliasName = "datasource",
@@ -126,12 +135,12 @@ datasource as (
                 IsExtension = false,
             };
 
-            var offsetdef = Build(ds);
+            var mapname = Build(ds).MappingTable.TableFullName;
 
             //cascade datasource convert
-            foreach (var item in def.DatasourceMap.Cascades.Where(x => x.IsUpperCascade == false))
+            foreach (var item in origindef.DatasourceMap.Cascades.Where(x => x.IsUpperCascade == false))
             {
-                if (item.GetType() == def.DatasourceMap.ActualDatasourceType) continue;
+                if (item.GetType() == origindef.DatasourceMap.ActualDatasourceType) continue;
 
                 if (item.IsExtension == false)
                 {
@@ -139,12 +148,15 @@ datasource as (
                 }
                 else
                 {
-                    var m = GenerateOffsetExtensionDatasource(def, offsetdef.MappingTable.TableFullName, item);
+                    var m = GenerateOffsetExtensionDatasource(origindef, mapname, item);
                     if (m != null) ds.Cascades.Add(m);
                 }
             }
 
-            return ds;
+            var def = Build(ds, prefix: "offset_");
+            def.Origin = origindef;
+
+            return def;
         }
 
         private IDatasourceMap GenerateOffsetExtensionDatasource(SyncMap def, string maptable, IDatasourceMap extensionmap)
