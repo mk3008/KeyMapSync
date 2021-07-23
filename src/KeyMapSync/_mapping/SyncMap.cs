@@ -37,6 +37,16 @@ namespace KeyMapSync
         /// </summary>
         public SyncMap Origin { get; set; }
 
+        /// <summary>
+        /// For offset.
+        /// If all items are deleted, the table will be created after the expected value becomes zero.
+        /// In the case of normal synchronization,
+        /// if Bridge is empty, there is no need for subsequent processing,
+        /// but in the case of Offset, deletion processing is required,
+        /// so subsequent processing is required.
+        /// </summary>
+        public bool MustCascade { get; set; } = false;
+
         public IList<SyncMap> Cascades { get; } = new List<SyncMap>();
 
         public string GetSummary(int nest = 0)
