@@ -97,6 +97,7 @@ _validate_datasource as (
             };
 
             var def = Build(ds, prefix: "expect_");
+            def.MustCascade = true;
 
             return def;
         }

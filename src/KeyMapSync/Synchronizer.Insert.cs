@@ -73,7 +73,7 @@ namespace KeyMapSync
         {
             var r = InsertCore(def);
 
-            if (def.DestinationTable?.TableFullName != null && r.Count == 0) return r;
+            if (def.DestinationTable?.TableFullName != null && r.Count == 0 && !def.MustCascade) return r;
 
             // cascade
             foreach (var item in def.Cascades)

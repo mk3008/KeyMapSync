@@ -187,6 +187,71 @@ delete from sales_data where sales_data_seq = 4
             }
         }
 
+        [Fact]
+        public void ValidateAllDelete()
+        {
+            //DbExecutor.OnBeforeExecute += OnBeforeExecute;
+            //DbExecutor.OnAfterExecute += OnAfterExecute;
+
+            using (var cn = new NpgsqlConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new PostgresDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailBridgeDatasource();
+                var def = builder.Build(ds);
+
+                sync.Insert(def);
+                var res = sync.Result;
+            }
+
+            using (var cn = new NpgsqlConnection(CnString))
+            {
+                cn.Open();
+                cn.Execute(@"
+delete from sales_data
+;
+");
+            }
+
+            using (var cn = new NpgsqlConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new PostgresDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailBridgeDatasource();
+
+                var validator = new Datasouce.SalesDetailValidate();
+                var def = builder.BuildAsOffset(ds, validator);
+
+                var summary = def.GetSummary();
+                sync.Offset(ds, validator);
+                var res = sync.Result;
+
+                //Assert.Equal(3, res.InnerResults.First().Count);
+            }
+
+            using (var cn = new NpgsqlConnection(CnString))
+            {
+                cn.Open();
+                var exe = new DbExecutor(new PostgresDB(), cn);
+                var builder = new SyncMapBuilder() { DbExecutor = exe };
+                var sync = new Synchronizer(builder);
+
+                var ds = new Datasouce.SalesDetailBridgeDatasource();
+                var def = builder.Build(ds);
+
+                sync.Insert(def);
+                var res = sync.Result;
+
+                Assert.Equal(0, res.Count);
+            }
+        }
+
         private void OnBeforeExecute(object sender, SqlEventArgs e)
         {
             if (e.Sql.IndexOf("insert into") == -1 && e.Sql.IndexOf("create temporary") == -1) return;
