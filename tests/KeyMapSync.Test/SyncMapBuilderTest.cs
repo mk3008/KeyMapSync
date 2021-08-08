@@ -39,21 +39,21 @@ namespace KeyMapSync.Test
                 Assert.Equal("row_number() over() + (select max(seq) from (select seq from sqlite_sequence where name = 'builder_test_destination' union all select 0))", def.DestinationTable.SequenceColumn.NextValCommand);
 
                 //sync
-                Assert.Equal("builder_test_destination_sync", def.SyncTable.TableFullName);
-                Assert.Equal("builder_test_destination_id,builder_test_destination_sync_version_id", string.Join(',', def.SyncTable.Columns));
-                Assert.Null(def.SyncTable.SequenceColumn);
+                Assert.Equal("builder_test_destination_sync", def.KeyMap.SyncTable.TableFullName);
+                Assert.Equal("builder_test_destination_id,builder_test_destination_sync_version_id", string.Join(',', def.KeyMap.SyncTable.Columns));
+                Assert.Null(def.KeyMap.SyncTable.SequenceColumn);
 
                 //sync_version
-                Assert.Equal("builder_test_destination_sync_version", def.VersionTable.TableFullName);
-                Assert.Equal("builder_test_destination_sync_version_id,datasource_name,mapping_name,create_timestamp", string.Join(',', def.VersionTable.Columns));
-                Assert.Equal("builder_test_destination_sync_version_id", def.VersionTable.SequenceColumn.ColumnName);
-                Assert.Equal("row_number() over() + (select max(seq) from (select seq from sqlite_sequence where name = 'builder_test_destination_sync_version' union all select 0))", def.VersionTable.SequenceColumn.NextValCommand);
+                Assert.Equal("builder_test_destination_sync_version", def.KeyMap.VersionTable.TableFullName);
+                Assert.Equal("builder_test_destination_sync_version_id,datasource_name,mapping_name,create_timestamp", string.Join(',', def.KeyMap.VersionTable.Columns));
+                Assert.Equal("builder_test_destination_sync_version_id", def.KeyMap.VersionTable.SequenceColumn.ColumnName);
+                Assert.Equal("row_number() over() + (select max(seq) from (select seq from sqlite_sequence where name = 'builder_test_destination_sync_version' union all select 0))", def.KeyMap.VersionTable.SequenceColumn.NextValCommand);
 
                 //map
-                Assert.Equal("builder_test_source", def.MappingName);
-                Assert.Equal("builder_test_destination_map_builder_test_source", def.MappingTable.TableFullName);
-                Assert.Equal("builder_test_source_id,builder_test_destination_id", string.Join(',', def.MappingTable.Columns));
-                Assert.Null(def.MappingTable.SequenceColumn);
+                Assert.Equal("builder_test_source", def.KeyMap.MappingName);
+                Assert.Equal("builder_test_destination_map_builder_test_source", def.KeyMap.MappingTable.TableFullName);
+                Assert.Equal("builder_test_source_id,builder_test_destination_id", string.Join(',', def.KeyMap.MappingTable.Columns));
+                Assert.Null(def.KeyMap.MappingTable.SequenceColumn);
 
                 //option
                 Assert.True(def.DatasourceMap.IsNeedExistsCheck);

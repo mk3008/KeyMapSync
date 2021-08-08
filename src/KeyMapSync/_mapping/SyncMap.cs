@@ -13,15 +13,9 @@ namespace KeyMapSync
     {
         public SyncMap Sender { get; set; }
 
-        public string MappingName { get; set; }
+        public KeyMap KeyMap { get; set; }
 
         public Table DestinationTable { get; set; }
-
-        public Table VersionTable { get; set; }
-
-        public Table SyncTable { get; set; }
-
-        public Table MappingTable { get; set; }
 
         [Obsolete("use BridgeTableName")]
         public DatasourceTable DatasourceTable => new DatasourceTable() { TableName = BridgeTableName };
@@ -83,20 +77,18 @@ namespace KeyMapSync
                 return s.ToString();
             }
 
-            if (MappingTable == null)
+            if (KeyMap == null)
             {
                 s.AppendLine($"{indent}-> bridge:{BridgeTableName}");
                 s.AppendLine($"{indent}   -> destination:{DestinationTable.TableName}");
-                s.AppendLine($"{indent}   -> sync:{SyncTable.TableName}");
-                s.AppendLine($"{indent}   -> syncversion:{VersionTable.TableName}");
                 return s.ToString();
             }
 
             s.AppendLine($"{indent}-> bridge:{BridgeTableName}");
             s.AppendLine($"{indent}   -> destination:{DestinationTable.TableName}");
-            s.AppendLine($"{indent}   -> sync:{SyncTable.TableName}");
-            s.AppendLine($"{indent}   -> syncversion:{VersionTable.TableName}");
-            s.AppendLine($"{indent}   -> map:{MappingTable.TableName}");
+            s.AppendLine($"{indent}   -> sync:{KeyMap.SyncTable.TableName}");
+            s.AppendLine($"{indent}   -> syncversion:{KeyMap.VersionTable.TableName}");
+            s.AppendLine($"{indent}   -> map:{KeyMap.MappingTable.TableName}");
             return s.ToString();
         }
 
