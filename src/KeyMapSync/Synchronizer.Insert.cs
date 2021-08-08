@@ -105,38 +105,35 @@ namespace KeyMapSync
                 return new Result() { Definition = def, Count = count, Elapsed = sw.Elapsed };
             }
 
-            var versionNo = DbExecutor.InsertVersionTableOrDefault(def);
-
-            var n = 0;
-            if (def.DestinationTable == null || def.DestinationTable.TableFullName == null)
+            if (def.KeyMap == null)
             {
-                count = 0;
+                var n = DbExecutor.InsertDestinationTable(def);
+                if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
+                sw.Stop();
+                return new Result() { Definition = def, Count = count, Elapsed = sw.Elapsed };
             }
             else
             {
+                var versionNo = DbExecutor.InsertVersionTableOrDefault(def);
+
+                var n = 0;
                 n = DbExecutor.InsertDestinationTable(def);
                 if (count != n) throw new InvalidOperationException($"destinaition-table insert fail.(expect count:{count}, actual:{n}");
 
-                if (versionNo.HasValue)
-                {
-                    n = DbExecutor.InsertSyncTable(def, versionNo.Value);
-                    if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
-                }
-            }
+                n = DbExecutor.InsertSyncTable(def, versionNo.Value);
+                if (count != n) throw new InvalidOperationException($"sync-table insert fail.(expect count:{count}, actual:{n}");
 
-            if (def.MappingTable != null)
-            {
                 n = DbExecutor.InsertMappingTable(def);
                 if (count != n) throw new InvalidOperationException($"mapping-table insert fail.(expect count:{count}, actual:{n}");
-            }
 
-            sw.Stop();
-            return new Result() { Definition = def, Count = count, Version = versionNo, Elapsed = sw.Elapsed };
+                sw.Stop();
+                return new Result() { Definition = def, Count = count, Version = versionNo, Elapsed = sw.Elapsed };
+            }
         }
 
         private void DeleteMapMain(SyncMap def)
         {
-            if (def.Origin != null && def.Origin.MappingTable != null)
+            if (def.Origin != null && def.Origin.KeyMap.MappingTable != null)
             {
                 DeleteMapCore(def.Origin);
             }

@@ -41,9 +41,9 @@ namespace KeyMapSync
         private SyncMap GenerateExpectBridge(SyncMap origindef, int version)
         {
             var destId = origindef.DestinationTable.SequenceColumn.ColumnName;
-            var verId = origindef.VersionTable.SequenceColumn.ColumnName;
+            var verId = origindef.KeyMap.VersionTable.SequenceColumn.ColumnName;
 
-            var mapping = origindef.MappingTable;
+            var mapping = origindef.KeyMap.MappingTable;
 
             var sql = $@"
 {origindef.DatasourceMap.DatasourceQueryGenarator(null)},
@@ -52,8 +52,8 @@ _validate_target as (
         d.{destId} as _{destId}
     from
         {origindef.DestinationTable.TableFullName} d
-        inner join {origindef.SyncTable.TableFullName} s on d.{destId} = s.{destId}
-        inner join {origindef.VersionTable.TableFullName} v on s.{verId} = v.{verId}
+        inner join {origindef.KeyMap.SyncTable.TableFullName} s on d.{destId} = s.{destId}
+        inner join {origindef.KeyMap.VersionTable.TableFullName} v on s.{verId} = v.{verId}
     where
         s.{verId} >= :_version
         and v.datasource_name = :_datasource_name
@@ -69,7 +69,7 @@ _validate_datasource as (
                 , m.{destId} as _{destId}
             from
                 {origindef.DatasourceMap.DatasourceAliasName} d
-                inner join {origindef.MappingTable.TableFullName} m on {origindef.MappingTable.Columns.Where((x) => x != destId).Select((x) => $"d.{x} = m.{x}").ToString(" and ")}
+                inner join {origindef.KeyMap.MappingTable.TableFullName} m on {origindef.KeyMap.MappingTable.Columns.Where((x) => x != destId).Select((x) => $"d.{x} = m.{x}").ToString(" and ")}
         ) q
     where
         exists (select * from _validate_target x where x._{destId} = q._{destId})
@@ -105,9 +105,9 @@ _validate_datasource as (
         private SyncMap GenerateOffset(SyncMap origindef, string tmpName, IValidateOption opt, int version)
         {
             var destId = origindef.DestinationTable.SequenceColumn.ColumnName;
-            var verId = origindef.VersionTable.SequenceColumn.ColumnName;
+            var verId = origindef.KeyMap.VersionTable.SequenceColumn.ColumnName;
 
-            var mapping = origindef.MappingTable;
+            var mapping = origindef.KeyMap.MappingTable;
 
             var idName = origindef.DestinationTable.SequenceColumn.ColumnName;
             var sql = $@"
@@ -117,8 +117,8 @@ _validate_target as (
         d.{destId} as _{destId}
     from
         {origindef.DestinationTable.TableFullName} d
-        inner join {origindef.SyncTable.TableFullName} s on d.{destId} = s.{destId}
-        inner join {origindef.VersionTable.TableFullName} v on s.{verId} = v.{verId}
+        inner join {origindef.KeyMap.SyncTable.TableFullName} s on d.{destId} = s.{destId}
+        inner join {origindef.KeyMap.VersionTable.TableFullName} v on s.{verId} = v.{verId}
     where
         s.{verId} >= :_version
         and v.datasource_name = :_datasource_name
@@ -165,7 +165,7 @@ datasource as (
                 IsExtension = false,
             };
 
-            var mapname = Build(ds).MappingTable.TableFullName;
+            var mapname = Build(ds).KeyMap.MappingTable.TableFullName;
 
             //cascade datasource convert
             foreach (var item in origindef.DatasourceMap.Cascades.Where(x => x.IsUpperCascade == false))

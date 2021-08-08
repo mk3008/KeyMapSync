@@ -20,6 +20,10 @@ namespace KeyMapSync
             {
                 return GetDatasourceRowCount(def);
             }
+            else if(def.KeyMap == null || def.DatasourceMap.IsNeedExistsCheck == false )
+            {
+                return CreateBridgeNoCheck(def);
+            }
             else
             {
                 return CreateBridge(def);
@@ -36,7 +40,7 @@ namespace KeyMapSync
         private int CreateBridge(SyncMap def)
         {
             var ds = def.DatasourceMap;
-            var map = def.MappingTable;
+            var map = def.KeyMap.MappingTable;
             var dst = def.DestinationTable;
 
             var seq = (dst?.SequenceColumn == null || def.DatasourceMap.IsBridge) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
@@ -54,6 +58,39 @@ select
 from
     {ds.DatasourceAliasName}
 {where}
+{orderText}
+";
+            ExpandoObject prm = ds.ParameterGenerator?.Invoke();
+            OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
+            Connection.Execute(sql, prm, commandTimeout: CommandTimeout);
+
+            //retrun insert count
+            var cntSql = $"select count(*) from {def.BridgeTableName}";
+            OnBeforeExecute?.Invoke(this, new SqlEventArgs(cntSql));
+
+            var cnt = Connection.ExecuteScalar<int>(cntSql, commandTimeout: CommandTimeout);
+            OnAfterExecute?.Invoke(this, new SqlResultArgs(sql, cnt, prm) { TableName = def.BridgeTableName });
+
+            return cnt;
+        }
+
+        private int CreateBridgeNoCheck(SyncMap def)
+        {
+            var ds = def.DatasourceMap;
+            var dst = def.DestinationTable;
+
+            var seq = (dst?.SequenceColumn == null || def.DatasourceMap.IsBridge) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
+
+            var orderText = (ds?.DatasourceKeyColumns == null) ? "" : $"order by {ds.DatasourceKeyColumns.ToString(", ", x => $"{ds.DatasourceAliasName}.{x}")}";
+
+            var sql = $@"
+create temporary table {def.BridgeTableName}
+as
+{ds.DatasourceQueryGenarator(def.Sender)}
+select
+    {seq}{ds.DatasourceAliasName}.*
+from
+    {ds.DatasourceAliasName}
 {orderText}
 ";
             ExpandoObject prm = ds.ParameterGenerator?.Invoke();
@@ -142,7 +179,7 @@ from
 
         public int? InsertVersionTableOrDefault(SyncMap def)
         {
-            if (def.VersionTable == null) return null;
+            if (def.KeyMap.VersionTable == null) return null;
 
             var args = DB.GetInsertVersionTableScalar(def);
             OnBeforeExecute?.Invoke(this, args);
@@ -156,8 +193,8 @@ from
         /// <param name="versionNo"></param>
         public int InsertSyncTable(SyncMap def, long versionNo)
         {
-            var sync = def.SyncTable;
-            var version = def.VersionTable;
+            var sync = def.KeyMap.SyncTable;
+            var version = def.KeyMap.VersionTable;
             var bridge = ReadTable(def.BridgeTableName);
             var columnsSql = new StringBuilder();
 
@@ -198,7 +235,7 @@ from
         /// <param name="def"></param>
         public int InsertMappingTable(SyncMap def)
         {
-            var map = def.MappingTable;
+            var map = def.KeyMap.MappingTable;
             var bridge = ReadTable(def.BridgeTableName);
 
             var sql = $@"

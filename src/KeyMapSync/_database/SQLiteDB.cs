@@ -88,13 +88,13 @@ create table {tableName}
 
         public SqlEventArgs GetInsertVersionTableScalar(SyncMap def)
         {
-            var version = def.VersionTable;
+            var version = def.KeyMap.VersionTable;
 
             var sql = $"insert into {version.TableFullName}(datasource_name, mapping_name) values (:datasource_name, :mapping_name); select last_insert_rowid();";
             var prm = new
             {
                 datasource_name = (def?.DatasourceName == null) ? "" : def.DatasourceName,
-                mapping_name = (def?.MappingName == null) ? "" : def.MappingName,
+                mapping_name = (def?.KeyMap?.MappingName == null) ? "" : def.KeyMap.MappingName,
             };
             return new SqlEventArgs(sql, prm);
         }
