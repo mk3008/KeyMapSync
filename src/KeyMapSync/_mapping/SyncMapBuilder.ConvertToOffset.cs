@@ -93,7 +93,8 @@ _validate_datasource as (
                 ParameterGenerator = pgen,
                 IsNeedExistsCheck = false,
                 IsExtension = false,
-                IsBridge = true
+                IsBridge = true,
+                Filter = origindef.DatasourceMap.Filter,
             };
 
             var def = Build(ds, prefix: "expect_");
@@ -163,6 +164,7 @@ datasource as (
                 ParameterGenerator = pgen,
                 IsNeedExistsCheck = false,
                 IsExtension = false,
+                Filter = origindef.DatasourceMap.Filter,
             };
 
             var mapname = Build(ds).KeyMap.MappingTable.TableFullName;

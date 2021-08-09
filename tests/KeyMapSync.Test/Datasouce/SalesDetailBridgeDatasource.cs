@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KeyMapSync.Test.Filter;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -14,6 +15,8 @@ namespace KeyMapSync.Test.Datasouce
             Cascades.Add(new SalesDatasource());
             Cascades.Add(new SalesDetailDatasource());
         }
+
+        public string ProductCondition { get; set; }
 
         public override string DestinationTableName => "sales_detail";
 
@@ -44,5 +47,13 @@ datasource as (
 ";
 
         public override Type ActualDatasourceType => typeof(SalesDetailDatasource);
+
+        public override DatasourceFilter Filter => GetFilter();
+
+        private DatasourceFilter GetFilter()
+        {
+            if (ProductCondition == null) return null;
+            return new ProductFilter(ProductCondition);
+        }
     }
 }
