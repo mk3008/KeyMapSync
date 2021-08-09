@@ -36,5 +36,7 @@ namespace KeyMapSync
         public abstract Type ActualDatasourceType { get; }
 
         public bool IsUpperCascade => false;
+
+        public virtual DatasourceFilter Filter => null;
     }
 }

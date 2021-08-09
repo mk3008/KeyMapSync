@@ -41,5 +41,7 @@ namespace KeyMapSync
         public Type ActualDatasourceType => null;
 
         public bool IsUpperCascade => false;
+
+        public DatasourceFilter Filter => null;
     }
 }

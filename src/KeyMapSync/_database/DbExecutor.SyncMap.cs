@@ -20,7 +20,7 @@ namespace KeyMapSync
             {
                 return GetDatasourceRowCount(def);
             }
-            else if(def.KeyMap == null || def.DatasourceMap.IsNeedExistsCheck == false )
+            else if (def.KeyMap == null || def.DatasourceMap.IsNeedExistsCheck == false)
             {
                 return CreateBridgeNoCheck(def);
             }
@@ -43,24 +43,39 @@ namespace KeyMapSync
             var map = def.KeyMap.MappingTable;
             var dst = def.DestinationTable;
 
+            string with = "";
+            var alias = "";
+            var prm = ds.ParameterGenerator?.Invoke();
+            if (ds.Filter == null)
+            {
+                with = ds.DatasourceQueryGenarator(def.Sender);
+                alias = ds.DatasourceAliasName;
+            }
+            else
+            {
+                with = ds.Filter.QueryGenerator(ds);
+                alias = ds.Filter.AliasName;
+                prm = ds.Filter.ParameterGenerator(prm);
+            }
+
             var seq = (dst?.SequenceColumn == null || def.DatasourceMap.IsBridge) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
 
-            var orderText = (ds?.DatasourceKeyColumns == null) ? "" : $"order by {ds.DatasourceKeyColumns.ToString(", ", x => $"{ds.DatasourceAliasName}.{x}")}";
+            var orderText = (ds?.DatasourceKeyColumns == null) ? "" : $"order by {ds.DatasourceKeyColumns.ToString(", ", x => $"d.{x}")}";
 
-            var where = !def.DatasourceMap.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {ds.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = {ds.DatasourceAliasName}.{x}")})";
+            var where = !def.DatasourceMap.IsNeedExistsCheck ? "" : $"where not exists (select * from {map.TableFullName} x where {ds.DatasourceKeyColumns.ToString(" and ", x => $"x.{x} = d.{x}")})";
 
             var sql = $@"
 create temporary table {def.BridgeTableName}
 as
-{ds.DatasourceQueryGenarator(def.Sender)}
+{with}
 select
-    {seq}{ds.DatasourceAliasName}.*
+    {seq}d.*
 from
-    {ds.DatasourceAliasName}
+    {ds.DatasourceAliasName} d
 {where}
 {orderText}
 ";
-            ExpandoObject prm = ds.ParameterGenerator?.Invoke();
+
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
             Connection.Execute(sql, prm, commandTimeout: CommandTimeout);
 
@@ -79,21 +94,36 @@ from
             var ds = def.DatasourceMap;
             var dst = def.DestinationTable;
 
+            string with = "";
+            var alias = "";
+            var prm = ds.ParameterGenerator?.Invoke();
+            if (ds.Filter == null)
+            {
+                with = ds.DatasourceQueryGenarator(def.Sender);
+                alias = ds.DatasourceAliasName;
+            }
+            else
+            {
+                with = ds.Filter.QueryGenerator(ds);
+                alias = ds.Filter.AliasName;
+                prm = ds.Filter.ParameterGenerator(prm);
+            }
+
             var seq = (dst?.SequenceColumn == null || def.DatasourceMap.IsBridge) ? "" : $"{dst.SequenceColumn.NextValCommand} as { dst.SequenceColumn.ColumnName}, ";
 
-            var orderText = (ds?.DatasourceKeyColumns == null) ? "" : $"order by {ds.DatasourceKeyColumns.ToString(", ", x => $"{ds.DatasourceAliasName}.{x}")}";
+            var orderText = (ds?.DatasourceKeyColumns == null) ? "" : $"order by {ds.DatasourceKeyColumns.ToString(", ", x => $"d.{x}")}";
 
             var sql = $@"
 create temporary table {def.BridgeTableName}
 as
-{ds.DatasourceQueryGenarator(def.Sender)}
+{with}
 select
-    {seq}{ds.DatasourceAliasName}.*
+    {seq}d.*
 from
-    {ds.DatasourceAliasName}
+    {alias} d
 {orderText}
 ";
-            ExpandoObject prm = ds.ParameterGenerator?.Invoke();
+
             OnBeforeExecute?.Invoke(this, new SqlEventArgs(sql, prm));
             Connection.Execute(sql, prm, commandTimeout: CommandTimeout);
 

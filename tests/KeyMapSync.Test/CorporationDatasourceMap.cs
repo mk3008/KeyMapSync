@@ -5,15 +5,15 @@ using System.Dynamic;
 
 namespace KeyMapSync.Test
 {
-    internal class CorporationDatasourceMap : IDatasourceMap
+    internal class CorporationDatasourceMap : RootDatasourceMap
     {
-        public string DestinationTableName => "client";
+        public override string DestinationTableName => "client";
 
-        public string MappingName => "corporation";
+        public override string MappingName => "corporation";
 
-        public IEnumerable<string> DatasourceKeyColumns => new string[] { "corporation_id" };
+        public override IEnumerable<string> DatasourceKeyColumns => new string[] { "corporation_id" };
 
-        public string DatasourceQuery => @"
+        public override string DatasourceQuery => @"
 with datasource as (
     select
         corporation_name as client_name
@@ -23,25 +23,5 @@ with datasource as (
     order by
         corporation_id
 )";
-
-        public string DatasourceAliasName => "datasource";
-
-        public Func<ExpandoObject> ParameterGenerator => () => null;
-
-        public bool IsNeedExistsCheck => true;
-
-        public bool IsExtension => false;
-
-        public IList<IDatasourceMap> Cascades => new List<IDatasourceMap>();
-
-        public Func<SyncMap, string> DatasourceQueryGenarator => (x) => DatasourceQuery;
-
-        public bool IsBridge => false;
-
-        public Type ActualDatasourceType => null;
-
-        public bool IsOffset => false;
-
-        public bool IsUpperCascade => false;
     }
 }
