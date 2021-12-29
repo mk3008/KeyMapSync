@@ -67,7 +67,5 @@ namespace KeyMapSync
         /// Specify this when transferring using a bridge data source.
         /// </summary>
         public Type ActualDatasourceType { get; }
-
-        DatasourceFilter Filter { get; }
     }
 }

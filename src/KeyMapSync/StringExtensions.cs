@@ -10,26 +10,26 @@ namespace KeyMapSync
     /// </summary>
     internal static class StringExtensions
     {
-        /// <summary>
-        /// string to teable info.
-        /// </summary>
-        /// <param name="source"></param>
-        /// <returns></returns>
-        public static TableNameInfo ToTableInfo(this string source)
-        {
-            var prms = source.Split('.');
-            var info = new TableNameInfo();
-            if (prms.Length == 1)
-            {
-                info.TableName = source;
-            }
-            else
-            {
-                info.SchemaName = prms[0];
-                info.SchemaName = prms[1];
-            }
-            return info;
-        }
+        ///// <summary>
+        ///// string to teable info.
+        ///// </summary>
+        ///// <param name="source"></param>
+        ///// <returns></returns>
+        //public static TableNameInfo ToTableInfo(this string source)
+        //{
+        //    var prms = source.Split('.');
+        //    var info = new TableNameInfo();
+        //    if (prms.Length == 1)
+        //    {
+        //        info.TableName = source;
+        //    }
+        //    else
+        //    {
+        //        info.SchemaName = prms[0];
+        //        info.SchemaName = prms[1];
+        //    }
+        //    return info;
+        //}
 
         public static string ToString(this IEnumerable<string> source, string splitter, Func<string, string> func = null)
         {
@@ -47,10 +47,10 @@ namespace KeyMapSync
             return s.ToString();
         }
 
-        public static string Left(this string source, int length)
-        {
-            if (source.Length < length) return source;
-            return source.Substring(0, length);
-        }
+        //public static string Left(this string source, int length)
+        //{
+        //    if (source.Length < length) return source;
+        //    return source.Substring(0, length);
+        //}
     }
 }
