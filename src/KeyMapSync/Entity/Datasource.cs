@@ -61,7 +61,9 @@ public class Datasource
     /// ex
     /// "sync_timestamp"
     /// </summary>
-    public IList<string> InspectionIgnoreColumns { get; set; }
+    public IList<string> InspectionIgnoreColumns { get; set; } = new List<string>();
+
+    public IEnumerable<string> InspectionColumns => Columns.Where(x => !InspectionIgnoreColumns.Contains(x)).Where(x => !KeyColumns.Contains(x));
 
     /// <summary>
     /// ex

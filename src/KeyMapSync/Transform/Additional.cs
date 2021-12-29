@@ -20,29 +20,22 @@ public class Additional : IBridge
 
     public string BridgeName => Owner.BridgeName;
 
-    /// <summary>
-    /// ex.
-    /// with 
-    /// ds as (...)
-    /// _added as (
-    ///    select
-    ///        sequnce_command as integration_sale_detail_id, ds.*
-    ///    from
-    ///        ds
-    ///    where
-    ///        not exists (select * from map _km on ds.ec_shop_sale_detail_id = _km.ec_shop_sale_detail_id)
-    /// )
-    /// </summary>
-    /// <returns></returns>
-    public string GetWithQuery()
+    public string GetWithQuery() => Owner.GetWithQuery();
+
+    public string BuildExtendWithQuery()
     {
         var dst = Datasource.Destination;
 
-        var sql = $@"{Owner.GetWithQuery()},
-{Alias} as (
-    select {dst.SequenceCommand} as {dst.SequenceKeyColumn}, {Owner.Alias}.*
-    from {Owner.Alias}
-    {AdditionalCondition.ToFilter(this).ToWhereSqlText()}
+        var cols = new List<string>();
+        cols.Add($"{dst.SequenceCommand} as {dst.SequenceKeyColumn}");
+        cols.Add($"{Owner.Alias}.*");
+        var col = cols.ToString("\r\n, ").Indent(4);
+        var sql = $@"select
+{col}
+from {Owner.Alias}
+{AdditionalCondition.ToFilter(this).ToWhereSqlText()}";
+        sql = $@"{Alias} as (
+{sql.Indent(4)}
 )";
         return sql;
     }

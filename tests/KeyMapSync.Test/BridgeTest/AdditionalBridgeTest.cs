@@ -1,0 +1,48 @@
+﻿using Dapper;
+using KeyMapSync.Entity;
+using KeyMapSync.Filtering;
+using KeyMapSync.Test.Model;
+using KeyMapSync.Test.Script;
+using KeyMapSync.Transform;
+using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.Data.SQLite;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
+
+namespace KeyMapSync.Test.BridgeTest;
+
+public class AdditionalBridgeTest
+{
+    private readonly ITestOutputHelper Output;
+
+    public AdditionalBridgeTest(ITestOutputHelper output)
+    {
+        Output = output;
+    }
+
+    [Fact]
+    public void BuildExtendWithQueryTest()
+    {
+        var ds = EcShopSaleDetail.GetDatasource();
+        var tmp = "tmp_parse";
+        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
+        var bridge = new Additional() { Owner = root, AdditionalCondition = new NotExistsKeyMapCondition() };
+       
+        var val = bridge.BuildExtendWithQuery();
+        var expect = $@"_added as (
+    select
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id
+        , ds.*
+    from ds
+    where
+        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail _km where ds.ec_shop_sale_detail_id = _km.ec_shop_sale_detail_id)
+)";
+
+        Assert.Equal(expect, val);
+    }
+}

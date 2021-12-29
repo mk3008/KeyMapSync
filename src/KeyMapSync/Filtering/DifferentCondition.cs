@@ -8,25 +8,9 @@ using System.Text;
 namespace KeyMapSync.Transform;
 public class DifferentCondition : IFilterable
 {
-    public IList<string> InspectionColumns { get; } = new List<string>();
-
     public string RemarksColumn { get; set; } = "_remarks";
 
-    /// <summary>
-    /// ex.
-    /// case when 
-    ///     (ds.ec_shop_sale_detail_id is null) then 'deleted'
-    /// else
-    ///   case when (_e.sale_date is null and ds.sale_date is not null) 
-    ///             or
-    ///             (_e.sale_date is not null and ds.sale_date is null)
-    ///             or 
-    ///             (_e.sale_date <> ds.sale_date is null) then 'sale_date is changed, '
-    ///   end
-    /// end as remarks
-    /// </summary>
-    /// <returns></returns>   
-    public string toDifferentRemarksSql(IBridge sender)
+    public string BuildRemarksSql(IBridge sender)
     {
         if (string.IsNullOrEmpty(RemarksColumn)) return null;
         if (!(sender is ChangedBridge)) throw new NotSupportedException();
@@ -35,7 +19,7 @@ public class DifferentCondition : IFilterable
         var expect = changed.Owner;
         var ds = sender.Datasource;
 
-        return BuildRemarksSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias);
+        return BuildRemarksSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias, ds.InspectionColumns);
     }
 
     /// <summary>
@@ -55,23 +39,24 @@ public class DifferentCondition : IFilterable
 
         var changed = sender as ChangedBridge;
         var ds = sender.Datasource;
-
+                
         return new Filter()
         {
-            Condition = BuildWhereSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias)
+            Condition = BuildWhereSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias, ds.InspectionColumns)
         };
     }
 
-    public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias)
+    public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
     {
         var sb = new StringBuilder();
-        sb.Append($"case when {ConvertToDeleteCondition(datasourceAlias, datasourceKeys)} then 'deleted'");
-        sb.AppendLine().Append("else ");
-
+        sb.Append($"case when {ConvertToDeleteCondition(datasourceAlias, datasourceKeys)} then");
+        sb.AppendLine().Append("    'deleted'");
+        sb.AppendLine().Append("else");
+        sb.AppendLine().Append("    ");
         var isFirst = true;
-        foreach (var item in InspectionColumns)
+        foreach (var item in inspectionColumns)
         {
-            if (!isFirst) sb.AppendLine().Append("     || ");
+            if (!isFirst) sb.AppendLine().Append("    || ");
             sb.Append("case when ");
             sb.Append(ConvertToDiffCondition(datasourceAlias, expectAlias, item));
             sb.Append($" then '{item} is changed, ' end");
@@ -83,14 +68,14 @@ public class DifferentCondition : IFilterable
         return sb.ToString();
     }
 
-    public string BuildWhereSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias)
+    public string BuildWhereSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
     {
         var sb = new StringBuilder();
         sb.Append("(");
         sb.AppendLine().Append("    ");
         sb.Append(ConvertToDeleteCondition(datasourceAlias, datasourceKeys));
 
-        foreach (var item in InspectionColumns)
+        foreach (var item in inspectionColumns)
         {
             sb.AppendLine().Append("or  ");
             sb.Append(ConvertToDiffCondition(datasourceAlias, expectAlias, item));

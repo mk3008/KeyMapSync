@@ -11,7 +11,8 @@ public static class FilterExtension
 {
     public static string ToWhereSqlText(this Filter source)
     {
-        return string.IsNullOrEmpty(source.Condition) ? null : $"where {source.Condition}";
+        return string.IsNullOrEmpty(source.Condition) ? null : $@"where
+{source.Condition.Indent(4)}";
     }
 
     public static ExpandoObject ToExpandObject(this Filter source)
@@ -22,7 +23,8 @@ public static class FilterExtension
     public static string ToWhereSqlText(this IEnumerable<Filter> source)
     {
         var s = source.Where(x => !string.IsNullOrEmpty(x.Condition)).Select(x => x.Condition).ToString(" and ");
-        if (!string.IsNullOrEmpty(s)) s = $"where {s}";
+        if (!string.IsNullOrEmpty(s)) s = $@"where
+{s.Indent(4)}";
         return s;
     }
 

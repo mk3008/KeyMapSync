@@ -61,8 +61,23 @@ public class BridgeRootTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
 
-        Assert.Equal($@"{ds.WithQuery}
-create table {tmp}
+        Assert.Equal(@"with 
+ds as (
+    select
+          sd.ec_shop_sale_detail_id
+        , s.sale_date
+        , sd.ec_shop_article_id
+        , a.article_name
+        , sd.unit_price
+        , sd.quantity
+        , sd.price
+        , current_timestamp as sync_timestamp
+    from
+        ec_shop_sale_detail sd
+        inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
+        inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
+)
+create temporary table tmp_parse
 as
 select * from ds;", root.ToSql());
     }
@@ -75,13 +90,28 @@ select * from ds;", root.ToSql());
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         var bridge = new Additional() { Owner = root, AdditionalCondition = new NotExistsKeyMapCondition() };
 
-        Assert.Equal($@"{ds.WithQuery},
+        Assert.Equal($@"with 
+ds as (
+    select
+          sd.ec_shop_sale_detail_id
+        , s.sale_date
+        , sd.ec_shop_article_id
+        , a.article_name
+        , sd.unit_price
+        , sd.quantity
+        , sd.price
+        , current_timestamp as sync_timestamp
+    from
+        ec_shop_sale_detail sd
+        inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
+        inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
+),
 _added as (
     select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id, ds.*
     from ds
     where not exists (select * from integration_sale_detail__map_ec_shop_sale_detail _km where ds.ec_shop_sale_detail_id = _km.ec_shop_sale_detail_id)
 )
-create table {tmp}
+create temporary table tmp_parse
 as
 select * from _added;", bridge.ToSql());
     }

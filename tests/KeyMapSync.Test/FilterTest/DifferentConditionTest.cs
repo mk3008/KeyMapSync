@@ -29,10 +29,11 @@ public class DifferentConditionTest
     public void RemarksSqlTest()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        var val = cnd.BuildRemarksSql("ds", new string[] { "key1" }, "_e");
-        var expect = @"case when ds.key1 is null then 'deleted'
-else case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
+        var val = cnd.BuildRemarksSql("ds", new string[] { "key1" }, "_e", new string[] { "val1" });
+        var expect = @"case when ds.key1 is null then
+    'deleted'
+else
+    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -42,10 +43,11 @@ end as _remarks";
     public void RemarksSqlTest_MultipleKey()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        var val = cnd.BuildRemarksSql("ds", new string[] { "key1", "key2" }, "_e");
-        var expect = @"case when ds.key1 is null then 'deleted'
-else case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
+        var val = cnd.BuildRemarksSql("ds", new string[] { "key1", "key2" }, "_e", new string[] { "val1" });
+        var expect = @"case when ds.key1 is null then
+    'deleted'
+else
+    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -55,12 +57,12 @@ end as _remarks";
     public void RemarksSqlTest_MultipleValue()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        cnd.InspectionColumns.Add("val2");
-        var val = cnd.BuildRemarksSql("ds", new string[] { "key1" }, "_e");
-        var expect = @"case when ds.key1 is null then 'deleted'
-else case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
-     || case when coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false) then 'val2 is changed, ' end
+        var val = cnd.BuildRemarksSql("ds", new string[] { "key1" }, "_e", new string[] { "val1", "val2" });
+        var expect = @"case when ds.key1 is null then
+    'deleted'
+else
+    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
+    || case when coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false) then 'val2 is changed, ' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -70,8 +72,7 @@ end as _remarks";
     public void WhereSqlTest()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e");
+        var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e", new string[] { "val1" });
         var expect = @"(
     ds.key1 is null
 or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
@@ -84,8 +85,7 @@ or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false
     public void WhereSqlTest_MultipleKey()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        var val = cnd.BuildWhereSql("ds", new string[] { "key1", "key2" }, "_e");
+        var val = cnd.BuildWhereSql("ds", new string[] { "key1", "key2" }, "_e", new string[] { "val1" });
         var expect = @"(
     ds.key1 is null
 or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
@@ -98,9 +98,7 @@ or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false
     public void WhereSqlTest_MultipleValue()
     {
         var cnd = new DifferentCondition();
-        cnd.InspectionColumns.Add("val1");
-        cnd.InspectionColumns.Add("val2");
-        var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e");
+        var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e", new string[] { "val1", "val2" });
         var expect = @"(
     ds.key1 is null
 or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)

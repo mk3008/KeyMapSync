@@ -33,8 +33,9 @@ public class NotExistsKeyMapConditionTest
         var keymap = "keymap";
         var alias = "ds";
         var keys = new string[] { "key1" };
+        var val = NotExistsKeyMapCondition.BuildSql(keymap, alias, keys);
 
-        Assert.Equal(expect, Filtering.NotExistsKeyMapCondition.BuildSql(keymap, alias, keys));
+        Assert.Equal(expect, val);
     }
 
     [Fact]
@@ -45,8 +46,9 @@ public class NotExistsKeyMapConditionTest
         var keymap = "keymap";
         var alias = "ds";
         var keys = new string[] { "key1", "key2" };
+        var val = NotExistsKeyMapCondition.BuildSql(keymap, alias, keys);
 
-        Assert.Equal(expect, Filtering.NotExistsKeyMapCondition.BuildSql(keymap, alias, keys));
+        Assert.Equal(expect, val);
     }
 }
 

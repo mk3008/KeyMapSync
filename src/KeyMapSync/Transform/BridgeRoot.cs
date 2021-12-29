@@ -26,6 +26,11 @@ public class BridgeRoot : IBridge
     /// </summary>
     public string BridgeName { get; set; }
 
+    public string BuildExtendWithQuery()
+    {
+        return null;
+    }
+
     /// <summary>
     /// ex.
     /// --unsync filter and sequencing

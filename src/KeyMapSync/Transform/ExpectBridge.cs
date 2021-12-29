@@ -38,17 +38,30 @@ public class ExpectBridge : IBridge
     /// <returns></returns>
     public string GetWithQuery()
     {
+        var sql = $@"{Owner.GetWithQuery()},
+{BuildExtendWithQuery()}";
+        return sql;
+    }
+
+    public string BuildExtendWithQuery()
+    {
         var ds = Owner.Datasource;
         var datasourceKeys = ds.KeyColumns;
         var dest = ds.Destination;
         var keymap = ds.KeyMapName;
 
-        var sql = $@"{Owner.GetWithQuery()},
-{Alias} as (
-    select {datasourceKeys.Select(x => $"_km.{x}").ToString(", ")}, _origin.*
-    from {dest.DestinationName} _origin
-    inner join {keymap} _km on _origin.{dest.SequenceKeyColumn} = _km.{dest.SequenceKeyColumn}
-    {Condition.ToFilter(this).ToList().ToWhereSqlText()}
+        var cols = datasourceKeys.Select(x => $"_km.{x}").ToList();
+        cols.Add("_origin.*"); 
+        var col = cols.ToString("\r\n, ").Indent(4);
+
+        var sql = $@"select
+{col}
+from {dest.DestinationName} _origin
+inner join {keymap} _km on _origin.{dest.SequenceKeyColumn} = _km.{dest.SequenceKeyColumn}
+{Condition.ToFilter(this).ToWhereSqlText()}";
+
+        sql = $@"{Alias} as (
+{sql.Indent(4)}
 )";
         return sql;
     }

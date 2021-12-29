@@ -24,6 +24,11 @@ public class FilterBridge : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
+    public string BuildExtendWithQuery()
+    {
+        throw new NotImplementedException();
+    }
+
     /// <summary>
     /// ex.
     /// with 

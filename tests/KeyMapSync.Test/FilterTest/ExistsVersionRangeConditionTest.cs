@@ -32,8 +32,9 @@ public class ExistsVersionRangeConditionTest
 
         var sync = "sync";
         var key = "id";
+        var val = ExistsVersionRangeCondition.BuildSql(sync, key);
 
-        Assert.Equal(expect, ExistsVersionRangeCondition.BuildSql(sync, key));
+        Assert.Equal(expect, val);
     }
 
     [Fact]
