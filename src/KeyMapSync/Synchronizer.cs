@@ -22,10 +22,10 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
-    public void CreateTemporaryTable(IDbConnection cn, IBridge bridge)
+    public void CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true )
     {
-        var sql = bridge.ToSql();
+        var sql = bridge.ToSql(isTemporary);
         var prm = bridge.ToParameter();
-
+        cn.Execute(sql, prm);
     }
 }

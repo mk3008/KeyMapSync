@@ -33,7 +33,9 @@ public class ManagementTableTest
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
 
         var val = root.ToSql();
-        var expect = @"with 
+        var expect = @"create temporary table tmp_parse
+as
+with 
 ds as (
     select
           sd.ec_shop_sale_detail_id
@@ -48,8 +50,6 @@ ds as (
         inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
 )
-create temporary table tmp_parse
-as
 select
     *
 from ds;";

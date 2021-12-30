@@ -45,15 +45,17 @@ public static class IBridgeExtension
         return "__ds";
     }
 
-    public static string ToSql(this IBridge source)
+    public static string ToSql(this IBridge source, bool isTemporary = true )
     {
         var ext = source.BuildExtendWithQuery();
         if (ext != null) ext = $@",
 {ext}";
 
-        var sql = $@"{source.GetWithQuery()}{ext}
-create temporary table {source.BridgeName}
+        var command = isTemporary ? "create temporary table" : "create table";
+
+        var sql = $@"{command} {source.BridgeName}
 as
+{source.GetWithQuery()}{ext}
 select
     *
 from {source.Alias};";
@@ -62,7 +64,7 @@ from {source.Alias};";
 
     public static ExpandoObject ToParameter(this IBridge source)
     {
-        var current = source.Filter.ToParameter();
+        var current = source.Filter?.ToParameter();
         var cascade = source.Owner?.ToParameter();
         return current == null ? cascade : current.Merge(cascade);
     }

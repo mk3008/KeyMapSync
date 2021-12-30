@@ -61,7 +61,9 @@ public class SqlTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
 
-        var expect = @"with 
+        var expect = @"create temporary table tmp_parse
+as
+with 
 ds as (
     select
           sd.ec_shop_sale_detail_id
@@ -76,8 +78,6 @@ ds as (
         inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
 )
-create temporary table tmp_parse
-as
 select
     *
 from ds;";
@@ -93,7 +93,9 @@ from ds;";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
 
-        var expect = @"with 
+        var expect = @"create temporary table tmp_parse
+as
+with 
 ds as (
     select
           sd.ec_shop_sale_detail_id
@@ -116,8 +118,6 @@ _added as (
     where
         not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
 )
-create temporary table tmp_parse
-as
 select
     *
 from _added;";
@@ -134,7 +134,9 @@ from _added;";
         var work = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
         var bridge = new ChangedBridge() { Owner = work, Filter = new DifferentCondition() };
 
-        var expect = @"with 
+        var expect = @"create temporary table tmp_default_parse
+as
+with 
 ds as (
     select
           sd.ec_shop_sale_detail_id
@@ -186,8 +188,6 @@ _changed as (
         or  coalesce((__e.price = __ds.price) or (__e.price is null and __ds.price is null), false)
         )
 )
-create temporary table tmp_default_parse
-as
 select
     *
 from _changed;";
