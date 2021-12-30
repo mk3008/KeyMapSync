@@ -156,5 +156,32 @@ from
         prm.name = ds.Name;
         return prm;
     }
+
+    public static IList<string> ToExtensionSqls(this IBridge source)
+    {
+        var lst = new List<string>();
+
+        var ds = source.Datasource;
+        foreach (var item in ds.Extensions)
+        {
+            var dst = item.Destination;
+            var toTable = dst.DestinationName;
+            var fromTable = item.AliasName;
+            var col = dst.Columns.ToString(", ");
+            var wsql = string.Format(item.WithQueryFormat, source.BridgeName);
+
+            var sql = $@"insert into {toTable}(
+    {col}
+)
+{wsql}
+select
+    {col}
+from
+    {fromTable};";
+            lst.Add(sql);
+        }
+
+        return lst;
+    }
 }
 

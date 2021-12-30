@@ -34,7 +34,7 @@ public class ExtensionDatasource
     /// <summary>
     /// ex."with _ds as (select integration_sales_slip_id, article_id from /*bridge*/)"
     /// </summary>
-    public string WithQuery { get; set; }
+    public string WithQueryFormat { get; set; }
 
     /// <summary>
     /// ex."_ds"
@@ -44,6 +44,6 @@ public class ExtensionDatasource
     /// <summary>
     /// ex."ec_shop_sales_article"
     /// </summary>
-    public string Destination { get; set; }
+    public ExtensionDestination Destination { get; set; }
 }
 

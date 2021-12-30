@@ -71,7 +71,7 @@ public class Datasource
     /// </summary>
     public IList<string> SingInversionColumns { get; set; }
 
-    public IEnumerable<ExtensionDatasource> Extensions { get; set; }
+    public IList<ExtensionDatasource> Extensions { get; set; } = new List<ExtensionDatasource>();
 
     public HeaderOption HeaderOption { get; set; }
 

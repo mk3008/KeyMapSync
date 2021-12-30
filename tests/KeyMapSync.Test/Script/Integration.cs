@@ -18,7 +18,7 @@ create table integration_sale_detail (
     price integer
 )
 ;
-create table integration_sale_detail_ext_ec_shop_sale_detail (
+create table integration_sale_detail_ext_ec_shop_article (
     integration_sale_detail_id integer primary key,
     ec_shop_article_id integer
 )

@@ -53,4 +53,13 @@ public class Synchronizer
         var prm = bridge.ToVersionParameter();
         cn.Execute(sql, prm);
     }
+
+    public void InsertExtension(IDbConnection cn, IBridge bridge)
+    {
+        var sqls = bridge.ToExtensionSqls();
+        foreach (var sql in sqls)
+        {
+            cn.Execute(sql);
+        }   
+    }
 }

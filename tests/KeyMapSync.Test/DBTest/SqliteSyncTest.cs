@@ -79,6 +79,7 @@ public class SqliteSyncTest
             sync.InsertKeyMap(cn, bridge);
             sync.InsertSync(cn, bridge);
             sync.InsertVersion(cn, bridge);
+            sync.InsertExtension(cn, bridge);
         }
     }
 }
