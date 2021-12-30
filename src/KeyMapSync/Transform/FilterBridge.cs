@@ -16,7 +16,9 @@ public class FilterBridge : IBridge
     /// ex.
     /// _table_name 
     /// </summary>
-    public IList<Filter> Filters { get; } = new List<Filter>();
+    public FilterContainer FilterContainer { get; } = new FilterContainer();
+
+    public IFilter Filter => FilterContainer;
 
     public string Alias => "_filtered";
 
@@ -31,7 +33,7 @@ public class FilterBridge : IBridge
         var sql = $@"select
     {Owner.Alias}.*
 from {Owner.Alias}
-{Filters.ToWhereSqlText()}";
+{Filter.ToCondition(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
 {sql.AddIndent(4)}

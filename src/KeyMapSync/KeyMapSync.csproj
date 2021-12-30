@@ -29,13 +29,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Filtering\FilterExtension.cs" />
+    <Compile Remove="Filtering\IAdditionalCondition.cs" />
+    <Compile Remove="Filtering\IExistsCondition.cs" />
     <Compile Remove="ICustomDatasource.cs" />
     <Compile Remove="IDbConnectionExtension.cs" />
     <Compile Remove="IValidateOption.cs" />
     <Compile Remove="Result.cs" />
     <Compile Remove="SqlEventArgs.cs" />
     <Compile Remove="SqlResultArgs.cs" />
-    <Compile Remove="Synchronizer.cs" />
     <Compile Remove="Synchronizer.Delete.cs" />
     <Compile Remove="Synchronizer.Insert.cs" />
     <Compile Remove="Synchronizer.Offset.cs" />

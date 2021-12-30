@@ -17,7 +17,7 @@ using Xunit.Abstractions;
 
 namespace KeyMapSync.Test.DBTest;
 
-public  class SqliteDDLTest
+public class SqliteDDLTest
 {
 
     private readonly ITestOutputHelper Output;
@@ -98,17 +98,6 @@ public  class SqliteDDLTest
         var val = db.ToOffsetDDL(ds);
 
         Assert.Equal(expect, val);
-    }
-
-    [Fact]
-    public void Sync()
-    {
-        var ds = EcShopSaleDetail.GetDatasource();
-        var tmp = "tmp_parse";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, AdditionalCondition = new NotExistsKeyMapCondition() };
-
-        //TODO:create map, sync, version table
     }
 }
 

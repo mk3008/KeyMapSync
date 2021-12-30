@@ -19,7 +19,7 @@ public class ExpectBridge : IBridge
 
     public string Alias => "_expect";
 
-    public IExistsCondition Condition { get; set; }
+    public IFilter Filter { get; set; }
 
     public string BridgeName => Owner.BridgeName;
 
@@ -58,7 +58,7 @@ public class ExpectBridge : IBridge
 {col}
 from {dest.DestinationName} _origin
 inner join {keymap} _km on _origin.{dest.SequenceKeyColumn} = _km.{dest.SequenceKeyColumn}
-{Condition.ToFilter(this).ToWhereSqlText()}";
+{Filter.ToCondition(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
 {sql.AddIndent(4)}

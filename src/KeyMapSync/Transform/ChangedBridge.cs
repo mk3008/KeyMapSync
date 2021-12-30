@@ -25,7 +25,9 @@ public class ChangedBridge : IBridge
 
     public string InnerExpectAlias { get; set; } = "__e";
 
-    public DifferentCondition Condition { get; set; }
+    public DifferentCondition Filter { get; set; }
+
+    IFilter IBridge.Filter => Filter;
 
     public string BridgeName => Owner.BridgeName;
 
@@ -44,7 +46,7 @@ public class ChangedBridge : IBridge
 from {Owner.Alias} {InnerExpectAlias}
 inner join {Datasource.KeyMapName} __map on {InnerExpectAlias}.{destKey} = __map.{destKey}
 left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datasource.KeyColumns.Select(x => $"_km.{x} = _ds.{x}").ToString(" and ")}
-{Condition.ToFilter(this).ToWhereSqlText()}";
+{Filter.ToCondition(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
 {sql.AddIndent(4)}
@@ -63,7 +65,7 @@ left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datas
 
         if (!string.IsNullOrEmpty(RemarksColumn))
         {
-            var q3 = new string[] { Condition.BuildRemarksSql(this) };
+            var q3 = new string[] { Filter.BuildRemarksSql(this) };
             q = q.Union(q3);
         }
         return q;

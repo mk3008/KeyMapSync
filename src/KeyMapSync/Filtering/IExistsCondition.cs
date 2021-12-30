@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace KeyMapSync.Filtering;
-public interface IExistsCondition : IFilterable
+public interface IExistsCondition : IFilter
 {
 }
 

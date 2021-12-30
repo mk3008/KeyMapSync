@@ -29,7 +29,7 @@ public class FilterBridgeTest
     [Fact]
     public void BuildExtendWithQueryTest()
     {
-        var f = new Filter()
+        var f = new CustomFilter()
         {
             Condition = "ec_shop_article_id = :_ec_shop_article_id",
         };
@@ -40,7 +40,7 @@ public class FilterBridgeTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         var bridge = new FilterBridge() { Owner = root};
-        bridge.Filters.Add(f);
+        bridge.FilterContainer.Filters.Add(f);
 
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_filtered as (
@@ -57,7 +57,7 @@ public class FilterBridgeTest
     [Fact]
     public void AdditionalNestTest()
     {
-        var f = new Filter()
+        var f = new CustomFilter()
         {
             Condition = "ec_shop_article_id = :_ec_shop_article_id",
         };
@@ -68,8 +68,8 @@ public class FilterBridgeTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         var fb = new FilterBridge() { Owner = root };
-        fb.Filters.Add(f);
-        var bridge = new Additional() { Owner = fb, AdditionalCondition = new NotExistsKeyMapCondition() };
+        fb.FilterContainer.Filters.Add(f);
+        var bridge = new Additional() { Owner = fb, Filter = new NotExistsKeyMapCondition() };
 
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
@@ -87,7 +87,7 @@ public class FilterBridgeTest
     [Fact]
     public void ChangedBridgeNestTest()
     {
-        var f = new Filter()
+        var f = new CustomFilter()
         {
             Condition = "ec_shop_article_id = :_ec_shop_article_id",
         };
@@ -98,10 +98,10 @@ public class FilterBridgeTest
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
         var fb = new FilterBridge() { Owner = root };
-        fb.Filters.Add(f);
-        var work = new ExpectBridge() { Owner = fb, Condition = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
+        fb.FilterContainer.Filters.Add(f);
+        var work = new ExpectBridge() { Owner = fb, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
         var cnd = new DifferentCondition();
-        var bridge = new ChangedBridge() { Owner = work, Condition = cnd };
+        var bridge = new ChangedBridge() { Owner = work, Filter = cnd };
 
         var expect = @"_changed as (
     select

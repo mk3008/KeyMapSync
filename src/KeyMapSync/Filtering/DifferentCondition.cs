@@ -2,11 +2,12 @@
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 
 namespace KeyMapSync.Transform;
-public class DifferentCondition : IFilterable
+public class DifferentCondition : IFilter
 {
     public string RemarksColumn { get; set; } = "_remarks";
 
@@ -20,30 +21,6 @@ public class DifferentCondition : IFilterable
         var ds = sender.Datasource;
 
         return BuildRemarksSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
-    }
-
-    /// <summary>
-    /// ex.
-    /// (ds.ec_shop_sale_detail_id is null)
-    /// or 
-    /// (_e.sale_date is null and ds.sale_date is not null)
-    /// or
-    /// (_e.sale_date is not null and ds.sale_date is null)
-    /// or 
-    /// (_e.sale_date <> ds.sale_date is null)
-    /// </summary>
-    /// <returns></returns>    
-    public Filter ToFilter(IBridge sender)
-    {
-        if (!(sender is ChangedBridge)) throw new NotSupportedException();
-
-        var changed = sender as ChangedBridge;
-        var ds = sender.Datasource;
-                
-        return new Filter()
-        {
-            Condition = BuildWhereSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns)
-        };
     }
 
     public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
@@ -93,5 +70,20 @@ public class DifferentCondition : IFilterable
     private string ConvertToDiffCondition(string datasourceAlias, string expectAlias, string column)
     {
         return $"coalesce(({expectAlias}.{column} = {datasourceAlias}.{column}) or ({expectAlias}.{column} is null and {datasourceAlias}.{column} is null), false)";
+    }
+
+    public string ToCondition(IBridge sender)
+    {
+        if (!(sender is ChangedBridge)) throw new NotSupportedException();
+
+        var changed = sender as ChangedBridge;
+        var ds = sender.Datasource;
+
+        return BuildWhereSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+    }
+
+    public ExpandoObject ToParameter()
+    {
+        return null;
     }
 }

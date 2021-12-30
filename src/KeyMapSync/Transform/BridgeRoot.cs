@@ -2,6 +2,7 @@
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,6 +28,8 @@ public class BridgeRoot : IBridge
     /// ex."tmp01"
     /// </summary>
     public string BridgeName { get; set; }
+
+    public IFilter Filter => null;
 
     public string BuildExtendWithQuery()
     {

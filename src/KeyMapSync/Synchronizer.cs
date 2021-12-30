@@ -1,33 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Dapper;
+using KeyMapSync.Entity;
+using KeyMapSync.Transform;
 
-namespace KeyMapSync
+namespace KeyMapSync;
+
+public class Synchronizer
 {
-    public partial class Synchronizer
+    public IDBMS Dbms { get; set; }
+
+    public void CreateSystemTable(IDbConnection cn, Datasource ds)
     {
-        //public Synchronizer(DbExecutor executor)
-        //{
-        //    DbExecutor = executor;
-        //}
+        cn.Execute(Dbms.ToKeyMapDDL(ds));
+        cn.Execute(Dbms.ToSyncDDL(ds));
+        cn.Execute(Dbms.ToVersionDDL(ds));
+        cn.Execute(Dbms.ToOffsetDDL(ds));
+    }
 
-        public Synchronizer(SyncMapBuilder builder)
-        {
-            DbExecutor = builder.DbExecutor;
-            Builder = builder;
-        }
+    public void CreateTemporaryTable(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToSql();
+        var prm = bridge.ToParameter();
 
-        /// <summary>
-        /// database command executor
-        /// </summary>
-        private DbExecutor DbExecutor { get; set; }
-
-        private SyncMapBuilder Builder { get; set; }
-
-        public Result Result { get; private set; }
     }
 }

@@ -8,36 +8,19 @@ using System.Linq;
 
 namespace KeyMapSync.Filtering;
 
-public class ExistsVersionRangeCondition : IExistsCondition
+public class ExistsVersionRangeCondition : IFilter
 {
     public int MinVersion { get; set; }
 
     public int MaxVersion { get; set; }
 
-    /// <summary>
-    /// ex.
-    /// exists (
-    ///     select 
-    ///         *
-    ///     from
-    ///         integration_sale_detail__sync _sync 
-    ///     where 
-    ///         _sync.version_id between :_min_version and :_max_version 
-    ///         and _origin.integration_sale_detail_id = _sync.integration_sale_detail_id
-    ///     )
-    /// </summary>
-    /// <returns></returns>    
-    public Filter ToFilter(IBridge sender)
+    public string ToCondition(IBridge sender)
     {
         var ds = sender.Datasource;
         var sync = ds.SyncName;
         var key = ds.Destination.SequenceKeyColumn;
 
-        return new Filter()
-        {
-            Condition = BuildSql(sync, key),
-            Parameters = BuildParameter()
-        };
+        return BuildSql(sync, key);
     }
 
     public static string BuildSql(string sync, string destinationKey)
@@ -45,11 +28,11 @@ public class ExistsVersionRangeCondition : IExistsCondition
         return $"exists (select * from {sync} _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.{destinationKey} = _sync.{destinationKey})";
     }
 
-    public ExpandoObject BuildParameter()
+    public ExpandoObject ToParameter()
     {
-        dynamic obj = new ExpandoObject();
-        obj._min_version_id = MinVersion;
-        obj._max_version_id = MaxVersion;
-        return obj;
+        dynamic prm = new ExpandoObject();
+        prm._min_version_id = MinVersion;
+        prm._max_version_id = MaxVersion;
+        return prm;
     }
 }

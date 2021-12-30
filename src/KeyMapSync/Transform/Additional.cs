@@ -2,6 +2,7 @@
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +15,7 @@ public class Additional : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
-    public IAdditionalCondition AdditionalCondition { get; set; }
+    public IFilter Filter { get; set; }
 
     public string Alias => "_added";
 
@@ -33,7 +34,7 @@ public class Additional : IBridge
         var sql = $@"select
 {col}
 from {Owner.Alias} {this.GetInnerDatasourceAlias()}
-{AdditionalCondition.ToFilter(this).ToWhereSqlText()}";
+{Filter.ToCondition(this).ToWhereSqlText()}";
         sql = $@"{Alias} as (
 {sql.AddIndent(4)}
 )";

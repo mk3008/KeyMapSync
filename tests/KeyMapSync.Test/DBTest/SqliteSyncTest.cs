@@ -58,11 +58,19 @@ public  class SqliteSyncTest
     public void Sync()
     {
         var ds = EcShopSaleDetail.GetDatasource();
-        var tmp = "tmp_parse";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, AdditionalCondition = new NotExistsKeyMapCondition() };
+        IDBMS db = new SQLite();
+        var sync = new Synchronizer() { Dbms = db };
 
-        //TODO:create map, sync, version table
+        // Execute DDL test
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            sync.CreateSystemTable(cn, ds);
+        }
+
+        // create temporary table test
+
+
+
     }
 }
 

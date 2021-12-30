@@ -91,7 +91,7 @@ from ds;";
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, AdditionalCondition = new NotExistsKeyMapCondition() };
+        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
 
         var expect = @"with 
 ds as (
@@ -131,8 +131,8 @@ from _added;";
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var work = new ExpectBridge() { Owner = root, Condition = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
-        var bridge = new ChangedBridge() { Owner = work, Condition = new DifferentCondition() };
+        var work = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
+        var bridge = new ChangedBridge() { Owner = work, Filter = new DifferentCondition() };
 
         var expect = @"with 
 ds as (

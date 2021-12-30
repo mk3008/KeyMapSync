@@ -49,4 +49,18 @@ internal static class StringExtensions
         if (source.Length < startIndex) return source;
         return source.Remove(startIndex);
     }
+
+    public static string ToWhereSqlText(this string source)
+    {
+        return string.IsNullOrEmpty(source) ? null : $@"where
+{source.AddIndent(4)}";
+    }
+
+    public static string ToWhereSqlText(this IEnumerable<string> source)
+    {
+        var s = source.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).ToString(" and ");
+        if (!string.IsNullOrEmpty(s)) s = $@"where
+{s.AddIndent(4)}";
+        return s;
+    }
 }
