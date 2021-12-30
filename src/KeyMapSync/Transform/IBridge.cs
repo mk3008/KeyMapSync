@@ -48,17 +48,19 @@ public static class IBridgeExtension
     public static string ToSql(this IBridge source, bool isTemporary = true )
     {
         var ext = source.BuildExtendWithQuery();
-        if (ext != null) ext = $@",
-{ext}";
+        if (ext != null) ext = $",\r\n{ext}";
 
         var command = isTemporary ? "create temporary table" : "create table";
 
+        var dest = source.Datasource.Destination;
         var sql = $@"{command} {source.BridgeName}
 as
 {source.GetWithQuery()}{ext}
 select
-    *
-from {source.Alias};";
+    __v.{dest.VersionKeyColumn}
+    , {source.GetInnerDatasourceAlias()}.*
+from {source.Alias} {source.GetInnerDatasourceAlias()}
+cross join (select {dest.VersionSequenceCommand} as {dest.VersionKeyColumn}) __v;";
         return sql;
     }
 

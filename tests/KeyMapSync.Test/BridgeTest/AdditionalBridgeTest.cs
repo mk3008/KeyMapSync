@@ -36,7 +36,7 @@ public class AdditionalBridgeTest
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
     select
-        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
     from ds __ds
     where

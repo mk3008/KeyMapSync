@@ -112,15 +112,17 @@ ds as (
 ),
 _added as (
     select
-        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
     from ds __ds
     where
         not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
 )
 select
-    *
-from _added;";
+    __v.version_id
+    , __ds.*
+from _added __ds
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToSql();
         Assert.Equal(expect, val);
     }
