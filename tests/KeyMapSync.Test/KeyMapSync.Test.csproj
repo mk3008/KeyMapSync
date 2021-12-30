@@ -41,6 +41,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="syntax_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="database_cascade.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

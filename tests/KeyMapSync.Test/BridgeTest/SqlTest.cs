@@ -83,7 +83,7 @@ select
     , __ds.*
 from ds __ds
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = root.ToSql();
+        var val = root.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
 
@@ -125,7 +125,7 @@ select
     , __ds.*
 from _added __ds
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = bridge.ToSql();
+        var val = bridge.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
 
@@ -166,7 +166,8 @@ _expect as (
 ),
 _changed as (
     select
-        __e.article_name
+        __e.sale_date
+        , __e.article_name
         , __e.unit_price
         , __e.quantity * -1 as quantity
         , __e.price * -1 as price
@@ -197,7 +198,7 @@ select
     , __ds.*
 from _changed __ds
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = bridge.ToSql();
+        var val = bridge.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
 

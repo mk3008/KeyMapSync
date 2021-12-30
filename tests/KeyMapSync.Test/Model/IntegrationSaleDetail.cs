@@ -16,7 +16,7 @@ public class IntegrationSaleDetail
             DestinationName = "integration_sale_detail",
             SequenceKeyColumn = "integration_sale_detail_id",
             SequenceCommand = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over()",
-            Columns = new[] { "integration_sale_detail_id", "sales_date", "article_name", "unit_price", "quantity", "price" },
+            Columns = new[] { "integration_sale_detail_id", "sale_date", "article_name", "unit_price", "quantity", "price" },
             VersionSequenceCommand = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1"
         };
         return c;

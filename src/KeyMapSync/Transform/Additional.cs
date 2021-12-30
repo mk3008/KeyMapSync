@@ -15,7 +15,7 @@ public class Additional : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
-    public IFilter Filter { get; set; }
+    public IFilter Filter { get; set; } = new NotExistsKeyMapCondition();
 
     public string Alias => "_added";
 

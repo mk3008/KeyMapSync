@@ -25,7 +25,7 @@ public class ChangedBridge : IBridge
 
     public string InnerExpectAlias { get; set; } = "__e";
 
-    public DifferentCondition Filter { get; set; }
+    public DifferentCondition Filter { get; set; } = new DifferentCondition();
 
     IFilter IBridge.Filter => Filter;
 

@@ -45,7 +45,7 @@ public static class IBridgeExtension
         return "__ds";
     }
 
-    public static string ToSql(this IBridge source, bool isTemporary = true )
+    public static string ToTemporaryDdl(this IBridge source, bool isTemporary = true)
     {
         var ext = source.BuildExtendWithQuery();
         if (ext != null) ext = $",\r\n{ext}";
@@ -64,11 +64,97 @@ cross join (select {dest.VersionSequenceCommand} as {dest.VersionKeyColumn}) __v
         return sql;
     }
 
-    public static ExpandoObject ToParameter(this IBridge source)
+    public static ExpandoObject ToTemporaryParameter(this IBridge source)
     {
         var current = source.Filter?.ToParameter();
-        var cascade = source.Owner?.ToParameter();
+        var cascade = source.Owner?.ToTemporaryParameter();
         return current == null ? cascade : current.Merge(cascade);
+    }
+
+    public static string ToDestinationSql(this IBridge source)
+    {
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = dest.DestinationName;
+        var fromTable = source.BridgeName;
+        var col = dest.Columns.Where(x => dest.SequenceKeyColumn != x).Where(x => ds.Columns.Contains(x)).ToString(", ");
+        var sql = $@"insert into {toTable} (
+    {col}
+)
+select
+    {col}
+from
+    {fromTable};";
+        return sql;
+    }
+
+    public static string ToKeyMapSql(this IBridge source)
+    {
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = ds.KeyMapName;
+        var fromTable = source.BridgeName;
+        var col = ds.GetKeyMapColumns().ToString(", ");
+        var sql = $@"insert into {toTable} (
+    {col}
+)
+select
+    {col}
+from
+    {fromTable};";
+        return sql;
+    }
+
+    public static string ToSyncSql(this IBridge source)
+    {
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = dest.SyncName;
+        var fromTable = source.BridgeName;
+        var col = dest.GetSyncColumns().ToString(", ");
+        var sql = $@"insert into {toTable} (
+    {col}
+)
+select
+    {col}
+from
+    {fromTable};";
+        return sql;
+    }
+
+    public static string ToVersionSql(this IBridge source)
+    {
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = dest.VersionName;
+        var fromTable = source.BridgeName;
+
+        var cols = new List<string>();
+        cols.Add(dest.VersionKeyColumn);
+        cols.Add(dest.NameColumn);
+        var col = cols.ToString(", ");
+
+        var vals = new List<string>();
+        vals.Add(dest.VersionKeyColumn);
+        vals.Add(":name");
+        var val = vals.ToString(", ");
+
+        var sql = $@"insert into {toTable} (
+    {col}
+)
+select distinct
+    {val}
+from
+    {fromTable};";
+        return sql;
+    }
+
+    public static ExpandoObject ToVersionParameter(this IBridge source)
+    {
+        var ds = source.Datasource;
+        dynamic prm = new ExpandoObject();
+        prm.name = ds.Name;
+        return prm;
     }
 }
 

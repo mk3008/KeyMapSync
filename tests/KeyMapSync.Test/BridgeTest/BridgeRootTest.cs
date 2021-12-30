@@ -54,7 +54,7 @@ select
     , __ds.*
 from ds __ds
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = root.ToSql();
+        var val = root.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
 }

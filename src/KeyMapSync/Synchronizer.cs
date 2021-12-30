@@ -24,8 +24,33 @@ public class Synchronizer
 
     public void CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true )
     {
-        var sql = bridge.ToSql(isTemporary);
-        var prm = bridge.ToParameter();
+        var sql = bridge.ToTemporaryDdl(isTemporary);
+        var prm = bridge.ToTemporaryParameter();
+        cn.Execute(sql, prm);
+    }
+
+    public void InsertDestination(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToDestinationSql();
+        cn.Execute(sql);
+    }
+
+    public void InsertKeyMap(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToKeyMapSql();
+        cn.Execute(sql);
+    }
+
+    public void InsertSync(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToSyncSql();
+        cn.Execute(sql);
+    }
+
+    public void InsertVersion(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToVersionSql();
+        var prm = bridge.ToVersionParameter();
         cn.Execute(sql, prm);
     }
 }

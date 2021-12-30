@@ -38,7 +38,8 @@ public class ChangedBridgeTest
 
         var expect = @"_changed as (
     select
-        __e.article_name
+        __e.sale_date
+        , __e.article_name
         , __e.unit_price
         , __e.quantity * -1 as quantity
         , __e.price * -1 as price
