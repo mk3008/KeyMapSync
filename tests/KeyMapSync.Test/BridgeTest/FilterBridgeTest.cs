@@ -114,7 +114,6 @@ public class FilterBridgeTest
         else
             case when coalesce((__e.sale_date = __ds.sale_date) or (__e.sale_date is null and __ds.sale_date is null), false) then 'sale_date is changed, ' end
             || case when coalesce((__e.ec_shop_article_id = __ds.ec_shop_article_id) or (__e.ec_shop_article_id is null and __ds.ec_shop_article_id is null), false) then 'ec_shop_article_id is changed, ' end
-            || case when coalesce((__e.article_name = __ds.article_name) or (__e.article_name is null and __ds.article_name is null), false) then 'article_name is changed, ' end
             || case when coalesce((__e.unit_price = __ds.unit_price) or (__e.unit_price is null and __ds.unit_price is null), false) then 'unit_price is changed, ' end
             || case when coalesce((__e.quantity = __ds.quantity) or (__e.quantity is null and __ds.quantity is null), false) then 'quantity is changed, ' end
             || case when coalesce((__e.price = __ds.price) or (__e.price is null and __ds.price is null), false) then 'price is changed, ' end
@@ -127,7 +126,6 @@ public class FilterBridgeTest
             __ds.ec_shop_sale_detail_id is null
         or  coalesce((__e.sale_date = __ds.sale_date) or (__e.sale_date is null and __ds.sale_date is null), false)
         or  coalesce((__e.ec_shop_article_id = __ds.ec_shop_article_id) or (__e.ec_shop_article_id is null and __ds.ec_shop_article_id is null), false)
-        or  coalesce((__e.article_name = __ds.article_name) or (__e.article_name is null and __ds.article_name is null), false)
         or  coalesce((__e.unit_price = __ds.unit_price) or (__e.unit_price is null and __ds.unit_price is null), false)
         or  coalesce((__e.quantity = __ds.quantity) or (__e.quantity is null and __ds.quantity is null), false)
         or  coalesce((__e.price = __ds.price) or (__e.price is null and __ds.price is null), false)

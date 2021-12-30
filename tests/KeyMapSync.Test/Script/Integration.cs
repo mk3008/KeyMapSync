@@ -13,13 +13,13 @@ drop table if exists integration_sale_detail_ext_store_sale_detail
 ;
 create table integration_sale (
     integration_sale_id integer primary key autoincrement,
-    sale_date date, 
+
     create_timestamp timestamp
 )
 ;
 create table integration_sale_detail (
     integration_sale_detail_id integer primary key autoincrement,
-    integration_sale_id integer,
+    sale_date date, 
     name integer,
     unit_price integer, 
     quantity integer, 

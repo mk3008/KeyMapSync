@@ -16,11 +16,11 @@ using Xunit.Abstractions;
 
 namespace KeyMapSync.Test.BridgeTest;
 
-public class BridgeRootTest
+public class ManagementTableTest
 {
     private readonly ITestOutputHelper Output;
 
-    public BridgeRootTest(ITestOutputHelper output)
+    public ManagementTableTest(ITestOutputHelper output)
     {
         Output = output;
     }
@@ -43,7 +43,6 @@ ds as (
         , sd.unit_price
         , sd.quantity
         , sd.price
-        , current_timestamp as sync_timestamp
     from
         ec_shop_sale_detail sd
         inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id

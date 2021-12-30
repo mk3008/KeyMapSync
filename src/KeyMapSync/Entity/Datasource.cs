@@ -53,13 +53,13 @@ public class Datasource
 
     /// <summary>
     /// ex.
-    /// "sales_date, article_name, unit_price, quantity, price, sync_timestamp"
+    /// "sales_date, article_name, unit_price, quantity, price"
     /// </summary>
     public IList<string> Columns { get; set; }
 
     /// <summary>
     /// ex
-    /// "sync_timestamp"
+    /// "article_name"
     /// </summary>
     public IList<string> InspectionIgnoreColumns { get; set; } = new List<string>();
 
@@ -81,11 +81,25 @@ public class Datasource
 
     public string VersionFormat { get; set; } = "{0}__version";
 
+    public string VersionKeyColumn { get; set; } = "version_id";
+
+    public string NameColumn { get; set; } = "datasource_name";
+
+    public string TimestampColumn { get; set; } = "create_timestamp";
+
     /// <summary>
     /// ex
     /// "integration_sales_detail__map_ec_shop_sales_detail"
     /// </summary>
     public string KeyMapName => string.Format(KeyMapFormat, Destination.DestinationName, Name);
+
+    public IList<string> GetKeyMapColumns()
+    {
+        var lst = new List<string>();
+        lst.Add(Destination.SequenceKeyColumn);
+        lst.AddRange(KeyColumns);
+        return lst;
+    }
 
     /// <summary>
     /// ex
@@ -93,11 +107,27 @@ public class Datasource
     /// </summary>
     public string SyncName => string.Format(SyncFormart, Destination.DestinationName, Name);
 
+    public IList<string> GetSyncColumns()
+    {
+        var lst = new List<string>();
+        lst.Add(Destination.SequenceKeyColumn);
+        lst.Add(VersionKeyColumn);
+        return lst;
+    }
+
     /// <summary>
     /// ex
     /// "integration_sales_detail__version"
     /// </summary>
     public string VersionName => string.Format(VersionFormat, Destination.DestinationName, Name);
+
+    public IList<string> GetVersionColumns()
+    {
+        var lst = new List<string>();
+        lst.Add(VersionKeyColumn);
+        lst.Add(NameColumn);
+        return lst;
+    }
 }
 
 

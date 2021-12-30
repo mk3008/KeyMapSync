@@ -29,13 +29,13 @@ public class Additional : IBridge
         var cols = new List<string>();
         cols.Add($"{dst.SequenceCommand} as {dst.SequenceKeyColumn}");
         cols.Add($"{this.GetInnerDatasourceAlias()}.*");
-        var col = cols.ToString("\r\n, ").Indent(4);
+        var col = cols.ToString("\r\n, ").AddIndent(4);
         var sql = $@"select
 {col}
 from {Owner.Alias} {this.GetInnerDatasourceAlias()}
 {AdditionalCondition.ToFilter(this).ToWhereSqlText()}";
         sql = $@"{Alias} as (
-{sql.Indent(4)}
+{sql.AddIndent(4)}
 )";
         return sql;
     }

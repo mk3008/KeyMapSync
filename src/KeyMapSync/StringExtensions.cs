@@ -26,7 +26,7 @@ internal static class StringExtensions
         return s.ToString();
     }
 
-    public static string Indent(this string source, int space, string separator = "\r\n")
+    public static string AddIndent(this string source, int space, string separator = "\r\n")
     {
         var sp = "";
         for (int i = 0; i < space; i++)
@@ -42,5 +42,11 @@ internal static class StringExtensions
             isFirst = false;
         }
         return sb.ToString();
+    }
+
+    public static string RemoveOrDefault(this string source, int startIndex)
+    {
+        if (source.Length < startIndex) return source;
+        return source.Remove(startIndex);
     }
 }

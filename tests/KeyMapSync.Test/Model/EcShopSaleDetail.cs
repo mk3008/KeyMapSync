@@ -11,18 +11,10 @@ namespace KeyMapSync.Test.Model
     {
         public static Datasource GetDatasource()
         {
-            var dst = new Destination()
-            {
-                DestinationName = "integration_sale_detail",
-                SequenceKeyColumn = "integration_sale_detail_id",
-                SequenceCommand = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0))",
-                Columns = new[] { "integration_sale_detail_id", "sales_date", "article_name", "unit_price", "quantity", "price", "sync_timestamp" },
-            };
-
             var ds = new Datasource()
             {
                 Name = "ec_shop_sale_detail",
-                Destination = dst,
+                Destination = IntegrationSaleDetail.GetDestination(),
                 WithQuery = @"with 
 ds as (
     select
@@ -33,17 +25,16 @@ ds as (
         , sd.unit_price
         , sd.quantity
         , sd.price
-        , current_timestamp as sync_timestamp
     from
         ec_shop_sale_detail sd
         inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
 )",
                 Alias = "ds",
-                Columns = new[] { "ec_shop_sale_detail_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price", "create_timestamp" },
+                Columns = new[] { "ec_shop_sale_detail_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price" },
                 KeyColumns = new[] { "ec_shop_sale_detail_id" },
                 SingInversionColumns = new[] { "quantity", "price" },
-                InspectionIgnoreColumns = new[] { "create_timestamp" },
+                InspectionIgnoreColumns = new[] { "article_name" },
             };
             return ds;
         }

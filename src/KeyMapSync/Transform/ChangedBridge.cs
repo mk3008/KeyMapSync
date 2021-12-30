@@ -37,7 +37,7 @@ public class ChangedBridge : IBridge
         var ds = Datasource;
         var dest = ds.Destination;
         var destKey = dest.SequenceKeyColumn;
-        var col = GetColumns().ToString("\r\n, ").Indent(4);
+        var col = GetColumns().ToString("\r\n, ").AddIndent(4);
 
         var sql = $@"select
 {col}
@@ -47,7 +47,7 @@ left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datas
 {Condition.ToFilter(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
-{sql.Indent(4)}
+{sql.AddIndent(4)}
 )";
         return sql;
     }

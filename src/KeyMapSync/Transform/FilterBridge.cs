@@ -34,7 +34,7 @@ from {Owner.Alias}
 {Filters.ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
-{sql.Indent(4)}
+{sql.AddIndent(4)}
 )";
         return sql;
     }

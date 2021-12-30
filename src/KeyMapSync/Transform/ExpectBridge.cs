@@ -52,7 +52,7 @@ public class ExpectBridge : IBridge
 
         var cols = datasourceKeys.Select(x => $"_km.{x}").ToList();
         cols.Add("_origin.*"); 
-        var col = cols.ToString("\r\n, ").Indent(4);
+        var col = cols.ToString("\r\n, ").AddIndent(4);
 
         var sql = $@"select
 {col}
@@ -61,7 +61,7 @@ inner join {keymap} _km on _origin.{dest.SequenceKeyColumn} = _km.{dest.Sequence
 {Condition.ToFilter(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
-{sql.Indent(4)}
+{sql.AddIndent(4)}
 )";
         return sql;
     }
