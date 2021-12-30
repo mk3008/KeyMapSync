@@ -12,9 +12,11 @@ public class BridgeRoot : IBridge
 {
     /// <summary>
     /// ex.
-    /// with ds as (select * from ec_shop_sales_detail)
+    /// with ds as (select * from ec_shop_sale_detail)
     /// </summary>
     public Datasource Datasource { get; set; }
+
+    public IBridge Owner => null;
 
     /// <summary>
     /// ex."ds"

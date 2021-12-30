@@ -13,12 +13,12 @@ public class NotExistsKeyMapCondition : IAdditionalCondition
         var ds = sender.Datasource;
         return new Filter()
         {
-            Condition = BuildSql(ds.KeyMapName, ds.Alias, ds.KeyColumns)
+            Condition = BuildSql(ds.KeyMapName, sender.GetInnerDatasourceAlias(), ds.KeyColumns)
         };
     }
 
     public static string BuildSql(string keymap, string datasourceAlias, IEnumerable<string> datasourceKeys)
     {
-        return $"not exists (select * from {keymap} _km where {datasourceKeys.Select(key => $"{datasourceAlias}.{key} = _km.{key}").ToString(" and ")})";
+        return $"not exists (select * from {keymap} ___map where {datasourceKeys.Select(key => $"{datasourceAlias}.{key} = ___map.{key}").ToString(" and ")})";
     }
 }

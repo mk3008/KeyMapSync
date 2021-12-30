@@ -15,13 +15,15 @@ public class ChangedBridge : IBridge
 {
     public ExpectBridge Owner { get; set; }
 
+    IBridge IBridge.Owner => Owner;
+
     public Datasource Datasource => Owner.Datasource;
 
     public string RemarksColumn { get; set; } = "_remarks";
 
     public string Alias => "_changed";
 
-    public string ExpectAlias { get; set; } = "_e";
+    public string InnerExpectAlias { get; set; } = "__e";
 
     public DifferentCondition Condition { get; set; }
 
@@ -32,13 +34,31 @@ public class ChangedBridge : IBridge
 
     public string BuildExtendWithQuery()
     {
-        var datasourceAlias = Datasource.Alias;
         var ds = Datasource;
         var dest = ds.Destination;
         var destKey = dest.SequenceKeyColumn;
+        var col = GetColumns().ToString("\r\n, ").Indent(4);
 
-        var q1 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => !ds.SingInversionColumns.Contains(x)).Select(x => $"{ExpectAlias}.{x}");
-        var q2 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => ds.SingInversionColumns.Contains(x)).Select(x => $"{ExpectAlias}.{x} * -1 as {x}");
+        var sql = $@"select
+{col}
+from {Owner.Alias} {InnerExpectAlias}
+inner join {Datasource.KeyMapName} __map on {InnerExpectAlias}.{destKey} = __map.{destKey}
+left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datasource.KeyColumns.Select(x => $"_km.{x} = _ds.{x}").ToString(" and ")}
+{Condition.ToFilter(this).ToWhereSqlText()}";
+
+        sql = $@"{Alias} as (
+{sql.Indent(4)}
+)";
+        return sql;
+    }
+
+    private IEnumerable<string>GetColumns()
+    {
+        var ds = Datasource;
+        var dest = ds.Destination;
+
+        var q1 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => !ds.SingInversionColumns.Contains(x)).Select(x => $"{InnerExpectAlias}.{x}");
+        var q2 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => ds.SingInversionColumns.Contains(x)).Select(x => $"{InnerExpectAlias}.{x} * -1 as {x}");
         var q = q1.Union(q2);
 
         if (!string.IsNullOrEmpty(RemarksColumn))
@@ -46,19 +66,7 @@ public class ChangedBridge : IBridge
             var q3 = new string[] { Condition.BuildRemarksSql(this) };
             q = q.Union(q3);
         }
-        var col = q.ToString("\r\n, ").Indent(4);
-
-        var sql = $@"select
-{col}
-from {Owner.Alias} {ExpectAlias}
-inner join {Datasource.KeyMapName} _km on {ExpectAlias}.{destKey} = _km.{destKey}
-left join {datasourceAlias} on {Datasource.KeyColumns.Select(x => $"_km.{x} = {datasourceAlias}.{x}").ToString(" and ")}
-{Condition.ToFilter(this).ToWhereSqlText()}";
-
-        sql = $@"{Alias} as (
-{sql.Indent(4)}
-)";
-        return sql;
+        return q;
     }
 }
 

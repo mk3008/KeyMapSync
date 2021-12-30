@@ -28,7 +28,7 @@ public class NotExistsKeyMapConditionTest
     [Fact]
     public void SqlTest()
     {
-        var expect = "not exists (select * from keymap _km where ds.key1 = _km.key1)";
+        var expect = "not exists (select * from keymap ___map where ds.key1 = ___map.key1)";
 
         var keymap = "keymap";
         var alias = "ds";
@@ -41,7 +41,7 @@ public class NotExistsKeyMapConditionTest
     [Fact]
     public void SqlTest_MultipleKey()
     {
-        var expect = "not exists (select * from keymap _km where ds.key1 = _km.key1 and ds.key2 = _km.key2)";
+        var expect = "not exists (select * from keymap ___map where ds.key1 = ___map.key1 and ds.key2 = ___map.key2)";
 
         var keymap = "keymap";
         var alias = "ds";

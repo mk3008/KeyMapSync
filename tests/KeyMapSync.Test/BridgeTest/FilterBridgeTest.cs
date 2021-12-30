@@ -8,6 +8,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,24 +17,91 @@ using Xunit.Abstractions;
 
 namespace KeyMapSync.Test.BridgeTest;
 
-public class ChangedBridgeTest
+public class FilterBridgeTest
 {
     private readonly ITestOutputHelper Output;
 
-    public ChangedBridgeTest(ITestOutputHelper output)
+    public FilterBridgeTest(ITestOutputHelper output)
     {
         Output = output;
     }
 
     [Fact]
-    public void BuildExtendWithQueryTest_ExistsVersionRange()
+    public void BuildExtendWithQueryTest()
     {
+        var f = new Filter()
+        {
+            Condition = "ec_shop_article_id = :_ec_shop_article_id",
+        };
+        dynamic prm = new ExpandoObject();
+        prm._ec_shop_article_id = 1;
+
+        var ds = EcShopSaleDetail.GetDatasource();
+        var tmp = "tmp_parse";
+        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
+        var bridge = new FilterBridge() { Owner = root};
+        bridge.Filters.Add(f);
+
+        var val = bridge.BuildExtendWithQuery();
+        var expect = $@"_filtered as (
+    select
+        ds.*
+    from ds
+    where
+        ec_shop_article_id = :_ec_shop_article_id
+)";
+
+        Assert.Equal(expect, val);
+    }
+
+    [Fact]
+    public void AdditionalNestTest()
+    {
+        var f = new Filter()
+        {
+            Condition = "ec_shop_article_id = :_ec_shop_article_id",
+        };
+        dynamic prm = new ExpandoObject();
+        prm._ec_shop_article_id = 1;
+
+        var ds = EcShopSaleDetail.GetDatasource();
+        var tmp = "tmp_parse";
+        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
+        var fb = new FilterBridge() { Owner = root };
+        fb.Filters.Add(f);
+        var bridge = new Additional() { Owner = fb, AdditionalCondition = new NotExistsKeyMapCondition() };
+
+        var val = bridge.BuildExtendWithQuery();
+        var expect = $@"_added as (
+    select
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id
+        , __ds.*
+    from _filtered __ds
+    where
+        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
+)";
+
+        Assert.Equal(expect, val);
+    }
+
+    [Fact]
+    public void ChangedBridgeNestTest()
+    {
+        var f = new Filter()
+        {
+            Condition = "ec_shop_article_id = :_ec_shop_article_id",
+        };
+        dynamic prm = new ExpandoObject();
+        prm._ec_shop_article_id = 1;
+
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var work = new ExpectBridge() { Owner = root, Condition = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
+        var fb = new FilterBridge() { Owner = root };
+        fb.Filters.Add(f);
+        var work = new ExpectBridge() { Owner = fb, Condition = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
         var cnd = new DifferentCondition();
-        var bridge = new ChangedBridge() { Owner = work , Condition = cnd};
+        var bridge = new ChangedBridge() { Owner = work, Condition = cnd };
 
         var expect = @"_changed as (
     select
@@ -53,7 +121,7 @@ public class ChangedBridgeTest
         end as _remarks
     from _expect __e
     inner join integration_sale_detail__map_ec_shop_sale_detail __map on __e.integration_sale_detail_id = __map.integration_sale_detail_id
-    left join ds __ds on _km.ec_shop_sale_detail_id = _ds.ec_shop_sale_detail_id
+    left join _filtered __ds on _km.ec_shop_sale_detail_id = _ds.ec_shop_sale_detail_id
     where
         (
             __ds.ec_shop_sale_detail_id is null
@@ -69,3 +137,4 @@ public class ChangedBridgeTest
         Assert.Equal(expect, val);
     }
 }
+

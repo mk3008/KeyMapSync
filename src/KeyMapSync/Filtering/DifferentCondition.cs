@@ -19,7 +19,7 @@ public class DifferentCondition : IFilterable
         var expect = changed.Owner;
         var ds = sender.Datasource;
 
-        return BuildRemarksSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias, ds.InspectionColumns);
+        return BuildRemarksSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public class DifferentCondition : IFilterable
                 
         return new Filter()
         {
-            Condition = BuildWhereSql(ds.Alias, ds.KeyColumns, changed.ExpectAlias, ds.InspectionColumns)
+            Condition = BuildWhereSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns)
         };
     }
 
@@ -68,17 +68,17 @@ public class DifferentCondition : IFilterable
         return sb.ToString();
     }
 
-    public string BuildWhereSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
+    public string BuildWhereSql(string ownerAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
     {
         var sb = new StringBuilder();
         sb.Append("(");
         sb.AppendLine().Append("    ");
-        sb.Append(ConvertToDeleteCondition(datasourceAlias, datasourceKeys));
+        sb.Append(ConvertToDeleteCondition(ownerAlias, datasourceKeys));
 
         foreach (var item in inspectionColumns)
         {
             sb.AppendLine().Append("or  ");
-            sb.Append(ConvertToDiffCondition(datasourceAlias, expectAlias, item));
+            sb.Append(ConvertToDiffCondition(ownerAlias, expectAlias, item));
         }
         sb.AppendLine().Append(")");
 

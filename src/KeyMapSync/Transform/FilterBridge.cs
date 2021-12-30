@@ -24,31 +24,17 @@ public class FilterBridge : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
+    public string GetWithQuery() => Owner.GetWithQuery();
+
     public string BuildExtendWithQuery()
     {
-        throw new NotImplementedException();
-    }
+        var sql = $@"select
+    {Owner.Alias}.*
+from {Owner.Alias}
+{Filters.ToWhereSqlText()}";
 
-    /// <summary>
-    /// ex.
-    /// with 
-    /// _added as (
-    ///    select
-    ///        (select max(seq) from (select seq from sqlite_sequence where name = :_table_name union all select 0)) as integration_sale_detail_id, ds.*
-    ///    from
-    ///        ds
-    ///    where
-    ///        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail _km on ds.ec_shop_sale_detail_id = _km.ec_shop_sale_detail_id)
-    /// )
-    /// </summary>
-    /// <returns></returns>
-    public string GetWithQuery()
-    {
-        var sql = $@"{Owner.GetWithQuery}, 
-{Alias} as (
-    select {Owner.Alias}.*
-    from {Owner.Alias}
-    {Filters.ToWhereSqlText}
+        sql = $@"{Alias} as (
+{sql.Indent(4)}
 )";
         return sql;
     }

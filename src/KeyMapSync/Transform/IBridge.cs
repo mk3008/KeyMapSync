@@ -11,15 +11,8 @@ public interface IBridge
 {
     Datasource Datasource { get; }
 
-    /// <summary>
-    /// ex.
-    /// --unsync filter and sequencing
-    /// , _ds as (select SEQ_COMMAND as integration_sales_detail_id, ds.* from _ds where not exists (select * from map where map.ec_shop_sales_detail_id = ds.ec_shop_sales_detail_id) and map.ec_shop_sales_id = ds.ec_shop_sales_id)
-    /// --header sequencing
-    /// , _head as (select SEQ_COMMAND as integration_sales_id from _ds group by ec_shop_sales_id)
-    /// --detail inner join header
-    /// , __ds as (select _head.integration_sales_id, _ds.* from _ds inner join _head on _ds.ec_shop_sales_id = _head.ec_shop_sales_id)
-    /// </summary>
+    IBridge Owner { get; }  
+
     string GetWithQuery();
 
     string BuildExtendWithQuery();
@@ -37,6 +30,16 @@ public interface IBridge
 
 public static class IBridgeExtension
 {
+    public static string GetDatasourceAlias(this IBridge source)
+    {
+        if (source.Owner == null || source is BridgeRoot || source is FilterBridge) return source.Alias;
+        return source.Owner.GetDatasourceAlias();
+    }
+
+    public static string GetInnerDatasourceAlias(this IBridge source)
+    {
+          return "__ds";
+    }
 
     public static string ToSql(this IBridge source)
     {
