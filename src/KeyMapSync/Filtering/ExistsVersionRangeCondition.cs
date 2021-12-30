@@ -17,7 +17,7 @@ public class ExistsVersionRangeCondition : IFilter
     public string ToCondition(IBridge sender)
     {
         var ds = sender.Datasource;
-        var sync = ds.SyncName;
+        var sync = ds.Destination.SyncName;
         var key = ds.Destination.SequenceKeyColumn;
 
         return BuildSql(sync, key);

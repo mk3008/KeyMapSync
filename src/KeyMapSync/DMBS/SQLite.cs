@@ -27,8 +27,9 @@ public class SQLite : IDBMS
 
     public string ToSyncDDL(Datasource ds)
     {
-        var tbl = ds.SyncName.RemoveOrDefault(TableNameMaxLength);
-        var cols = ds.GetSyncColumns().Select(x => $"{x} integer not null").ToList();
+        var dest = ds.Destination;
+        var tbl = dest.SyncName.RemoveOrDefault(TableNameMaxLength);
+        var cols = dest.GetSyncColumns().Select(x => $"{x} integer not null").ToList();
         cols.Add($"primary key({ds.Destination.SequenceKeyColumn})");
         var col = cols.ToString("\r\n, ");
         var sql = $@"create table if not exists {tbl}
@@ -41,12 +42,13 @@ public class SQLite : IDBMS
 
     public string ToVersionDDL(Datasource ds)
     {
-        var tbl = ds.VersionName.RemoveOrDefault(TableNameMaxLength);
+        var dest = ds.Destination;
+        var tbl = dest.VersionName.RemoveOrDefault(TableNameMaxLength);
         var cols = new List<string>();
-        cols.Add($"{ds.VersionKeyColumn} integer not null");
-        cols.Add($"{ds.NameColumn} text not null");
-        cols.Add($"{ds.TimestampColumn} timestamp not null default current_timestamp");
-        cols.Add($"primary key({ds.VersionKeyColumn})");
+        cols.Add($"{dest.VersionKeyColumn} integer not null");
+        cols.Add($"{dest.NameColumn} text not null");
+        cols.Add($"{dest.TimestampColumn} timestamp not null default current_timestamp");
+        cols.Add($"primary key({dest.VersionKeyColumn})");
         var col = cols.ToString("\r\n, ");
         var sql = $@"create table if not exists {tbl}
 (

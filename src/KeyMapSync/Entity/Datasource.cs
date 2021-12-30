@@ -77,16 +77,6 @@ public class Datasource
 
     public string KeyMapFormat { get; set; } = "{0}__map_{1}";
 
-    public string SyncFormart { get; set; } = "{0}__sync";
-
-    public string VersionFormat { get; set; } = "{0}__version";
-
-    public string VersionKeyColumn { get; set; } = "version_id";
-
-    public string NameColumn { get; set; } = "datasource_name";
-
-    public string TimestampColumn { get; set; } = "create_timestamp";
-
     /// <summary>
     /// ex
     /// "integration_sales_detail__map_ec_shop_sales_detail"
@@ -101,33 +91,6 @@ public class Datasource
         return lst;
     }
 
-    /// <summary>
-    /// ex
-    /// "integration_sales_detail__sync"
-    /// </summary>
-    public string SyncName => string.Format(SyncFormart, Destination.DestinationName, Name);
-
-    public IList<string> GetSyncColumns()
-    {
-        var lst = new List<string>();
-        lst.Add(Destination.SequenceKeyColumn);
-        lst.Add(VersionKeyColumn);
-        return lst;
-    }
-
-    /// <summary>
-    /// ex
-    /// "integration_sales_detail__version"
-    /// </summary>
-    public string VersionName => string.Format(VersionFormat, Destination.DestinationName, Name);
-
-    public IList<string> GetVersionColumns()
-    {
-        var lst = new List<string>();
-        lst.Add(VersionKeyColumn);
-        lst.Add(NameColumn);
-        return lst;
-    }
 }
 
 

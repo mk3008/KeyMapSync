@@ -18,6 +18,17 @@ namespace KeyMapSync.Entity
 
         public IList<string> Columns { get; set; }
 
+        public string SyncFormart { get; set; } = "{0}__sync";
+
+        public string VersionFormat { get; set; } = "{0}__version";
+
+        public string VersionKeyColumn { get; set; } = "version_id";
+
+        public string NameColumn { get; set; } = "datasource_name";
+
+        public string TimestampColumn { get; set; } = "create_timestamp";
+
+
         public string OffsetFormat { get; set; } = "{0}__offset";
 
         public string OffsetName => String.Format(OffsetFormat, DestinationName);
@@ -33,5 +44,34 @@ namespace KeyMapSync.Entity
 
         public string RemarksColumn { get; set; } = "remarks";
 
+        /// <summary>
+        /// ex
+        /// "integration_sales_detail__sync"
+        /// </summary>
+        public string SyncName => string.Format(SyncFormart, DestinationName);
+
+        public IList<string> GetSyncColumns()
+        {
+            var lst = new List<string>();
+            lst.Add(SequenceKeyColumn);
+            lst.Add(VersionKeyColumn);
+            return lst;
+        }
+
+        /// <summary>
+        /// ex
+        /// "integration_sales_detail__version"
+        /// </summary>
+        public string VersionName => string.Format(VersionFormat, DestinationName);
+
+        public IList<string> GetVersionColumns()
+        {
+            var lst = new List<string>();
+            lst.Add(VersionKeyColumn);
+            lst.Add(NameColumn);
+            return lst;
+        }
+
+        public string VersionSequenceCommand { get; set; }
     }
 }
