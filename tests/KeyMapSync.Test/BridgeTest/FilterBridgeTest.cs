@@ -40,7 +40,7 @@ public class FilterBridgeTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         var bridge = new FilterBridge() { Owner = root};
-        bridge.FilterContainer.Filters.Add(f);
+        bridge.FilterContainer.Add(f);
 
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_filtered as (
@@ -57,81 +57,70 @@ public class FilterBridgeTest
     [Fact]
     public void AdditionalNestTest()
     {
+        dynamic prm = new ExpandoObject();
+        prm._ec_shop_article_id = 1; 
         var f = new CustomFilter()
         {
-            Condition = "ec_shop_article_id = :_ec_shop_article_id",
+            Condition = "__ds.ec_shop_article_id = :_ec_shop_article_id",
+            Parameter = prm
         };
-        dynamic prm = new ExpandoObject();
-        prm._ec_shop_article_id = 1;
 
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var fb = new FilterBridge() { Owner = root };
-        fb.FilterContainer.Filters.Add(f);
-        var bridge = new Additional() { Owner = fb, Filter = new NotExistsKeyMapCondition() };
+        //var fb = new FilterBridge() { Owner = root };
+        //fb.FilterContainer.Add(f);
+        var bridge = new Additional() { Owner = root };
+        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
+        bridge.FilterContainer.Add(f);
 
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
     select
         (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
-    from _filtered __ds
+    from ds __ds
     where
         not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
+        and __ds.ec_shop_article_id = :_ec_shop_article_id
 )";
 
         Assert.Equal(expect, val);
     }
 
     [Fact]
-    public void ChangedBridgeNestTest()
+    public void ExpectBridgeNestTest()
     {
-        var f = new CustomFilter()
-        {
-            Condition = "ec_shop_article_id = :_ec_shop_article_id",
-        };
         dynamic prm = new ExpandoObject();
         prm._ec_shop_article_id = 1;
+        var f = new CustomFilter()
+        {
+            Condition = "__ds.ec_shop_article_id = :_ec_shop_article_id",
+            Parameter = prm
+        };
 
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var fb = new FilterBridge() { Owner = root };
-        fb.FilterContainer.Filters.Add(f);
-        var work = new ExpectBridge() { Owner = fb, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
-        var cnd = new DifferentCondition();
-        var bridge = new ChangedBridge() { Owner = work, Filter = cnd };
+        //var fb = new FilterBridge() { Owner = root };
+        //fb.FilterContainer.Add(f);
+        var work = new ExpectBridge() { Owner = root };
+        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        work.FilterContainer.Add(f);
+        //var cnd = new DifferentCondition();
+        //var bridge = new ChangedBridge() { Owner = work, Filter = cnd };
 
-        var expect = @"_changed as (
+        var expect = @"_expect as (
     select
-        __e.article_name
-        , __e.unit_price
-        , __e.quantity * -1 as quantity
-        , __e.price * -1 as price
-        , case when __ds.ec_shop_sale_detail_id is null then
-            'deleted'
-        else
-            case when coalesce((__e.sale_date = __ds.sale_date) or (__e.sale_date is null and __ds.sale_date is null), false) then 'sale_date is changed, ' end
-            || case when coalesce((__e.ec_shop_article_id = __ds.ec_shop_article_id) or (__e.ec_shop_article_id is null and __ds.ec_shop_article_id is null), false) then 'ec_shop_article_id is changed, ' end
-            || case when coalesce((__e.unit_price = __ds.unit_price) or (__e.unit_price is null and __ds.unit_price is null), false) then 'unit_price is changed, ' end
-            || case when coalesce((__e.quantity = __ds.quantity) or (__e.quantity is null and __ds.quantity is null), false) then 'quantity is changed, ' end
-            || case when coalesce((__e.price = __ds.price) or (__e.price is null and __ds.price is null), false) then 'price is changed, ' end
-        end as _remarks
-    from _expect __e
-    inner join integration_sale_detail__map_ec_shop_sale_detail __map on __e.integration_sale_detail_id = __map.integration_sale_detail_id
-    left join _filtered __ds on _km.ec_shop_sale_detail_id = _ds.ec_shop_sale_detail_id
+        __map.ec_shop_sale_detail_id
+        , __ds.*
+    from integration_sale_detail __ds
+    inner join integration_sale_detail__map_ec_shop_sale_detail __map on __ds.integration_sale_detail_id = __map.integration_sale_detail_id
     where
-        (
-            __ds.ec_shop_sale_detail_id is null
-        or  coalesce((__e.sale_date = __ds.sale_date) or (__e.sale_date is null and __ds.sale_date is null), false)
-        or  coalesce((__e.ec_shop_article_id = __ds.ec_shop_article_id) or (__e.ec_shop_article_id is null and __ds.ec_shop_article_id is null), false)
-        or  coalesce((__e.unit_price = __ds.unit_price) or (__e.unit_price is null and __ds.unit_price is null), false)
-        or  coalesce((__e.quantity = __ds.quantity) or (__e.quantity is null and __ds.quantity is null), false)
-        or  coalesce((__e.price = __ds.price) or (__e.price is null and __ds.price is null), false)
-        )
+        exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.integration_sale_detail_id = ___sync.integration_sale_detail_id)
+        and __ds.ec_shop_article_id = :_ec_shop_article_id
 )";
-        var val = bridge.BuildExtendWithQuery();
+        var val = work.BuildExtendWithQuery();
         Assert.Equal(expect, val);
     }
 }

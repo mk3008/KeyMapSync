@@ -17,15 +17,16 @@ public class ExistsVersionRangeCondition : IFilter
     public string ToCondition(IBridge sender)
     {
         var ds = sender.Datasource;
+        var datasourceAlias = sender.GetInnerDatasourceAlias();
         var sync = ds.Destination.SyncName;
         var key = ds.Destination.SequenceKeyColumn;
 
-        return BuildSql(sync, key);
+        return BuildSql(sync, datasourceAlias, key);
     }
 
-    public static string BuildSql(string sync, string destinationKey)
+    public static string BuildSql(string sync, string datasourceAlias, string destinationKey)
     {
-        return $"exists (select * from {sync} _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.{destinationKey} = _sync.{destinationKey})";
+        return $"exists (select * from {sync} ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and {datasourceAlias}.{destinationKey} = ___sync.{destinationKey})";
     }
 
     public ExpandoObject ToParameter()

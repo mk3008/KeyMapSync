@@ -79,8 +79,10 @@ ds as (
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
 )
 select
-    *
-from ds;";
+    __v.version_id
+    , __ds.*
+from ds __ds
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = root.ToSql();
         Assert.Equal(expect, val);
     }
@@ -91,7 +93,8 @@ from ds;";
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
+        var bridge = new Additional() { Owner = root };
+        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
 
         var expect = @"create temporary table tmp_parse
 as
@@ -133,7 +136,8 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var work = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
+        var work = new ExpectBridge() { Owner = root };
+        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
         var bridge = new ChangedBridge() { Owner = work, Filter = new DifferentCondition() };
 
         var expect = @"create temporary table tmp_default_parse
@@ -155,12 +159,12 @@ ds as (
 ),
 _expect as (
     select
-        _km.ec_shop_sale_detail_id
-        , _origin.*
-    from integration_sale_detail _origin
-    inner join integration_sale_detail__map_ec_shop_sale_detail _km on _origin.integration_sale_detail_id = _km.integration_sale_detail_id
+        __map.ec_shop_sale_detail_id
+        , __ds.*
+    from integration_sale_detail __ds
+    inner join integration_sale_detail__map_ec_shop_sale_detail __map on __ds.integration_sale_detail_id = __map.integration_sale_detail_id
     where
-        exists (select * from integration_sale_detail__sync _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.integration_sale_detail_id = _sync.integration_sale_detail_id)
+        exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.integration_sale_detail_id = ___sync.integration_sale_detail_id)
 ),
 _changed as (
     select
@@ -191,92 +195,94 @@ _changed as (
         )
 )
 select
-    *
-from _changed;";
+    __v.version_id
+    , __ds.*
+from _changed __ds
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToSql();
         Assert.Equal(expect, val);
     }
 
-//    [Fact]
-//    public void HeaderDetailParse()
-//    {
-//        var head = new HeaderOption()
-//        {
-//            HeaderDestination = "integration_sale",
-//            Columns = new string[] { "sale_date" },
-//        };
+    //    [Fact]
+    //    public void HeaderDetailParse()
+    //    {
+    //        var head = new HeaderOption()
+    //        {
+    //            HeaderDestination = "integration_sale",
+    //            Columns = new string[] { "sale_date" },
+    //        };
 
-//        var ds = EcShopSaleDetail.GetDatasource();
-//        ds.HeaderOption = head;
+    //        var ds = EcShopSaleDetail.GetDatasource();
+    //        ds.HeaderOption = head;
 
-//        var bridge = new Additional();
+    //        var bridge = new Additional();
 
-//        Assert.Equal($@"{ds.WithQuery},
-//_ds_1 as (
-//    select
-//        (select max(seq) from (select seq from sqlite_sequence where name = :_table_name union all select 0)) as integration_sale_detail_id, ds.*
-//    from
-//        ds
-//    where
-//        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail km on ds.ec_shop_sale_detail_id = km.ec_shop_sale_detail_id)
-//),
-//_ds_2 as (
-//    select
-//        head.integration_sale_id, _ds_1.*
-//    from
-//        _ds_1
-//        (
-//            select
-//                ec_shop_sale_id, (select max(seq) from (select seq from sqlite_sequence where name = :_header_table_name union all select 0)) as integration_sale_id
-//            from
-//                _ds_1 
-//            group by 
-//                ec_shop_sale_id
-//        ) head on _ds_1.ec_shop_sale_id = head.ec_shop_sale_id
-//)
-//create table tmp01
-//as
-//select * from _ds_2", bridge.GetWithQuery());
-//    }
+    //        Assert.Equal($@"{ds.WithQuery},
+    //_ds_1 as (
+    //    select
+    //        (select max(seq) from (select seq from sqlite_sequence where name = :_table_name union all select 0)) as integration_sale_detail_id, ds.*
+    //    from
+    //        ds
+    //    where
+    //        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail km on ds.ec_shop_sale_detail_id = km.ec_shop_sale_detail_id)
+    //),
+    //_ds_2 as (
+    //    select
+    //        head.integration_sale_id, _ds_1.*
+    //    from
+    //        _ds_1
+    //        (
+    //            select
+    //                ec_shop_sale_id, (select max(seq) from (select seq from sqlite_sequence where name = :_header_table_name union all select 0)) as integration_sale_id
+    //            from
+    //                _ds_1 
+    //            group by 
+    //                ec_shop_sale_id
+    //        ) head on _ds_1.ec_shop_sale_id = head.ec_shop_sale_id
+    //)
+    //create table tmp01
+    //as
+    //select * from _ds_2", bridge.GetWithQuery());
+    //    }
 
-//    [Fact]
-//    public void HeaderDetailVersionOffsetParse()
-//    {
-//        var head = new HeaderOption()
-//        {
-//            HeaderDestination = "integration_sale",
-//            Columns = new string[] { "sale_date" },
-//        };
+    //    [Fact]
+    //    public void HeaderDetailVersionOffsetParse()
+    //    {
+    //        var head = new HeaderOption()
+    //        {
+    //            HeaderDestination = "integration_sale",
+    //            Columns = new string[] { "sale_date" },
+    //        };
 
-//        var ds = EcShopSaleDetail.GetDatasource();
-//        ds.HeaderOption = head;
+    //        var ds = EcShopSaleDetail.GetDatasource();
+    //        ds.HeaderOption = head;
 
-//        var bridge = new Additional();
+    //        var bridge = new Additional();
 
-//        Assert.Equal($@"{ds.WithQuery},
-//_expect as (
-//    select
-//        _km.ec_shop_sale_detail_id, _origin.*, _head.sale_date
-//    from
-//        integration_sale_detail _origin
-//        inner join integration_sale _head on _origin.integration_sale_id = _head.integration_sale_id
-//        inner join integration_sale_detail__map_ec_shop_sale_detail _km on from.integration_sale_detail_id = _km.integration_sale_detail_id
-//    where
-//        exists (select * from integration_sale_detail__sync _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.integration_sale_detail = _sync.integration_sale_detail)
-//),
-//_validate as (
-//    select
-//        _e.integration_sale_detail_id, _e.sale_date, _e.ec_shop_article_id, _e.article_name, _e.unit_price, _e.quantity * -1 as quantity, _e.price * -1 as price, current_timestamp as create_timestamp, case when ds.ec_shop_sale_detail_id is null then 'row:deleted' end || case when _e.sale_date <> ds.sale_date then 'sale_date:diff,' end || case when _e.unit_price <> ds.unit_price then 'unit_price:diff,' end || case when _e.price <> ds.price then 'price:diff,' end as _validate_remarks
-//    from
-//        _expect _e
-//        left join ds _e.ec_shop_sale_detail_id = ds.ec_shop_sale_detail_id
-//    where
-//        ds.ec_shop_sale_detail_id is null or _e.sale_date <> ds.sale_date or _e.unit_price <> ds.unit_price or _e.price <> ds.price
-//),
-//create table tmp01
-//as
-//select * from _validate", bridge.GetWithQuery());
-//    }
+    //        Assert.Equal($@"{ds.WithQuery},
+    //_expect as (
+    //    select
+    //        _km.ec_shop_sale_detail_id, _origin.*, _head.sale_date
+    //    from
+    //        integration_sale_detail _origin
+    //        inner join integration_sale _head on _origin.integration_sale_id = _head.integration_sale_id
+    //        inner join integration_sale_detail__map_ec_shop_sale_detail _km on from.integration_sale_detail_id = _km.integration_sale_detail_id
+    //    where
+    //        exists (select * from integration_sale_detail__sync _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.integration_sale_detail = _sync.integration_sale_detail)
+    //),
+    //_validate as (
+    //    select
+    //        _e.integration_sale_detail_id, _e.sale_date, _e.ec_shop_article_id, _e.article_name, _e.unit_price, _e.quantity * -1 as quantity, _e.price * -1 as price, current_timestamp as create_timestamp, case when ds.ec_shop_sale_detail_id is null then 'row:deleted' end || case when _e.sale_date <> ds.sale_date then 'sale_date:diff,' end || case when _e.unit_price <> ds.unit_price then 'unit_price:diff,' end || case when _e.price <> ds.price then 'price:diff,' end as _validate_remarks
+    //    from
+    //        _expect _e
+    //        left join ds _e.ec_shop_sale_detail_id = ds.ec_shop_sale_detail_id
+    //    where
+    //        ds.ec_shop_sale_detail_id is null or _e.sale_date <> ds.sale_date or _e.unit_price <> ds.unit_price or _e.price <> ds.price
+    //),
+    //create table tmp01
+    //as
+    //select * from _validate", bridge.GetWithQuery());
+    //    }
 
     //    [Fact]
     //    public void ValidateUpdate()

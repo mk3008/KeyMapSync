@@ -19,7 +19,9 @@ public class ExpectBridge : IBridge
 
     public string Alias => "_expect";
 
-    public IFilter Filter { get; set; }
+    public FilterContainer FilterContainer { get; } = new FilterContainer();
+
+    public IFilter Filter => FilterContainer;
 
     public string BridgeName => Owner.BridgeName;
 
@@ -50,14 +52,14 @@ public class ExpectBridge : IBridge
         var dest = ds.Destination;
         var keymap = ds.KeyMapName;
 
-        var cols = datasourceKeys.Select(x => $"_km.{x}").ToList();
-        cols.Add("_origin.*"); 
+        var cols = datasourceKeys.Select(x => $"__map.{x}").ToList();
+        cols.Add($"{this.GetInnerDatasourceAlias()}.*"); 
         var col = cols.ToString("\r\n, ").AddIndent(4);
 
         var sql = $@"select
 {col}
-from {dest.DestinationName} _origin
-inner join {keymap} _km on _origin.{dest.SequenceKeyColumn} = _km.{dest.SequenceKeyColumn}
+from {dest.DestinationName} {this.GetInnerDatasourceAlias()}
+inner join {keymap} __map on {this.GetInnerDatasourceAlias()}.{dest.SequenceKeyColumn} = __map.{dest.SequenceKeyColumn}
 {Filter.ToCondition(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (

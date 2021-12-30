@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Transform;
 
+[Obsolete("use FilterContainer")]
 public class FilterBridge : IBridge
 {
     public IBridge Owner { get; set; }

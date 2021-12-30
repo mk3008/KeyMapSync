@@ -15,7 +15,9 @@ public class Additional : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
-    public IFilter Filter { get; set; }
+    public FilterContainer FilterContainer { get; } = new FilterContainer();
+
+    public IFilter Filter => FilterContainer;
 
     public string Alias => "_added";
 

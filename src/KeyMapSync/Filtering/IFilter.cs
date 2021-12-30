@@ -10,14 +10,19 @@ namespace KeyMapSync.Filtering;
 
 public interface IFilter
 {
-    public string ToCondition(IBridge sender);
+    string ToCondition(IBridge sender);
 
-    public ExpandoObject ToParameter();
+    ExpandoObject ToParameter();
 }
 
 public class FilterContainer : IFilter
 {
-    public IList<IFilter> Filters { get; set; } = new List<IFilter>(); 
+    private IList<IFilter> Filters { get; set; } = new List<IFilter>();
+
+    public void Add(IFilter item)
+    {
+        Filters.Add(item);
+    }
 
     public string ToCondition(IBridge sender)
     {

@@ -31,8 +31,9 @@ public class AdditionalBridgeTest
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
-       
+        var bridge = new Additional() { Owner = root };
+        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
+
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
     select

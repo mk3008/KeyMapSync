@@ -16,11 +16,11 @@ using Xunit.Abstractions;
 
 namespace KeyMapSync.Test.BridgeTest;
 
-public class ManagementTableTest
+public class BridgeRootTest
 {
     private readonly ITestOutputHelper Output;
 
-    public ManagementTableTest(ITestOutputHelper output)
+    public BridgeRootTest(ITestOutputHelper output)
     {
         Output = output;
     }
@@ -32,7 +32,6 @@ public class ManagementTableTest
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
 
-        var val = root.ToSql();
         var expect = @"create temporary table tmp_parse
 as
 with 
@@ -51,9 +50,11 @@ ds as (
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
 )
 select
-    *
-from ds;";
-
-        Assert.Equal(expect, root.ToSql());
+    __v.version_id
+    , __ds.*
+from ds __ds
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
+        var val = root.ToSql();
+        Assert.Equal(expect, val);
     }
 }

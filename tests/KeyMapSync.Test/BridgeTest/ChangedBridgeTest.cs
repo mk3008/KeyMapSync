@@ -31,7 +31,8 @@ public class ChangedBridgeTest
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var work = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
+        var work = new ExpectBridge() { Owner = root};
+        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
         var cnd = new DifferentCondition();
         var bridge = new ChangedBridge() { Owner = work , Filter = cnd};
 

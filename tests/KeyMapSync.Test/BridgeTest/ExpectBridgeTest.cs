@@ -31,17 +31,17 @@ public class ExpectBridgeTest
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var bridge = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
-
+        var bridge = new ExpectBridge() { Owner = root };
+        bridge.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_expect as (
     select
-        _km.ec_shop_sale_detail_id
-        , _origin.*
-    from integration_sale_detail _origin
-    inner join integration_sale_detail__map_ec_shop_sale_detail _km on _origin.integration_sale_detail_id = _km.integration_sale_detail_id
+        __map.ec_shop_sale_detail_id
+        , __ds.*
+    from integration_sale_detail __ds
+    inner join integration_sale_detail__map_ec_shop_sale_detail __map on __ds.integration_sale_detail_id = __map.integration_sale_detail_id
     where
-        exists (select * from integration_sale_detail__sync _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.integration_sale_detail_id = _sync.integration_sale_detail_id)
+        exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.integration_sale_detail_id = ___sync.integration_sale_detail_id)
 )";
 
         Assert.Equal(expect, val);

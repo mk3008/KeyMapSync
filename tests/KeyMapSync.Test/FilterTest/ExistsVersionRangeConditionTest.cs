@@ -28,11 +28,11 @@ public class ExistsVersionRangeConditionTest
     [Fact]
     public void SqlTest()
     {
-        var expect = "exists (select * from sync _sync where _sync.version_id between :_min_version_id and :_max_version_id and _origin.id = _sync.id)";
+        var expect = "exists (select * from sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.id = ___sync.id)";
 
         var sync = "sync";
         var key = "id";
-        var val = ExistsVersionRangeCondition.BuildSql(sync, key);
+        var val = ExistsVersionRangeCondition.BuildSql(sync, "__ds", key);
 
         Assert.Equal(expect, val);
     }
@@ -42,9 +42,9 @@ public class ExistsVersionRangeConditionTest
     {
         var min = 1;
         var max = 2;
-        var cnd = new ExistsVersionRangeCondition() { MinVersion = min, MaxVersion = max};
+        var cnd = new ExistsVersionRangeCondition() { MinVersion = min, MaxVersion = max };
 
-        dynamic prm = cnd.ToParameter();        
+        dynamic prm = cnd.ToParameter();
 
         Assert.Equal(min, prm._min_version_id);
         Assert.Equal(max, prm._max_version_id);
