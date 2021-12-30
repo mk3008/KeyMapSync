@@ -32,7 +32,7 @@ public class ExpectBridgeTest
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
         var bridge = new ExpectBridge() { Owner = root };
-        bridge.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        bridge.Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 };
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_expect as (
     select

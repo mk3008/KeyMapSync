@@ -39,7 +39,7 @@ public class FilterBridgeTest
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new FilterBridge() { Owner = root};
+        var bridge = new FilterBridge() { Owner = root };
         bridge.FilterContainer.Add(f);
 
         var val = bridge.BuildExtendWithQuery();
@@ -58,7 +58,7 @@ public class FilterBridgeTest
     public void AdditionalNestTest()
     {
         dynamic prm = new ExpandoObject();
-        prm._ec_shop_article_id = 1; 
+        prm._ec_shop_article_id = 1;
         var f = new CustomFilter()
         {
             Condition = "__ds.ec_shop_article_id = :_ec_shop_article_id",
@@ -70,10 +70,10 @@ public class FilterBridgeTest
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         //var fb = new FilterBridge() { Owner = root };
         //fb.FilterContainer.Add(f);
-        var bridge = new Additional() { Owner = root };
-        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
-        bridge.FilterContainer.Add(f);
-
+        var fc = new FilterContainer();
+        fc.Add(new NotExistsKeyMapCondition());
+        fc.Add(f);
+        var bridge = new Additional() { Owner = root, Filter = fc };
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
     select
@@ -104,9 +104,10 @@ public class FilterBridgeTest
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
         //var fb = new FilterBridge() { Owner = root };
         //fb.FilterContainer.Add(f);
-        var work = new ExpectBridge() { Owner = root };
-        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
-        work.FilterContainer.Add(f);
+        var fc = new FilterContainer();
+        fc.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        fc.Add(f);
+        var work = new ExpectBridge() { Owner = root, Filter = fc };
         //var cnd = new DifferentCondition();
         //var bridge = new ChangedBridge() { Owner = work, Filter = cnd };
 

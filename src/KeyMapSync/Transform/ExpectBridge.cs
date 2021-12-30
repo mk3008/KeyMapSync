@@ -19,9 +19,7 @@ public class ExpectBridge : IBridge
 
     public string Alias => "_expect";
 
-    public FilterContainer FilterContainer { get; } = new FilterContainer();
-
-    public IFilter Filter => FilterContainer;
+    public IFilter Filter { get; set; }
 
     public string BridgeName => Owner.BridgeName;
 

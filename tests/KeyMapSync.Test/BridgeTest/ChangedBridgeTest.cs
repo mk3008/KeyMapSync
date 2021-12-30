@@ -32,7 +32,7 @@ public class ChangedBridgeTest
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
         var work = new ExpectBridge() { Owner = root};
-        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        work.Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 };
         var cnd = new DifferentCondition();
         var bridge = new ChangedBridge() { Owner = work , Filter = cnd};
 

@@ -93,8 +93,7 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root };
-        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
+        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
 
         var expect = @"create temporary table tmp_parse
 as
@@ -136,8 +135,7 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
         var ds = EcShopSaleDetail.GetDatasource();
 
         var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var work = new ExpectBridge() { Owner = root };
-        work.FilterContainer.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        var work = new ExpectBridge() { Owner = root, Filter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 } };
         var bridge = new ChangedBridge() { Owner = work, Filter = new DifferentCondition() };
 
         var expect = @"create temporary table tmp_default_parse

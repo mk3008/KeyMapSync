@@ -70,23 +70,17 @@ public class SqliteSyncTest
         // create temporary table test
         var tmp = "tmp_additional";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root };
-        bridge.FilterContainer.Add(new NotExistsKeyMapCondition());
+        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
 
         using (var cn = new SQLiteConnection(CnString))
         {
             sync.CreateTemporaryTable(cn, bridge, false);
 
-/*            sync.InsertDestination();
-            sync.InsertKeyMap();
-            sync.InsertSync();
-            sync.InsertVersion();*/
+            /*            sync.InsertDestination();
+                        sync.InsertKeyMap();
+                        sync.InsertSync();
+                        sync.InsertVersion();*/
         }
-
-
-
-
-
     }
 }
 
