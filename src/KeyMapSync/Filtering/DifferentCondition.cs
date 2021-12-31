@@ -36,7 +36,7 @@ public class DifferentCondition : IFilter
             if (!isFirst) sb.AppendLine().Append("    || ");
             sb.Append("case when ");
             sb.Append(ConvertToDiffCondition(datasourceAlias, expectAlias, item));
-            sb.Append($" then '{item} is changed, ' end");
+            sb.Append($" then '{item} is changed, ' else '' end");
             isFirst = false;
         }
 
@@ -69,7 +69,7 @@ public class DifferentCondition : IFilter
 
     private string ConvertToDiffCondition(string datasourceAlias, string expectAlias, string column)
     {
-        return $"coalesce(({expectAlias}.{column} = {datasourceAlias}.{column}) or ({expectAlias}.{column} is null and {datasourceAlias}.{column} is null), false)";
+        return $"not coalesce(({expectAlias}.{column} = {datasourceAlias}.{column}) or ({expectAlias}.{column} is null and {datasourceAlias}.{column} is null), false)";
     }
 
     public string ToCondition(IBridge sender)

@@ -50,6 +50,38 @@ public class Synchronizer
         }
     }
 
+    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, IFilter filter = null)
+    {
+        SyncEvent = new SyncEventArgs("Offset");
+
+        using (var trn = cn.BeginTransaction())
+        {
+            CreateSystemTable(cn, ds);
+
+            var tmp = $"_kms_tmp_{ds.Name}";
+            var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
+            var work = new ExpectBridge() { Owner = root, };
+            work.AddFilter(validateFilter);
+            work.AddFilter(filter);
+            var bridge = new ChangedBridge() { Owner = work };
+
+            var cnt = CreateTemporaryTable(cn, bridge);
+            if (cnt == 0) return 0;
+
+            //if (InsertDestinationAsOffset(cn, bridge) != cnt) throw new InvalidOperationException();
+            //if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            //if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
+
+            //InsertExtension(cn, bridge);
+
+            trn.Commit();
+
+            return cnt;
+        }
+    }
+
     public void CreateSystemTable(IDbConnection cn, Datasource ds)
     {
         cn.Execute(Dbms.ToKeyMapDDL(ds));
@@ -87,6 +119,16 @@ public class Synchronizer
     {
         var sql = bridge.ToKeyMapSql();
         var e = OnBeforeSqlExecute("InsertKeyMap", sql, null);
+        var cnt = cn.Execute(sql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
+    public int RemoveKeyMap(IDbConnection cn, IBridge bridge)
+    {
+        var sql = bridge.ToRemoveKeyMapSql();
+        var e = OnBeforeSqlExecute("RemoveKeyMap", sql, null);
         var cnt = cn.Execute(sql);
         OnAfterSqlExecute(e, cnt);
 

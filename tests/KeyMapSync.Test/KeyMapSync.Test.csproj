@@ -44,6 +44,9 @@
     <None Update="filter_insert_test.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="offset_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="insert_test.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

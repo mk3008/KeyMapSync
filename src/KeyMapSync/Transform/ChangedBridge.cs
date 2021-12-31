@@ -19,7 +19,7 @@ public class ChangedBridge : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
-    public string RemarksColumn { get; set; } = "_remarks";
+    //public string RemarksColumn { get; set; } = "_remarks";
 
     public string Alias => "_changed";
 
@@ -45,7 +45,7 @@ public class ChangedBridge : IBridge
 {col}
 from {Owner.Alias} {InnerExpectAlias}
 inner join {Datasource.KeyMapName} __map on {InnerExpectAlias}.{destKey} = __map.{destKey}
-left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datasource.KeyColumns.Select(x => $"_km.{x} = _ds.{x}").ToString(" and ")}
+left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datasource.KeyColumns.Select(x => $"__map.{x} = {this.GetInnerDatasourceAlias()}.{x}").ToString(" and ")}
 {Filter.ToCondition(this).ToWhereSqlText()}";
 
         sql = $@"{Alias} as (
@@ -54,21 +54,24 @@ left join {this.GetDatasourceAlias()} {this.GetInnerDatasourceAlias()} on {Datas
         return sql;
     }
 
-    private IEnumerable<string>GetColumns()
+    private IEnumerable<string> GetColumns()
     {
         var ds = Datasource;
         var dest = ds.Destination;
 
-        var q1 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => !ds.SingInversionColumns.Contains(x)).Select(x => $"{InnerExpectAlias}.{x}");
-        var q2 = dest.Columns.Where(x => ds.Columns.Contains(x)).Where(x => ds.SingInversionColumns.Contains(x)).Select(x => $"{InnerExpectAlias}.{x} * -1 as {x}");
-        var q = q1.Union(q2);
+        var cols = new List<string>();
+        //origin key
+        cols.Add($"{InnerExpectAlias}.{dest.SequenceKeyColumn}");
+        //offset key
+        cols.Add($"{dest.SequenceCommand} as {dest.OffsetColumnPrefix}{dest.SequenceKeyColumn}");
+        //offset remarks
+        if (!string.IsNullOrEmpty(dest.RemarksColumn)) cols.Add(Filter.BuildRemarksSql(this));
+        //renewal key
+        cols.Add($"case when {this.GetInnerDatasourceAlias()}.{ds.KeyColumns.First()} is null then null else count(*) over() + {dest.SequenceCommand} end as {dest.RenewalColumnPrefix}{dest.SequenceKeyColumn}");
+        //renewal values
+        cols.Add($"{this.GetInnerDatasourceAlias()}.*");
 
-        if (!string.IsNullOrEmpty(RemarksColumn))
-        {
-            var q3 = new string[] { Filter.BuildRemarksSql(this) };
-            q = q.Union(q3);
-        }
-        return q;
+        return cols;
     }
 }
 

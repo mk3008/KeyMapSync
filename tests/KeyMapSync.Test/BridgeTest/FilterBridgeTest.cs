@@ -105,7 +105,8 @@ public class FilterBridgeTest
         var fc = new FilterContainer();
         fc.Add(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
         fc.Add(f);
-        var work = new ExpectBridge() { Owner = root, Filter = fc };
+        var work = new ExpectBridge() { Owner = root};
+        work.AddFilter(fc);
         //var cnd = new DifferentCondition();
         //var bridge = new ChangedBridge() { Owner = work, Filter = cnd };
 

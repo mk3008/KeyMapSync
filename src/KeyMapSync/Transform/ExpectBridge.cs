@@ -13,13 +13,24 @@ namespace KeyMapSync.Transform;
 /// </summary>
 public class ExpectBridge : IBridge
 {
+    public ExpectBridge()
+    {
+        Filter = new FilterContainer();
+    }
+
     public IBridge Owner { get; set; }
 
     public Datasource Datasource => Owner.Datasource;
 
     public string Alias => "_expect";
 
-    public IFilter Filter { get; set; }
+    public IFilter Filter { get; }
+
+    public void AddFilter(IFilter f)
+    {
+        if (f == null) return;
+        (Filter as FilterContainer).Add(f);
+    }
 
     public string BridgeName => Owner.BridgeName;
 

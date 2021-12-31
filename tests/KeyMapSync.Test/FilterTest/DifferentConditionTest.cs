@@ -33,7 +33,7 @@ public class DifferentConditionTest
         var expect = @"case when ds.key1 is null then
     'deleted'
 else
-    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
+    case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -47,7 +47,7 @@ end as _remarks";
         var expect = @"case when ds.key1 is null then
     'deleted'
 else
-    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
+    case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -61,8 +61,8 @@ end as _remarks";
         var expect = @"case when ds.key1 is null then
     'deleted'
 else
-    case when coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' end
-    || case when coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false) then 'val2 is changed, ' end
+    case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
+    || case when not coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false) then 'val2 is changed, ' else '' end
 end as _remarks";
 
         Assert.Equal(expect, val);
@@ -75,7 +75,7 @@ end as _remarks";
         var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e", new string[] { "val1" });
         var expect = @"(
     ds.key1 is null
-or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
+or  not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
 )";
 
         Assert.Equal(expect, val);
@@ -88,7 +88,7 @@ or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false
         var val = cnd.BuildWhereSql("ds", new string[] { "key1", "key2" }, "_e", new string[] { "val1" });
         var expect = @"(
     ds.key1 is null
-or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
+or  not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
 )";
 
         Assert.Equal(expect, val);
@@ -101,8 +101,8 @@ or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false
         var val = cnd.BuildWhereSql("ds", new string[] { "key1" }, "_e", new string[] { "val1", "val2" });
         var expect = @"(
     ds.key1 is null
-or  coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
-or  coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false)
+or  not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false)
+or  not coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false)
 )";
 
         Assert.Equal(expect, val);

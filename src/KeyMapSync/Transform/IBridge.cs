@@ -73,6 +73,24 @@ cross join (select {dest.VersionSequenceCommand} as {dest.VersionKeyColumn}) __v
 
     public static string ToDestinationSql(this IBridge source)
     {
+        if (source is ChangedBridge) return ToDestinationSql_Change(source);
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = dest.DestinationName;
+        var fromTable = source.BridgeName;
+        var col = dest.Columns.Where(x => dest.SequenceKeyColumn != x).Where(x => ds.Columns.Contains(x)).ToString(", ");
+        var sql = $@"insert into {toTable} (
+    {col}
+)
+select
+    {col}
+from
+    {fromTable};";
+        return sql;
+    }
+
+    public static string ToDestinationSql_Change(this IBridge source)
+    {
         var ds = source.Datasource;
         var dest = source.Datasource.Destination;
         var toTable = dest.DestinationName;
@@ -102,6 +120,19 @@ select
     {col}
 from
     {fromTable};";
+        return sql;
+    }
+
+    public static string ToRemoveKeyMapSql(this IBridge source)
+    {
+        var ds = source.Datasource;
+        var dest = source.Datasource.Destination;
+        var toTable = ds.KeyMapName;
+        var fromTable = source.BridgeName;
+        var col = dest.SequenceKeyColumn;
+        var sql = $@"delete from {toTable} m
+where
+    exists (select * from {fromTable} t where m.{col} = t.{col});";
         return sql;
     }
 
