@@ -15,7 +15,9 @@ namespace KeyMapSync
 
             //Synthesize parameters
             var dic = source as IDictionary<string, object>;
-            foreach (var item in dic)
+            var adddic = additional as IDictionary<string, object>;
+
+            foreach (var item in adddic)
             {
                 if (dic.ContainsKey(item.Key))
                 {

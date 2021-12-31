@@ -17,14 +17,14 @@ using Xunit.Abstractions;
 
 namespace KeyMapSync.Test.DBTest;
 
-public class SqliteSyncTest
+public class SqliteInsertTest
 {
 
     private readonly ITestOutputHelper Output;
 
-    public static string CnString => "Data Source=./syntax_test.sqlite;Cache=Shared";
+    public static string CnString => "Data Source=./insert_test.sqlite;Cache=Shared";
 
-    public SqliteSyncTest(ITestOutputHelper output)
+    public SqliteInsertTest(ITestOutputHelper output)
     {
         Output = output;
 
@@ -55,32 +55,30 @@ public class SqliteSyncTest
     }
 
     [Fact]
-    public void SqlSyntaxTest()
+    public void InsertTest()
     {
         var ds = EcShopSaleDetail.GetDatasource();
         IDBMS db = new SQLite();
         var sync = new Synchronizer() { Dbms = db };
 
         // Execute DDL test
+        var cnt = 0;
         using (var cn = new SQLiteConnection(CnString))
         {
-            sync.CreateSystemTable(cn, ds);
+            cn.Open();
+            cnt = sync.Insert(cn, ds);
         }
 
-        // create temporary table test
-        var tmp = "tmp_additional";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root };
+        Assert.Equal(11, cnt);
 
+        // rerun
         using (var cn = new SQLiteConnection(CnString))
         {
-            sync.CreateTemporaryTable(cn, bridge, false);
-            sync.InsertDestination(cn, bridge);
-            sync.InsertKeyMap(cn, bridge);
-            sync.InsertSync(cn, bridge);
-            sync.InsertVersion(cn, bridge);
-            sync.InsertExtension(cn, bridge);
+            cn.Open();
+            cnt = sync.Insert(cn, ds);
         }
+
+        Assert.Equal(0, cnt);
     }
 }
 

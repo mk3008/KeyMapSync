@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Dapper;
 using KeyMapSync.Entity;
+using KeyMapSync.Filtering;
 using KeyMapSync.Transform;
 
 namespace KeyMapSync;
@@ -13,6 +14,41 @@ namespace KeyMapSync;
 public class Synchronizer
 {
     public IDBMS Dbms { get; set; }
+
+    public event EventHandler<SqlEventArgs> BeforeSqlExecute;
+
+    public event EventHandler<SqlResultArgs> AfterSqlExecute;
+
+    public SyncEventArgs SyncEvent { get; set; }
+
+    public int Insert(IDbConnection cn, Datasource ds, IFilter filter = null)
+    {
+        SyncEvent = new SyncEventArgs("Insert");
+
+        using (var trn = cn.BeginTransaction())
+        {
+            CreateSystemTable(cn, ds);
+
+            var tmp = $"_kms_tmp_{ds.Name}";
+            var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
+            var bridge = new Additional() { Owner = root };
+            bridge.AddFilter(filter);
+
+            var cnt = CreateTemporaryTable(cn, bridge);
+            if (cnt == 0) return 0;
+
+            if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
+
+            InsertExtension(cn, bridge);
+
+            trn.Commit();
+
+            return cnt;
+        }
+    }
 
     public void CreateSystemTable(IDbConnection cn, Datasource ds)
     {
@@ -22,36 +58,60 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
-    public void CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true )
+    public int CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true)
     {
         var sql = bridge.ToTemporaryDdl(isTemporary);
         var prm = bridge.ToTemporaryParameter();
+
+        var e = OnBeforeSqlExecute("CreateTemporaryTable", sql, prm);
         cn.Execute(sql, prm);
+        var cntSql = $"select count(*) from {bridge.BridgeName};";
+        var cnt = cn.ExecuteScalar<int>(cntSql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
     }
 
-    public void InsertDestination(IDbConnection cn, IBridge bridge)
+    public int InsertDestination(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToDestinationSql();
-        cn.Execute(sql);
+
+        var e = OnBeforeSqlExecute("InsertDestination", sql, null);
+        var cnt = cn.Execute(sql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
     }
 
-    public void InsertKeyMap(IDbConnection cn, IBridge bridge)
+    public int InsertKeyMap(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToKeyMapSql();
-        cn.Execute(sql);
+        var e = OnBeforeSqlExecute("InsertKeyMap", sql, null);
+        var cnt = cn.Execute(sql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
     }
 
-    public void InsertSync(IDbConnection cn, IBridge bridge)
+    public int InsertSync(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToSyncSql();
-        cn.Execute(sql);
+        var e = OnBeforeSqlExecute("InsertSync", sql, null);
+        var cnt = cn.Execute(sql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
     }
 
-    public void InsertVersion(IDbConnection cn, IBridge bridge)
+    public int InsertVersion(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToVersionSql();
         var prm = bridge.ToVersionParameter();
-        cn.Execute(sql, prm);
+        var e = OnBeforeSqlExecute("InsertVersion", sql, prm);
+        var cnt = cn.Execute(sql, prm);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
     }
 
     public void InsertExtension(IDbConnection cn, IBridge bridge)
@@ -59,7 +119,30 @@ public class Synchronizer
         var sqls = bridge.ToExtensionSqls();
         foreach (var sql in sqls)
         {
-            cn.Execute(sql);
-        }   
+            var e = OnBeforeSqlExecute("InsertExtension", sql, null);
+            var cnt = cn.Execute(sql);
+            OnAfterSqlExecute(e, cnt);
+        }
+    }
+
+    private SqlEventArgs OnBeforeSqlExecute(string name, string sql, object prm)
+    {
+        var handler = BeforeSqlExecute;
+
+        if (SyncEvent == null || handler == null) return null;
+
+        var e = new SqlEventArgs(SyncEvent, name, sql, prm);
+        handler(this, e);
+        return e;
+    }
+
+    private void OnAfterSqlExecute(SqlEventArgs owner, int count)
+    {
+        var handler = AfterSqlExecute;
+
+        if (owner == null || handler == null) return;
+
+        var e = new SqlResultArgs(owner, count);
+        handler(this, e);
     }
 }

@@ -69,10 +69,9 @@ public class SqliteDDLTest
 
         var expect = @"create table if not exists integration_sale_detail__version
 (
-    version_id integer not null
+    version_id integer primary key autoincrement
     , datasource_name text not null
     , create_timestamp timestamp not null default current_timestamp
-    , primary key(version_id)
 )";
         var val = db.ToVersionDDL(ds);
 

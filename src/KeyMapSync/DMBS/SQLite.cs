@@ -45,10 +45,10 @@ public class SQLite : IDBMS
         var dest = ds.Destination;
         var tbl = dest.VersionName.RemoveOrDefault(TableNameMaxLength);
         var cols = new List<string>();
-        cols.Add($"{dest.VersionKeyColumn} integer not null");
+        cols.Add($"{dest.VersionKeyColumn} integer primary key autoincrement");
         cols.Add($"{dest.NameColumn} text not null");
         cols.Add($"{dest.TimestampColumn} timestamp not null default current_timestamp");
-        cols.Add($"primary key({dest.VersionKeyColumn})");
+        //cols.Add($"primary key({dest.VersionKeyColumn})");
         var col = cols.ToString("\r\n, ");
         var sql = $@"create table if not exists {tbl}
 (

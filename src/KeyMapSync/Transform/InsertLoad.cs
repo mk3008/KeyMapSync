@@ -39,8 +39,8 @@ public class InsertLoad
     /// <summary>
     /// ex.1 detail load
     /// with bridge as (select * from tmp01)
-    /// insert into integration_sales_detail(integration_sales_detail_id, integration_sales_id, price, create_timestamp)
-    /// select integration_sales_detail_id, integration_sales_id, price, create_timestamp from bridge
+    /// insert into integration_sale_detail(integration_sale_detail_id, integration_sales_id, price, create_timestamp)
+    /// select integration_sale_detail_id, integration_sales_id, price, create_timestamp from bridge
     /// 
     /// ex.2 header load
     /// with bridge as (select * from tmp01)
@@ -54,18 +54,18 @@ public class InsertLoad
     /// 
     /// ex.4 keymap load
     /// with bridge as (select * from tmp01)
-    /// insert into integration_sales_detail_keymap_ec_shop_sales_detail(integration_sales_detail_id, ec_shop_sales_detail_id)
-    /// select integration_sales_detail_id, ec_shop_sales_detail_id from bridge
+    /// insert into integration_sale_detail_keymap_ec_shop_sales_detail(integration_sale_detail_id, ec_shop_sales_detail_id)
+    /// select integration_sale_detail_id, ec_shop_sales_detail_id from bridge
     /// 
     /// ex.5 sync load
     /// with bridge as (select * from tmp01)
-    /// insert into integration_sales_detail_sync(integration_sales_detail_id, integration_sales_detail_version_id)
-    /// select integration_sales_detail_id, integration_sales_detail_version_id from bridge
+    /// insert into integration_sale_detail_sync(integration_sale_detail_id, integration_sale_detail_version_id)
+    /// select integration_sale_detail_id, integration_sale_detail_version_id from bridge
     /// 
     /// ex.6 version load
-    /// with v as (select :version as integration_sales_detail_version_id, :datasource_name as datasource_name, current_timestmap as create_timestamp)
-    /// insert into integration_sales_detail_version(integration_sales_detail_version_id, name, create_timestamp)
-    /// select integration_sales_detail_version_id, name, create_timestamp from v
+    /// with v as (select :version as integration_sale_detail_version_id, :datasource_name as datasource_name, current_timestmap as create_timestamp)
+    /// insert into integration_sale_detail_version(integration_sale_detail_version_id, name, create_timestamp)
+    /// select integration_sale_detail_version_id, name, create_timestamp from v
     /// 
     /// </summary>
     /// <returns></returns>

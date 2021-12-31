@@ -11,11 +11,23 @@ namespace KeyMapSync.Transform;
 
 public class Additional : IBridge
 {
+    public Additional()
+    {
+        Filter = new FilterContainer();
+        (Filter as FilterContainer).Add(new NotExistsKeyMapCondition());
+    }
+
     public IBridge Owner { get; set; }
 
     public Datasource Datasource => Owner.Datasource;
 
-    public IFilter Filter { get; set; } = new NotExistsKeyMapCondition();
+    public IFilter Filter { get; }
+
+    public void AddFilter(IFilter f)
+    {
+        if (f == null) return;
+        (Filter as FilterContainer).Add(f);
+    }
 
     public string Alias => "_added";
 

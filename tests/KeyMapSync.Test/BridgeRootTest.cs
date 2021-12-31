@@ -58,7 +58,7 @@ public class BridgeRootTest
         {
             DestinationName = "integration_sale_detail",
             SequenceKeyColumn = "integration_sale_detail_id",
-            SequenceCommand = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0))",
+            SequenceCommand = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0))",
             Columns = new[] { "integration_sale_detail_id", "sales_date", "article_name", "unit_price", "quantity", "price", "sync_timestamp" },
         };
 
@@ -114,7 +114,7 @@ select * from ds;", root.ToSql());
 
         Assert.Equal($@"{ds.WithQuery},
 _added as (
-    select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) as integration_sale_detail_id, ds.*
+    select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) as integration_sale_detail_id, ds.*
     from ds
     where not exists (select * from integration_sale_detail__map_ec_shop_sale_detail _km where ds.ec_shop_sale_detail_id = _km.ec_shop_sale_detail_id)
 )

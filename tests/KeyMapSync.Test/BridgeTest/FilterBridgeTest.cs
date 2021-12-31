@@ -70,14 +70,12 @@ public class FilterBridgeTest
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
         //var fb = new FilterBridge() { Owner = root };
         //fb.FilterContainer.Add(f);
-        var fc = new FilterContainer();
-        fc.Add(new NotExistsKeyMapCondition());
-        fc.Add(f);
-        var bridge = new Additional() { Owner = root, Filter = fc };
+        var bridge = new Additional() { Owner = root };
+        bridge.AddFilter(f);
         var val = bridge.BuildExtendWithQuery();
         var expect = $@"_added as (
     select
-        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
     from ds __ds
     where

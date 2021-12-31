@@ -20,7 +20,7 @@ public class Datasource
 
     /// <summary>
     /// datasource description.
-    /// ex."transfrom 'ec_shop_sales_detail' to 'integration_sales_detail'." 
+    /// ex."transfrom 'ec_shop_sales_detail' to 'integration_sale_detail'." 
     /// </summary>
     public string Description { get; set; }
 
@@ -37,9 +37,9 @@ public class Datasource
     /// <summary>
     /// ex.
     /// {
-    /// "DestinationName":"integration_sales_detail"
-    /// "SequenceKeyColumn":"integration_sales_detail_id",
-    /// "SequenceCommand":"(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0))",
+    /// "DestinationName":"integration_sale_detail"
+    /// "SequenceKeyColumn":"integration_sale_detail_id",
+    /// "SequenceCommand":"(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0))",
     /// }
     /// </summary>
     public Destination Destination { get; set; }
@@ -79,7 +79,7 @@ public class Datasource
 
     /// <summary>
     /// ex
-    /// "integration_sales_detail__map_ec_shop_sales_detail"
+    /// "integration_sale_detail__map_ec_shop_sales_detail"
     /// </summary>
     public string KeyMapName => string.Format(KeyMapFormat, Destination.DestinationName, Name);
 

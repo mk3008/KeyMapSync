@@ -39,7 +39,7 @@ public class BridgeRoot : IBridge
     /// <summary>
     /// ex.
     /// --unsync filter and sequencing
-    /// , _ds as (select SEQ_COMMAND as integration_sales_detail_id, ds.* from _ds where not exists (select * from map where map.ec_shop_sales_detail_id = ds.ec_shop_sales_detail_id) and map.ec_shop_sales_id = ds.ec_shop_sales_id)
+    /// , _ds as (select SEQ_COMMAND as integration_sale_detail_id, ds.* from _ds where not exists (select * from map where map.ec_shop_sales_detail_id = ds.ec_shop_sales_detail_id) and map.ec_shop_sales_id = ds.ec_shop_sales_id)
     /// --header sequencing
     /// , _head as (select SEQ_COMMAND as integration_sales_id from _ds group by ec_shop_sales_id)
     /// --detail inner join header

@@ -82,7 +82,7 @@ select
     __v.version_id
     , __ds.*
 from ds __ds
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = root.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
@@ -93,7 +93,7 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
         var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root, Filter = new NotExistsKeyMapCondition() };
+        var bridge = new Additional() { Owner = root };
 
         var expect = @"create temporary table tmp_parse
 as
@@ -114,7 +114,7 @@ ds as (
 ),
 _added as (
     select
-        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
+        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
     from ds __ds
     where
@@ -124,7 +124,7 @@ select
     __v.version_id
     , __ds.*
 from _added __ds
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }
@@ -197,7 +197,7 @@ select
     __v.version_id
     , __ds.*
 from _changed __ds
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sales_detail__version' union all select 0)) + 1 as version_id) __v;";
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToTemporaryDdl();
         Assert.Equal(expect, val);
     }

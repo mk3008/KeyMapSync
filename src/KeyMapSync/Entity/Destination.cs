@@ -46,7 +46,7 @@ namespace KeyMapSync.Entity
 
         /// <summary>
         /// ex
-        /// "integration_sales_detail__sync"
+        /// "integration_sale_detail__sync"
         /// </summary>
         public string SyncName => string.Format(SyncFormart, DestinationName);
 
@@ -60,7 +60,7 @@ namespace KeyMapSync.Entity
 
         /// <summary>
         /// ex
-        /// "integration_sales_detail__version"
+        /// "integration_sale_detail__version"
         /// </summary>
         public string VersionName => string.Format(VersionFormat, DestinationName);
 
