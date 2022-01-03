@@ -90,8 +90,21 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
+    private int CreateTemporaryView(IDbConnection cn, BridgeRoot root)
+    {
+        var sql = root.ToTemporaryViewDdl();
+
+        var e = OnBeforeSqlExecute("CreateTemporaryView", sql, null);
+        var cnt = cn.Execute(sql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
     public int CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true)
     {
+        CreateTemporaryView(cn, bridge.GetRoot());
+
         var sql = bridge.ToTemporaryDdl(isTemporary);
         var prm = bridge.ToTemporaryParameter();
 

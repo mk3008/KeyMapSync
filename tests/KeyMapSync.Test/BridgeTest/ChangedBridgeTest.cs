@@ -52,7 +52,7 @@ public class ChangedBridgeTest
         , __ds.*
     from _expect __e
     inner join integration_sale_detail__map_ec_shop_sale_detail __map on __e.integration_sale_detail_id = __map.integration_sale_detail_id
-    left join ds __ds on __map.ec_shop_sale_detail_id = __ds.ec_shop_sale_detail_id
+    left join _kms_v_ec_shop_sale_detail __ds on __map.ec_shop_sale_detail_id = __ds.ec_shop_sale_detail_id
     where
         (
             __ds.ec_shop_sale_detail_id is null

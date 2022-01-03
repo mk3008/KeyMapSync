@@ -74,12 +74,16 @@ public class SqliteSyntaxTest
 
         using (var cn = new SQLiteConnection(CnString))
         {
-            sync.CreateTemporaryTable(cn, bridge, false);
-            sync.InsertDestination(cn, bridge);
-            sync.InsertKeyMap(cn, bridge);
-            sync.InsertSync(cn, bridge);
-            sync.InsertVersion(cn, bridge);
-            sync.InsertExtension(cn, bridge);
+            cn.Open();
+            using (var tran = cn.BeginTransaction())
+            {
+                sync.CreateTemporaryTable(cn, bridge, false);
+                sync.InsertDestination(cn, bridge);
+                sync.InsertKeyMap(cn, bridge);
+                sync.InsertSync(cn, bridge);
+                sync.InsertVersion(cn, bridge);
+                sync.InsertExtension(cn, bridge);
+            }
         }
     }
 

@@ -15,6 +15,8 @@ public interface IBridge
 
     IBridge Owner { get; }
 
+    BridgeRoot GetRoot();
+
     string GetWithQuery();
 
     string BuildExtendWithQuery();
@@ -47,16 +49,16 @@ public static class IBridgeExtension
 
     public static string ToTemporaryDdl(this IBridge source, bool isTemporary = true)
     {
-        var ext = source.BuildExtendWithQuery();
-        if (ext != null) ext = $",\r\n{ext}";
+        //var ext = source.BuildExtendWithQuery();
+        //if (ext != null) ext = $",\r\n{ext}";
 
         var command = isTemporary ? "create temporary table" : "create table";
-
+        var w = source.GetWithQuery();
+        w = (w == null) ? null : $"{w}\r\n"; ;
         var dest = source.Datasource.Destination;
         var sql = $@"{command} {source.BridgeName}
 as
-{source.GetWithQuery()}{ext}
-select
+{w}select
     __v.{dest.VersionKeyColumn}
     , {source.GetInnerDatasourceAlias()}.*
 from {source.Alias} {source.GetInnerDatasourceAlias()}

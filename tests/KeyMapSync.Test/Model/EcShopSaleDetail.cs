@@ -15,7 +15,7 @@ namespace KeyMapSync.Test.Model
             {
                 Name = "ec_shop_sale_detail",
                 Destination = IntegrationSaleDetail.GetDestination(),
-                WithQuery = @"with 
+                Query = @"with 
 ds as (
     select
           sd.ec_shop_sale_detail_id
@@ -29,8 +29,9 @@ ds as (
         ec_shop_sale_detail sd
         inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id
         inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id
-)",
-                Alias = "ds",
+)
+select * from ds",
+                //Alias = "ds",
                 Columns = new[] { "ec_shop_sale_detail_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price" },
                 KeyColumns = new[] { "ec_shop_sale_detail_id" },
                 SingInversionColumns = new[] { "quantity", "price" },

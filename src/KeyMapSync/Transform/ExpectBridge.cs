@@ -20,6 +20,8 @@ public class ExpectBridge : IBridge
 
     public IBridge Owner { get; set; }
 
+    public BridgeRoot GetRoot() => Owner.GetRoot();
+
     public Datasource Datasource => Owner.Datasource;
 
     public string Alias => "_expect";
@@ -49,8 +51,10 @@ public class ExpectBridge : IBridge
     /// <returns></returns>
     public string GetWithQuery()
     {
-        var sql = $@"{Owner.GetWithQuery()},
-{BuildExtendWithQuery()}";
+        var w = Owner.GetWithQuery();
+        w = (w == null) ? "with\r\n" : $"{w},\r\n";
+
+        var sql = $@"{w}{BuildExtendWithQuery()}";
         return sql;
     }
 
@@ -62,7 +66,7 @@ public class ExpectBridge : IBridge
         var keymap = ds.KeyMapName;
 
         var cols = datasourceKeys.Select(x => $"__map.{x}").ToList();
-        cols.Add($"{this.GetInnerDatasourceAlias()}.*"); 
+        cols.Add($"{this.GetInnerDatasourceAlias()}.*");
         var col = cols.ToString("\r\n, ").AddIndent(4);
 
         var sql = $@"select

@@ -25,14 +25,9 @@ public class Datasource
     public string Description { get; set; }
 
     /// <summary>
-    /// ex."with ds as (select * from ec_shop_sales_detail)"
+    /// ex."with ds as (select * from ec_shop_sales_detail) select * from select * from ds"
     /// </summary>
-    public string WithQuery { get; set; }
-
-    /// <summary>
-    /// ex."ds"
-    /// </summary>
-    public string Alias { get; set; }
+    public string Query { get; set; }
 
     /// <summary>
     /// ex.

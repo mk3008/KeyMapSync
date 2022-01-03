@@ -13,6 +13,8 @@ public class FilterBridge : IBridge
 {
     public IBridge Owner { get; set; }
 
+    public BridgeRoot GetRoot() => Owner.GetRoot();
+
     /// <summary>
     /// ex.
     /// _table_name 
@@ -27,7 +29,14 @@ public class FilterBridge : IBridge
 
     public Datasource Datasource => Owner.Datasource;
 
-    public string GetWithQuery() => Owner.GetWithQuery();
+    public string GetWithQuery()
+    {
+        var w = Owner.GetWithQuery();
+        w = (w == null) ? "with\r\n" : $"{w},\r\n";
+
+        var sql = $@"{w}{BuildExtendWithQuery()}";
+        return sql;
+    }
 
     public string BuildExtendWithQuery()
     {

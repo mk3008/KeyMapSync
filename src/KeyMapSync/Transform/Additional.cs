@@ -33,7 +33,14 @@ public class Additional : IBridge
 
     public string BridgeName => Owner.BridgeName;
 
-    public string GetWithQuery() => Owner.GetWithQuery();
+    public string GetWithQuery()
+    {
+        var w = Owner.GetWithQuery();
+        w = (w == null) ? "with\r\n" : $"{w},\r\n";
+
+        var sql = $@"{w}{BuildExtendWithQuery()}";
+        return sql;
+    }
 
     public string BuildExtendWithQuery()
     {
@@ -52,5 +59,7 @@ from {Owner.Alias} {this.GetInnerDatasourceAlias()}
 )";
         return sql;
     }
+
+    public BridgeRoot GetRoot() => Owner.GetRoot();
 }
 

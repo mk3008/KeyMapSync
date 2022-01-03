@@ -17,6 +17,7 @@ public class ChangedBridge : IBridge
 
     IBridge IBridge.Owner => Owner;
 
+    public BridgeRoot GetRoot() => Owner.GetRoot();
     public Datasource Datasource => Owner.Datasource;
 
     //public string RemarksColumn { get; set; } = "_remarks";
@@ -31,8 +32,14 @@ public class ChangedBridge : IBridge
 
     public string BridgeName => Owner.BridgeName;
 
-    public string GetWithQuery() => Owner.GetWithQuery();
+    public string GetWithQuery()
+    {
+        var w = Owner.GetWithQuery();
+        w = (w == null) ? "with\r\n" : $"{w},\r\n";
 
+        var sql = $@"{w}{BuildExtendWithQuery()}";
+        return sql;
+    }
 
     public string BuildExtendWithQuery()
     {

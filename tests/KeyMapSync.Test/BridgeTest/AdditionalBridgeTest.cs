@@ -39,7 +39,7 @@ public class AdditionalBridgeTest
     select
         (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __ds.*
-    from ds __ds
+    from _kms_v_ec_shop_sale_detail __ds
     where
         not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
 )";
