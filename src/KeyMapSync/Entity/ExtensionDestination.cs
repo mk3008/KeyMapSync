@@ -8,10 +8,6 @@ namespace KeyMapSync.Entity
 {
     public class ExtensionDestination
     {
-        public int ExtensionDestinationId { get; set; }
-
-        public Destination BaseDestination { get; set; }
-
         public string DestinationName { get; set; }
 
         public IList<string> Columns { get; set; }

@@ -9,11 +9,6 @@ namespace KeyMapSync.Entity;
 public class Datasource
 {
     /// <summary>
-    /// id.
-    /// </summary>
-    public int? DatasourceId { get; set; }
-
-    /// <summary>
     /// ex."ec_shop_sales_detail"
     /// </summary>
     public string Name { get; set; }
@@ -70,6 +65,9 @@ public class Datasource
 
     public HeaderOption HeaderOption { get; set; }
 
+    /// <summary>
+    /// keymap table name format.
+    /// </summary>
     public string KeyMapFormat { get; set; } = "{0}__map_{1}";
 
     /// <summary>

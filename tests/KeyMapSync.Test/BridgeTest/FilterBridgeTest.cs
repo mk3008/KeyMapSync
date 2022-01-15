@@ -37,19 +37,16 @@ public class FilterBridgeTest
         prm._ec_shop_article_id = 1;
 
         var ds = EcShopSaleDetail.GetDatasource();
-        var tmp = "tmp_parse";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new FilterBridge() { Owner = root };
-        bridge.FilterContainer.Add(f);
+        var root = new Abutment(ds);
+        var bridge = new FilterPier(root);
+        bridge.AddFilter(f);
 
-        var val = bridge.BuildExtendWithQuery();
-        var expect = $@"_filtered as (
-    select
-        _kms_v_ec_shop_sale_detail.*
-    from _kms_v_ec_shop_sale_detail
-    where
-        ec_shop_article_id = :_ec_shop_article_id
-)";
+        var val = bridge.BuildCurrentSelectQuery();
+        var expect = $@"select
+    _kms_v_ec_shop_sale_detail.*
+from _kms_v_ec_shop_sale_detail
+where
+    ec_shop_article_id = :_ec_shop_article_id";
 
         Assert.Equal(expect, val);
     }

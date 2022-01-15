@@ -11,16 +11,16 @@ public class DifferentCondition : IFilter
 {
     public string RemarksColumn { get; set; } = "_remarks";
 
-    public string BuildRemarksSql(IBridge sender)
+    public string BuildRemarksSql(IPier sender)
     {
         if (string.IsNullOrEmpty(RemarksColumn)) return null;
-        if (!(sender is ChangedBridge)) throw new NotSupportedException();
+        if (!(sender is ChangedPier)) throw new NotSupportedException();
 
-        var changed = sender as ChangedBridge;
-        var expect = changed.Owner;
-        var ds = sender.Datasource;
+        var changed = sender as ChangedPier;
+        //var expect = changed.PreviousPrier;
+        var ds = sender.GetDatasource();
 
-        return BuildRemarksSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+        return BuildRemarksSql(changed.InnerAlias, ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
     public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
@@ -72,14 +72,14 @@ public class DifferentCondition : IFilter
         return $"not coalesce(({expectAlias}.{column} = {datasourceAlias}.{column}) or ({expectAlias}.{column} is null and {datasourceAlias}.{column} is null), false)";
     }
 
-    public string ToCondition(IBridge sender)
+    public string ToCondition(IPier sender)
     {
-        if (!(sender is ChangedBridge)) throw new NotSupportedException();
+        if (!(sender is ChangedPier)) throw new NotSupportedException();
 
-        var changed = sender as ChangedBridge;
-        var ds = sender.Datasource;
+        var changed = sender as ChangedPier;
+        var ds = sender.GetDatasource();
 
-        return BuildWhereSql(sender.GetInnerDatasourceAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+        return BuildWhereSql(sender.InnerAlias, ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
     public ExpandoObject ToParameter()

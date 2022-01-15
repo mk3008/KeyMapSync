@@ -8,11 +8,7 @@ namespace KeyMapSync.Entity;
 
 public class ExtensionDatasource
 {
-    /// <summary>
-    /// id.
-    /// </summary>
-    public int? ExtensionDatasourceId { get; set; }
-    
+   
     /// <summary>
     /// ex."ec_shop_sales_article"
     /// </summary>

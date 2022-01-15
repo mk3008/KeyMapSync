@@ -10,7 +10,7 @@ namespace KeyMapSync.Filtering;
 
 public interface IFilter
 {
-    string ToCondition(IBridge sender);
+    string ToCondition(IPier sender);
 
     ExpandoObject ToParameter();
 }
@@ -24,7 +24,7 @@ public class FilterContainer : IFilter
         Filters.Add(item);
     }
 
-    public string ToCondition(IBridge sender)
+    public string ToCondition(IPier sender)
     {
         return Filters.Select(x => x.ToCondition(sender)).ToString("\r\nand ");
     }

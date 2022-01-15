@@ -1,14 +1,13 @@
 ﻿using System;
 
-namespace KeyMapSync
-{
-    public class SyncEventArgs : EventArgs
-    {
-        public SyncEventArgs(string name)
-        {
-            Name = name;
-        }
+namespace KeyMapSync;
 
-        public string Name { get; }
+public class SyncEventArgs : EventArgs
+{
+    public SyncEventArgs(string name)
+    {
+        Name = name;
     }
+
+    public string Name { get; }
 }

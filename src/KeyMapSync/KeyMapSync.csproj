@@ -39,6 +39,9 @@
     <Compile Remove="Synchronizer.Delete.cs" />
     <Compile Remove="Synchronizer.Insert.cs" />
     <Compile Remove="Synchronizer.Offset.cs" />
+    <Compile Remove="Transform\FilterPier.cs" />
+    <Compile Remove="Transform\InsertLoad.cs" />
+    <Compile Remove="Transform\RemoveLoad.cs" />
     <Compile Remove="Transform\UnSynchronizedCondition.cs" />
     <Compile Remove="ValidateOption.cs" />
   </ItemGroup>

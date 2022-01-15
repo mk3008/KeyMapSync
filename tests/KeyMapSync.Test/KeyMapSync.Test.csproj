@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <Compile Remove="BridgeRootTest.cs" />
+    <Compile Remove="BridgeTest\FilterBridgeTest.cs" />
     <Compile Remove="CascadeTest.cs" />
     <Compile Remove="CorporationDatasourceMap.cs" />
     <Compile Remove="CustomerDatasourceMap.cs" />

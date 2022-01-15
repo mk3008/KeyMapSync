@@ -15,9 +15,9 @@ public class CustomFilter : IFilter
 
     public ExpandoObject Parameter { get; set; }
 
-    public string ToCondition(IBridge sender)
+    public string ToCondition(IPier sender)
     {
-        return Condition;
+        return string.Format(Condition, sender.InnerAlias);
     }
 
     public ExpandoObject ToParameter()

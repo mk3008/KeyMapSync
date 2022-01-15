@@ -9,18 +9,19 @@ namespace KeyMapSync.Filtering;
 
 public class NotExistsKeyMapCondition : IFilter
 {
-    public string ToCondition(IBridge sender)
+    public string ToCondition(IPier sender)
     {
-        var ds = sender.Datasource;
+        var ds = sender.GetDatasource();
         var keymap = ds.KeyMapName;
-        var datasourceAlias = sender.GetInnerDatasourceAlias();
+        var datasourceAlias = sender.InnerAlias;
         var datasourceKeys = ds.KeyColumns;
         return BuildSql(keymap, datasourceAlias, datasourceKeys);
     }
 
     public static string BuildSql(string keymap, string datasourceAlias, IEnumerable<string> datasourceKeys)
     {
-        return $"not exists (select * from {keymap} ___map where {datasourceKeys.Select(key => $"{datasourceAlias}.{key} = ___map.{key}").ToString(" and ")})";
+        var sql = $"not exists (select * from {keymap} ___map where {datasourceKeys.Select(key => $"{datasourceAlias}.{key} = ___map.{key}").ToString(" and ")})";
+        return sql;
     }
 
     public ExpandoObject ToParameter()

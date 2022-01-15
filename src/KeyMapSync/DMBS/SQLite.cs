@@ -66,7 +66,7 @@ public class SQLite : IDBMS
         cols.Add($"{dest.SequenceKeyColumn} integer not null");
         cols.Add($"{dest.OffsetColumnName} integer not null");
         cols.Add($"{dest.RenewalColumnName} integer");
-        cols.Add($"{dest.RemarksColumn} text not null");
+        cols.Add($"{dest.OffsetRemarksColumn} text not null");
         cols.Add($"primary key({dest.SequenceKeyColumn})");
         cols.Add($"unique({dest.OffsetColumnName})");
         cols.Add($"unique({dest.RenewalColumnName})");

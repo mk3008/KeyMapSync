@@ -30,19 +30,18 @@ public class ExpectBridgeTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
 
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = "tmp_default_parse" };
-        var bridge = new ExpectBridge() { Owner = root };
+        var root = new Abutment(ds);
+        var bridge = new ExpectPier(root);
         bridge.AddFilter(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
-        var val = bridge.BuildExtendWithQuery();
-        var expect = $@"_expect as (
-    select
-        __map.ec_shop_sale_detail_id
-        , __ds.*
-    from integration_sale_detail __ds
-    inner join integration_sale_detail__map_ec_shop_sale_detail __map on __ds.integration_sale_detail_id = __map.integration_sale_detail_id
-    where
-        exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.integration_sale_detail_id = ___sync.integration_sale_detail_id)
-)";
+        var val = bridge.BuildCurrentSelectQuery();
+
+        var expect = $@"select
+    __map.ec_shop_sale_detail_id
+    , __p.*
+from integration_sale_detail __p
+inner join integration_sale_detail__map_ec_shop_sale_detail __map on __p.integration_sale_detail_id = __map.integration_sale_detail_id
+where
+    exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __p.integration_sale_detail_id = ___sync.integration_sale_detail_id)";
 
         Assert.Equal(expect, val);
     }

@@ -21,22 +21,20 @@ public class Synchronizer
 
     public SyncEventArgs SyncEvent { get; set; }
 
-    public int Insert(IDbConnection cn, Datasource ds, IFilter filter = null)
+    public int Insert(IDbConnection cn, Datasource ds, string bridgeName = null, IFilter filter = null)
     {
         SyncEvent = new SyncEventArgs("Insert");
 
+        CreateSystemTable(cn, ds);
+        var root = new Abutment(ds, bridgeName);
+        var bridge = new AdditionalPier(root);
+        bridge.AddFilter(filter);
+
+        var cnt = CreateTemporaryTable(cn, bridge);
+        if (cnt == 0) return 0;
+
         using (var trn = cn.BeginTransaction())
         {
-            CreateSystemTable(cn, ds);
-
-            var tmp = $"_kms_tmp_{ds.Name}";
-            var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-            var bridge = new Additional() { Owner = root };
-            bridge.AddFilter(filter);
-
-            var cnt = CreateTemporaryTable(cn, bridge);
-            if (cnt == 0) return 0;
-
             if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
             if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
             if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
@@ -50,7 +48,7 @@ public class Synchronizer
         }
     }
 
-    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, IFilter filter = null)
+    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, string bridgeName = null, IFilter filter = null)
     {
         SyncEvent = new SyncEventArgs("Offset");
 
@@ -58,12 +56,11 @@ public class Synchronizer
         {
             CreateSystemTable(cn, ds);
 
-            var tmp = $"_kms_tmp_{ds.Name}";
-            var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-            var work = new ExpectBridge() { Owner = root, };
-            work.AddFilter(validateFilter);
-            work.AddFilter(filter);
-            var bridge = new ChangedBridge() { Owner = work };
+            var root = new Abutment(ds, bridgeName);
+            var pier = new ExpectPier(root);
+            pier.AddFilter(validateFilter);
+            pier.AddFilter(filter);
+            var bridge = new ChangedPier(pier);
 
             var cnt = CreateTemporaryTable(cn, bridge);
             if (cnt == 0) return 0;
@@ -90,7 +87,7 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
-    private int CreateTemporaryView(IDbConnection cn, BridgeRoot root)
+    private int CreateTemporaryView(IDbConnection cn, IAbutment root)
     {
         var sql = root.ToTemporaryViewDdl();
 
@@ -101,16 +98,16 @@ public class Synchronizer
         return cnt;
     }
 
-    public int CreateTemporaryTable(IDbConnection cn, IBridge bridge, bool isTemporary = true)
+    public int CreateTemporaryTable(IDbConnection cn, IPier bridge, bool isTemporary = true)
     {
-        CreateTemporaryView(cn, bridge.GetRoot());
+        CreateTemporaryView(cn, bridge.GetAbutment());
 
         var sql = bridge.ToTemporaryDdl(isTemporary);
         var prm = bridge.ToTemporaryParameter();
 
         var e = OnBeforeSqlExecute("CreateTemporaryTable", sql, prm);
         cn.Execute(sql, prm);
-        var cntSql = $"select count(*) from {bridge.BridgeName};";
+        var cntSql = $"select count(*) from {bridge.GetBridgeName()};";
         var cnt = cn.ExecuteScalar<int>(cntSql);
         OnAfterSqlExecute(e, cnt);
 

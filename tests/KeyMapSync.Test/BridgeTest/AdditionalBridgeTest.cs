@@ -29,20 +29,16 @@ public class AdditionalBridgeTest
     public void BuildExtendWithQueryTest()
     {
         var ds = EcShopSaleDetail.GetDatasource();
-        var tmp = "tmp_parse";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root };
-        //bridge.Filter = new NotExistsKeyMapCondition();
+        var root = new Abutment(ds);
+        var bridge = new AdditionalPier(root);
 
-        var val = bridge.BuildExtendWithQuery();
-        var expect = $@"_added as (
-    select
-        (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
-        , __ds.*
-    from _kms_v_ec_shop_sale_detail __ds
-    where
-        not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __ds.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
-)";
+        var val = bridge.BuildCurrentSelectQuery();
+        var expect = $@"select
+    (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
+    , __p.*
+from _kms_v_ec_shop_sale_detail __p
+where
+    not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __p.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)";
 
         Assert.Equal(expect, val);
     }

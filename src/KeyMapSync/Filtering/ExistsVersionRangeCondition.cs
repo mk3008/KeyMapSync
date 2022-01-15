@@ -14,10 +14,10 @@ public class ExistsVersionRangeCondition : IFilter
 
     public int MaxVersion { get; set; }
 
-    public string ToCondition(IBridge sender)
+    public string ToCondition(IPier sender)
     {
-        var ds = sender.Datasource;
-        var datasourceAlias = sender.GetInnerDatasourceAlias();
+        var ds = sender.GetDatasource();
+        var datasourceAlias = sender.InnerAlias;
         var sync = ds.Destination.SyncName;
         var key = ds.Destination.SequenceKeyColumn;
 

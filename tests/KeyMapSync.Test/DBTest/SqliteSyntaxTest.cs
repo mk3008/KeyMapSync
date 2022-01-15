@@ -68,9 +68,8 @@ public class SqliteSyntaxTest
         }
 
         // create temporary table test
-        var tmp = "tmp_additional";
-        var root = new BridgeRoot() { Datasource = ds, BridgeName = tmp };
-        var bridge = new Additional() { Owner = root };
+        var root = new Abutment(ds);
+        var bridge = new AdditionalPier(root);
 
         using (var cn = new SQLiteConnection(CnString))
         {

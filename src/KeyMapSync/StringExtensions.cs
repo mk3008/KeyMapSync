@@ -12,14 +12,12 @@ internal static class StringExtensions
 {
     public static string ToString(this IEnumerable<string> source, string splitter, Func<string, string> func = null)
     {
-        if (func == null) func = (x => x);
-
+        func ??= x => x;
         var s = new StringBuilder();
         var isFirst = true;
         foreach (var item in source)
         {
             if (!isFirst) s.Append(splitter);
-
             s.Append(func.Invoke(item));
             isFirst = false;
         }
@@ -58,7 +56,7 @@ internal static class StringExtensions
 
     public static string ToWhereSqlText(this IEnumerable<string> source)
     {
-        var s = source.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).ToString(" and ");
+        var s = source.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).ToList().ToString(" and ");
         if (!string.IsNullOrEmpty(s)) s = $@"where
 {s.AddIndent(4)}";
         return s;

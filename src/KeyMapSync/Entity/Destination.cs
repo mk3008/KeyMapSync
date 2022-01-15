@@ -8,41 +8,87 @@ namespace KeyMapSync.Entity
 {
     public class Destination
     {
-        public int DestinationId { get; set; }
-
+        /// <summary>
+        /// Destination table name.
+        /// </summary>
         public string DestinationName { get; set; }
 
+        /// <summary>
+        /// Sequence key column name.
+        /// </summary>
         public string SequenceKeyColumn { get; set; }
 
+        /// <summary>
+        /// Sequence next value command.
+        /// ex.
+        /// "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over()"
+        /// </summary>
         public string SequenceCommand { get; set; }
 
+        /// <summary>
+        /// Destination columns.
+        /// </summary>
         public IList<string> Columns { get; set; }
 
+        /// <summary>
+        /// Sync-table name format.
+        /// </summary>
         public string SyncFormart { get; set; } = "{0}__sync";
 
+        /// <summary>
+        /// Version-table name format.
+        /// </summary>
         public string VersionFormat { get; set; } = "{0}__version";
 
+        /// <summary>
+        /// Version key column name.
+        /// </summary>
         public string VersionKeyColumn { get; set; } = "version_id";
 
+        /// <summary>
+        /// Datasourcename column name.
+        /// </summary>
         public string NameColumn { get; set; } = "datasource_name";
 
+        /// <summary>
+        /// Timestamp column name.
+        /// </summary>
         public string TimestampColumn { get; set; } = "create_timestamp";
 
-
+        /// <summary>
+        /// Offset-table name format.
+        /// </summary>
         public string OffsetFormat { get; set; } = "{0}__offset";
 
+        /// <summary>
+        /// Offest-table name.
+        /// </summary>
         public string OffsetName => String.Format(OffsetFormat, DestinationName);
 
-
+        /// <summary>
+        /// Offset column prefix.
+        /// </summary>
         public string OffsetColumnPrefix { get; set; } = "offset_";
 
+        /// <summary>
+        /// Offset column name.
+        /// </summary>
         public string OffsetColumnName => $"{OffsetColumnPrefix}{SequenceKeyColumn}";
 
+        /// <summary>
+        /// Renewal column prefix.
+        /// </summary>
         public string RenewalColumnPrefix { get; set; } = "renewal_";
 
+        /// <summary>
+        /// Renewal column name.
+        /// </summary>
         public string RenewalColumnName => $"{RenewalColumnPrefix}{SequenceKeyColumn}";
 
-        public string RemarksColumn { get; set; } = "remarks";
+        /// <summary>
+        /// Offest remarks column
+        /// </summary>
+        public string OffsetRemarksColumn { get; set; } = "remarks";
 
         /// <summary>
         /// ex
@@ -50,6 +96,10 @@ namespace KeyMapSync.Entity
         /// </summary>
         public string SyncName => string.Format(SyncFormart, DestinationName);
 
+        /// <summary>
+        /// Get sync-table column list.
+        /// </summary>
+        /// <returns></returns>
         public IList<string> GetSyncColumns()
         {
             var lst = new List<string>();
@@ -64,6 +114,10 @@ namespace KeyMapSync.Entity
         /// </summary>
         public string VersionName => string.Format(VersionFormat, DestinationName);
 
+        /// <summary>
+        /// Get version-table column list.
+        /// </summary>
+        /// <returns></returns>
         public IList<string> GetVersionColumns()
         {
             var lst = new List<string>();
@@ -72,6 +126,9 @@ namespace KeyMapSync.Entity
             return lst;
         }
 
+        /// <summary>
+        /// Version sequence next value command.
+        /// </summary>
         public string VersionSequenceCommand { get; set; }
     }
 }

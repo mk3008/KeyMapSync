@@ -9,11 +9,6 @@ namespace KeyMapSync.Entity;
 public class HeaderOption
 {
     /// <summary>
-    /// id.
-    /// </summary>
-    public int? HeaderOptionId { get; set; }
-
-    /// <summary>
     /// ex."integration_sales_slip header"
     /// </summary>
     public string Name { get; set; }

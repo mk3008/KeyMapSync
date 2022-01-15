@@ -68,7 +68,7 @@ public class SqliteFilterInsertTest
         prm.ec_shop_article_id = 10;
         var f = new CustomFilter()
         {
-            Condition = "__ds.ec_shop_article_id = :ec_shop_article_id",
+            Condition = "{0}.ec_shop_article_id = :ec_shop_article_id",
             Parameter = prm
         };
 
@@ -77,7 +77,7 @@ public class SqliteFilterInsertTest
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();
-            cnt = sync.Insert(cn, ds, f);
+            cnt = sync.Insert(cn, ds, filter: f);
         }
 
         Assert.Equal(3, cnt);
@@ -86,7 +86,7 @@ public class SqliteFilterInsertTest
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();
-            cnt = sync.Insert(cn, ds, f);
+            cnt = sync.Insert(cn, ds, filter: f);
         }
 
         Assert.Equal(0, cnt);
@@ -96,7 +96,7 @@ public class SqliteFilterInsertTest
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();
-            cnt = sync.Insert(cn, ds, f);
+            cnt = sync.Insert(cn, ds, filter: f);
         }
 
         Assert.Equal(3, cnt);
