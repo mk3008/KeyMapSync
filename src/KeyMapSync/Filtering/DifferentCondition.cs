@@ -82,7 +82,7 @@ public class DifferentCondition : IFilter
         return BuildWhereSql(sender.InnerAlias, ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
-    public ExpandoObject ToParameter()
+    public IDictionary<string, object> ToParameter()
     {
         return null;
     }

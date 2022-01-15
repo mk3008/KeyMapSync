@@ -77,7 +77,7 @@ from
         return sql;
     }
 
-    public static ExpandoObject ToTemporaryParameter(this IBridge source)
+    public static IDictionary<string, object> ToTemporaryParameter(this IBridge source)
     {
         var pier = source.GetCurrentPier();
         if (pier == null) return null;

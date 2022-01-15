@@ -24,7 +24,7 @@ public class NotExistsKeyMapCondition : IFilter
         return sql;
     }
 
-    public ExpandoObject ToParameter()
+    public IDictionary<string, object> ToParameter()
     {
         return null;
     }

@@ -13,14 +13,14 @@ public class CustomFilter : IFilter
 {
     public string Condition { get; set; }
 
-    public ExpandoObject Parameter { get; set; }
+    public IDictionary<string, object> Parameter { get; set; }
 
     public string ToCondition(IPier sender)
     {
         return string.Format(Condition, sender.InnerAlias);
     }
 
-    public ExpandoObject ToParameter()
+    public IDictionary<string, object> ToParameter()
     {
         return Parameter;
     }

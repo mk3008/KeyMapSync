@@ -29,11 +29,11 @@ public class ExistsVersionRangeCondition : IFilter
         return $"exists (select * from {sync} ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and {datasourceAlias}.{destinationKey} = ___sync.{destinationKey})";
     }
 
-    public ExpandoObject ToParameter()
+    public IDictionary<string, object> ToParameter()
     {
-        dynamic prm = new ExpandoObject();
-        prm._min_version_id = MinVersion;
-        prm._max_version_id = MaxVersion;
-        return prm;
+        var dic = new Dictionary<string, object>();
+        dic.Add("_min_version_id", MinVersion);
+        dic.Add("_max_version_id", MaxVersion);
+        return dic;
     }
 }

@@ -44,10 +44,10 @@ public class ExistsVersionRangeConditionTest
         var max = 2;
         var cnd = new ExistsVersionRangeCondition() { MinVersion = min, MaxVersion = max };
 
-        dynamic prm = cnd.ToParameter();
+        var prm = cnd.ToParameter();
 
-        Assert.Equal(min, prm._min_version_id);
-        Assert.Equal(max, prm._max_version_id);
+        Assert.Equal(min, prm["_min_version_id"]);
+        Assert.Equal(max, prm["_max_version_id"]);
     }
 }
 
