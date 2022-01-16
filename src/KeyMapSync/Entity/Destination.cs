@@ -31,6 +31,12 @@ namespace KeyMapSync.Entity
         public IList<string> Columns { get; set; }
 
         /// <summary>
+        /// ex
+        /// "quantity, price"
+        /// </summary>
+        public IList<string> SingInversionColumns { get; set; }
+
+        /// <summary>
         /// Sync-table name format.
         /// </summary>
         public string SyncFormart { get; set; } = "{0}__sync";
@@ -95,8 +101,6 @@ namespace KeyMapSync.Entity
         /// "integration_sale_detail__sync"
         /// </summary>
         public string SyncName => string.Format(SyncFormart, DestinationName);
-
-
 
         /// <summary>
         /// ex

@@ -36,7 +36,6 @@ from
 
     public (string commandText, IDictionary<string, object> parameter) ToInsertDestinationCommand(string prefix)
     {
-        var ds = this.GetDatasource();
         var dest = this.GetDestination();
 
         var toTable = dest.DestinationName;
@@ -47,6 +46,20 @@ from
         return (sql, null);
     }
 
+    public (string commandText, IDictionary<string, object> parameter) ToReverseInsertDestinationCommand()
+    {
+        var dest = this.GetDestination();
+        var key = dest.SequenceKeyColumn;
+
+        var toTable = dest.DestinationName;
+        var fromTable = $"(select __p.offset_{key}, __d.* from {this.GetBridgeName()} __p inner join {dest.DestinationName} __d on __p.{key} = __d.{key}) __p";
+
+        var info = dest.GetReverseInsertDestinationInfo();
+        var sql = CreateInsertSql(toTable, info.toColumns, fromTable, info.fromColumns, whereQuery: info.where);
+        return (sql, null);
+    }
+
+
     public (string commandText, IDictionary<string, object> parameter) ToInsertKeyMapCommand(string prefix)
     {
         var ds = this.GetDatasource();
@@ -54,6 +67,18 @@ from
         var toTable = ds.KeyMapName;
         var fromTable = this.GetBridgeName();
         var info = ds.GetInsertKeyMapInfoset(prefix);
+
+        var sql = CreateInsertSql(toTable, info.toColumns, fromTable, info.fromColumns, whereQuery: info.where);
+        return (sql, null);
+    }
+
+    public (string commandText, IDictionary<string, object> parameter) ToInsertOffsetKeyMapCommand()
+    {
+        var dest = this.GetDatasource().Destination;
+
+        var toTable = dest.OffsetName;
+        var fromTable = this.GetBridgeName();
+        var info = dest.GetInsertOffsetKeyMapInfoset();
 
         var sql = CreateInsertSql(toTable, info.toColumns, fromTable, info.fromColumns, whereQuery: info.where);
         return (sql, null);
@@ -142,7 +167,5 @@ as
 {query}";
         return (viewName, ddl);
     }
-
-
 }
 

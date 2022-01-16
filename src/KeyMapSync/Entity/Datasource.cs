@@ -55,12 +55,6 @@ public class Datasource
 
     public IEnumerable<string> InspectionColumns => Columns.Where(x => !InspectionIgnoreColumns.Contains(x)).Where(x => !KeyColumns.Contains(x));
 
-    /// <summary>
-    /// ex
-    /// "quantity, price"
-    /// </summary>
-    public IList<string> SingInversionColumns { get; set; }
-
     public IList<ExtensionDatasource> Extensions { get; set; } = new List<ExtensionDatasource>();
 
     public HeaderOption HeaderOption { get; set; }

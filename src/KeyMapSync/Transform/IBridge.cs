@@ -19,7 +19,11 @@ public interface IBridge
 
     (string commandText, IDictionary<string, object> parameter) ToInsertDestinationCommand(string prefix);
 
+    (string commandText, IDictionary<string, object> parameter) ToReverseInsertDestinationCommand();
+
     (string commandText, IDictionary<string, object> parameter) ToInsertKeyMapCommand(string prefix);
+
+    (string commandText, IDictionary<string, object> parameter) ToInsertOffsetKeyMapCommand();
 
     string ToRemoveKeyMapSql();
 

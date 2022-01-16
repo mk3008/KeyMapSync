@@ -64,17 +64,24 @@ public class Synchronizer
             var cnt = CreateTemporaryTable(cn, bridge);
             if (cnt == 0) return 0;
 
-            //if (InsertReverseDestination(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
+            var renewalPrefix = ds.Destination.RenewalColumnPrefix;
+            var offsetPrefix = ds.Destination.OffsetColumnPrefix;
+
+            // offset
+            if (ReverseInsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
             if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            //if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge, offsetPrefix) != cnt) throw new InvalidOperationException();
 
             //TODO:count check!
-            if (InsertDestination(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
-            if (InsertKeyMap(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
+
+            // renewwal
+            if (InsertDestination(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
+            if (InsertKeyMap(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
             if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
-            //InsertExtension(cn, bridge);
+            //InsertExtension(cn, bridge, prefix);
 
             trn.Commit();
 
@@ -127,11 +134,33 @@ public class Synchronizer
         return cnt;
     }
 
+    public int ReverseInsertDestination(IDbConnection cn, IBridge bridge)
+    {
+        var cmd = bridge.ToReverseInsertDestinationCommand();
+
+        var e = OnBeforeSqlExecute("ReverseInsertDestination", cmd);
+        var cnt = cn.Execute(cmd);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
     public int InsertKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
     {
         var cmd = bridge.ToInsertKeyMapCommand(prefix);
 
         var e = OnBeforeSqlExecute("InsertKeyMap", cmd);
+        var cnt = cn.Execute(cmd);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
+    public int InsertOffsetKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
+    {
+        var cmd = bridge.ToInsertOffsetKeyMapCommand();
+
+        var e = OnBeforeSqlExecute("InsertOffsetKeyMap", cmd);
         var cnt = cn.Execute(cmd);
         OnAfterSqlExecute(e, cnt);
 

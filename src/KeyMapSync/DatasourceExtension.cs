@@ -21,18 +21,17 @@ internal static class DatasourceExtension
 
     public static (IList<string> fromColumns, IList<string> toColumns, string where) GetInsertKeyMapInfoset(this Datasource source, string prefix = null)
     {
-        var pre = (string.IsNullOrEmpty(prefix)) ? null : $"{prefix}_";
         var key = source.Destination.SequenceKeyColumn;
 
         var fromCols = new List<string>();
-        fromCols.Add($"{pre}{key}");
+        fromCols.Add($"{prefix}{key}");
         fromCols.AddRange(source.KeyColumns);
 
         var toCols = new List<string>();
         toCols.Add(key);
         toCols.AddRange(source.KeyColumns);
 
-        var where = (pre == null) ? null : $"where {pre}{key} is not null";
+        var where = (string.IsNullOrEmpty(prefix)) ? null : $"where {prefix}{key} is not null";
 
         return (fromCols, toCols, where);
     }

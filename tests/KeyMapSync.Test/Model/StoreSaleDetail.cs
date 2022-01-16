@@ -32,7 +32,6 @@ from
 
                 Columns = new[] { "store_sale_detail_id", "sale_date", "store_article_id", "article_name", "unit_price", "quantity", "price", "remarks" },
                 KeyColumns = new[] { "store_sale_detail_id" },
-                SingInversionColumns = new[] { "quantity", "price" },
                 InspectionIgnoreColumns = new[] { "store_article_id", "article_name", "remarks" },
             };
             ds.Extensions.Add(GetExtensionDatasource());
