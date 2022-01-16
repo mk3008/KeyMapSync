@@ -71,6 +71,30 @@ from
     )v 
     inner join ec_shop_article a on v.column2 = a.ec_shop_article_id
 ;";
+
+    public static string CreateExtendDataSql => @"
+insert into ec_shop_article (ec_shop_article_id, article_name, unit_price, create_timestamp)
+values 
+(50, 'beef' , 500, current_timestamp)
+;
+insert into ec_shop_sale (ec_shop_sale_id, sale_date, create_timestamp)
+values 
+(800, '2000/03/10', '2000/03/10')
+;
+insert into ec_shop_sale_detail (ec_shop_sale_id, ec_shop_article_id, unit_price, quantity, price)
+select
+    v.column1 as ec_shop_sale_id,
+    a.ec_shop_article_id,
+    a.unit_price, 
+    v.column3 as quantity,
+    a.unit_price * v.column3 as price
+from
+    (
+        values 
+        (800, 50, 6)
+    )v 
+    inner join ec_shop_article a on v.column2 = a.ec_shop_article_id
+;";
 }
 
 

@@ -45,19 +45,15 @@ select * from ds",
         {
             var ext = new ExtensionDatasource()
             {
-                Name = "ext_ec_shop_article",
                 Destination = ExtEcShopArtcile.GetDestination(),
-                WithQueryFormat = @"with
-ds as (
-    select
-        integration_sale_detail_id
-        , ec_shop_article_id 
-    from
-        {0}
-    where
-        ec_shop_article_id is not null
-)",
-                AliasName = "ds",
+                QueryFormat = @"
+select
+    integration_sale_detail_id
+    , ec_shop_article_id 
+from
+    {0}
+where
+    ec_shop_article_id is not null"
             };
             return ext;
         }

@@ -64,8 +64,8 @@ public class SqliteFilterInsertTest
         var sync = new Synchronizer() { Dbms = db };
         sync.BeforeSqlExecute += OnBeforeSqlExecute;
 
-        dynamic prm = new ExpandoObject();
-        prm.ec_shop_article_id = 10;
+        dynamic prm = new Dictionary<string, object>();
+        prm[":ec_shop_article_id"] = 10;
         var f = new CustomFilter()
         {
             Condition = "{0}.ec_shop_article_id = :ec_shop_article_id",
@@ -92,7 +92,7 @@ public class SqliteFilterInsertTest
         Assert.Equal(0, cnt);
 
         // parameter change
-        prm.ec_shop_article_id = 20;
+        prm[":ec_shop_article_id"] = 20;
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();

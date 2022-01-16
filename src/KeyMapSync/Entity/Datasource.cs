@@ -75,15 +75,6 @@ public class Datasource
     /// "integration_sale_detail__map_ec_shop_sales_detail"
     /// </summary>
     public string KeyMapName => string.Format(KeyMapFormat, Destination.DestinationName, Name);
-
-    public IList<string> GetKeyMapColumns()
-    {
-        var lst = new List<string>();
-        lst.Add(Destination.SequenceKeyColumn);
-        lst.AddRange(KeyColumns);
-        return lst;
-    }
-
 }
 
 

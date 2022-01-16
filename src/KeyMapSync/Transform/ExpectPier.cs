@@ -13,7 +13,10 @@ namespace KeyMapSync.Transform;
 /// </summary>
 public class ExpectPier : PierBase
 {
-    public ExpectPier(IBridge bridge) : base(bridge) { }
+    public ExpectPier(IBridge bridge, IFilter validateFilter = null) : base(bridge)
+    {
+        if (validateFilter != null) Filter.Add(validateFilter);
+    }
 
     public override string Name => "_expect";
 

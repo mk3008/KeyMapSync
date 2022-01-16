@@ -31,55 +31,108 @@ public class SqliteOffsetTest
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();
-            foreach (var item in Integration.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in EcShop.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in EcShop.CreateDataSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in Store.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in Store.CreateDataSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
+            foreach (var item in Integration.InitializeSql.Split(";")) cn.Execute(item);
+            foreach (var item in EcShop.InitializeSql.Split(";")) cn.Execute(item);
+            foreach (var item in EcShop.CreateDataSql.Split(";")) cn.Execute(item);
+            foreach (var item in Store.InitializeSql.Split(";")) cn.Execute(item);
+            foreach (var item in Store.CreateDataSql.Split(";")) cn.Execute(item);
         }
     }
+
+    internal void AddEcshopExtendSale()
+    {
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            cn.Open();
+            foreach (var item in EcShop.CreateExtendDataSql.Split(";")) cn.Execute(item);
+        }
+    }
+
+    internal void UpdateQuantity()
+    {
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            cn.Open();
+            cn.Execute("update ec_shop_sale_detail set quantity = quantity + 1, price = unit_price * (quantity + 1) where ec_shop_sale_detail_id = 1");
+        }
+    }
+
+
+    private int Sync(Datasource ds)
+    {
+        IDBMS db = new SQLite();
+        var sync = new Synchronizer() { Dbms = db };
+        sync.BeforeSqlExecute += OnBeforeSqlExecute;
+
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            cn.Open();
+            return sync.Insert(cn, ds);
+        }
+    }
+
+    private void OnBeforeSqlExecute(object sender, SqlEventArgs e)
+    {
+        Output.WriteLine(e.GetSqlInfo());
+    }
+
+    private int Offset(Datasource ds, IFilter validateFilter)
+    {
+        IDBMS db = new SQLite();
+        var sync = new Synchronizer() { Dbms = db };
+        sync.BeforeSqlExecute += OnBeforeSqlExecute;
+
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            cn.Open();
+            return sync.Offset(cn, ds, validateFilter);
+        }
+    }
+
 
     [Fact]
     public void OffsetTest()
     {
-/*        var ds = EcShopSaleDetail.GetDatasource();
-        IDBMS db = new SQLite();
-        var sync = new Synchronizer() { Dbms = db };
+        var ecShopDs = EcShopSaleDetail.GetDatasource();
+        var storeDs = StoreSaleDetail.GetDatasource();
 
-        // Execute DDL test
-        var cnt = 0;
-        using (var cn = new SQLiteConnection(CnString))
-        {
-            cn.Open();
-            cnt = sync.Insert(cn, ds);
-        }
-
+        //insert ecshop
+        var cnt = Sync(ecShopDs);
         Assert.Equal(11, cnt);
 
-        // rerun
-        var validateFilter = new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 };
-        using (var cn = new SQLiteConnection(CnString))
-        {
-            cn.Open();
-            cnt = sync.Offset(cn, ds, validateFilter);
-        }
+        var validateFilter = new ExistsVersionRangeCondition();
 
-        Assert.Equal(0, cnt);*/
+        // no chnage
+        cnt = Offset(ecShopDs, validateFilter);
+        Assert.Equal(0, cnt);
+
+        //insert store
+        cnt = Sync(storeDs);
+        Assert.Equal(11, cnt);
+
+        //ecshop is not changed
+        cnt = Offset(ecShopDs, validateFilter);
+        Assert.Equal(0, cnt);
+
+        //insert ecshop
+        AddEcshopExtendSale();
+
+        //ecshop is not changed (Inserts are not subject to verification.)
+        cnt = Offset(ecShopDs, validateFilter);
+        Assert.Equal(0, cnt);
+
+        //update ecsho
+        UpdateQuantity();
+
+        //hit
+        cnt = Offset(ecShopDs, validateFilter);
+        Assert.Equal(1, cnt);
+
+
+        //delete ecshop
+
+        //hit
+
     }
 }
 

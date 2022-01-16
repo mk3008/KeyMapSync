@@ -26,28 +26,59 @@ public class ExistsVersionRangeConditionTest
     }
 
     [Fact]
-    public void SqlTest()
+    public void SqlTest_VersionRange()
     {
         var expect = "exists (select * from sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __ds.id = ___sync.id)";
 
         var sync = "sync";
         var key = "id";
-        var val = ExistsVersionRangeCondition.BuildSql(sync, "__ds", key);
+        var min = 1;
+        var max = 2;
+        var cnd = new ExistsVersionRangeCondition(min, max);
+
+        var val = cnd.BuildSql(sync, "__ds", key);
 
         Assert.Equal(expect, val);
     }
 
     [Fact]
-    public void ParameterTest()
+    public void ParameterTest_VersionRange()
     {
         var min = 1;
         var max = 2;
-        var cnd = new ExistsVersionRangeCondition() { MinVersion = min, MaxVersion = max };
+        var cnd = new ExistsVersionRangeCondition(min, max);
 
         var prm = cnd.ToParameter();
 
-        Assert.Equal(min, prm["_min_version_id"]);
-        Assert.Equal(max, prm["_max_version_id"]);
+        Assert.Equal(min, prm[":_min_version_id"]);
+        Assert.Equal(max, prm[":_max_version_id"]);
+    }
+
+    [Fact]
+    public void SqlTest_Version()
+    {
+        var expect = "exists (select * from sync ___sync where :_min_version_id <= ___sync.version_id and __ds.id = ___sync.id)";
+
+        var sync = "sync";
+        var key = "id";
+        var min = 1;
+        var cnd = new ExistsVersionRangeCondition(min);
+
+        var val = cnd.BuildSql(sync, "__ds", key);
+
+        Assert.Equal(expect, val);
+    }
+
+    [Fact]
+    public void ParameterTest_Version()
+    {
+        var min = 1;
+        var cnd = new ExistsVersionRangeCondition(min);
+
+        var prm = cnd.ToParameter();
+
+        Assert.Equal(min, prm[":_min_version_id"]);
+        Assert.False(prm.ContainsKey(":_max_version_id"));
     }
 }
 

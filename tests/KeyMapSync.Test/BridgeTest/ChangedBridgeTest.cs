@@ -32,7 +32,7 @@ public class ChangedBridgeTest
 
         var root = new Abutment(ds);
         var pier = new ExpectPier(root);
-        pier.AddFilter(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        pier.AddFilter(new ExistsVersionRangeCondition(1));
         var bridge = new ChangedPier(pier);
 
         var expect = @"select

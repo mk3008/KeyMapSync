@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Transform;
 
-public class Abutment : IAbutment
+public class Abutment : BridgeBase, IAbutment
 {
     public Abutment(Datasource datasource, string bridgeName = null)
     {
@@ -28,7 +28,7 @@ public class Abutment : IAbutment
     /// Name of the view wrapping the data source.
     /// ex."_kms_v_datasource"
     /// </summary>
-    public string Name => String.Format(ViewNameFormat, Datasource.Name);
+    public override string Name => String.Format(ViewNameFormat, Datasource.Name);
 
     public string BridgeNameFormat => "_kms_tmp_{0}";
 
@@ -38,9 +38,9 @@ public class Abutment : IAbutment
     /// </summary>
     public string BridgeName { get; }
 
-    public IAbutment GetAbutment() => this;
+    public override IAbutment GetAbutment() => this;
 
-    public IPier GetCurrentPier() => null;
+    public override IPier GetCurrentPier() => null;
 
     public string ToTemporaryViewDdl()
     {

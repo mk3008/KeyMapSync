@@ -96,17 +96,7 @@ namespace KeyMapSync.Entity
         /// </summary>
         public string SyncName => string.Format(SyncFormart, DestinationName);
 
-        /// <summary>
-        /// Get sync-table column list.
-        /// </summary>
-        /// <returns></returns>
-        public IList<string> GetSyncColumns()
-        {
-            var lst = new List<string>();
-            lst.Add(SequenceKeyColumn);
-            lst.Add(VersionKeyColumn);
-            return lst;
-        }
+
 
         /// <summary>
         /// ex

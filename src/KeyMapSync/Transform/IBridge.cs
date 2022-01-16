@@ -16,6 +16,18 @@ public interface IBridge
     IPier GetCurrentPier();
 
     string Name { get; }
+
+    (string commandText, IDictionary<string, object> parameter) ToInsertDestinationCommand(string prefix);
+
+    (string commandText, IDictionary<string, object> parameter) ToInsertKeyMapCommand(string prefix);
+
+    string ToRemoveKeyMapSql();
+
+    (string commandText, IDictionary<string, object> parameter) ToInsertSyncCommand(string prefix);
+
+    (string commandText, IDictionary<string, object> parameter) ToInsertVersionCommand();
+
+    IList<string> ToExtensionSqls();
 }
 
 public interface IAbutment : IBridge
@@ -40,5 +52,9 @@ public interface IPier : IBridge
     FilterContainer Filter { get; }
 
     string InnerAlias { get; }
+
+    (string commandText, IDictionary<string, object> parameter) ToCreateTableCommand(bool isTemporary = true);
+
+    IDictionary<string, object> ToCreateTableParameter();
 }
 

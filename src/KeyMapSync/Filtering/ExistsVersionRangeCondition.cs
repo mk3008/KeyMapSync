@@ -10,9 +10,15 @@ namespace KeyMapSync.Filtering;
 
 public class ExistsVersionRangeCondition : IFilter
 {
-    public int MinVersion { get; set; }
+    public ExistsVersionRangeCondition(int minVersion = 1, int? maxVersion = null)
+    {
+        MinVersion = minVersion;
+        MaxVersion = maxVersion;
+    }
 
-    public int MaxVersion { get; set; }
+    public int MinVersion { get; }
+
+    public int? MaxVersion { get; }
 
     public string ToCondition(IPier sender)
     {
@@ -24,16 +30,27 @@ public class ExistsVersionRangeCondition : IFilter
         return BuildSql(sync, datasourceAlias, key);
     }
 
-    public static string BuildSql(string sync, string datasourceAlias, string destinationKey)
+    public string BuildSql(string sync, string datasourceAlias, string destinationKey)
     {
-        return $"exists (select * from {sync} ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and {datasourceAlias}.{destinationKey} = ___sync.{destinationKey})";
+        var cnd = "";
+        if (MaxVersion.HasValue)
+        {
+            cnd = "___sync.version_id between :_min_version_id and :_max_version_id";
+        }
+        else
+        {
+            cnd = ":_min_version_id <= ___sync.version_id";
+        }
+        var sql = $"exists (select * from {sync} ___sync where {cnd} and {datasourceAlias}.{destinationKey} = ___sync.{destinationKey})";
+
+        return sql;
     }
 
     public IDictionary<string, object> ToParameter()
     {
         var dic = new Dictionary<string, object>();
-        dic.Add("_min_version_id", MinVersion);
-        dic.Add("_max_version_id", MaxVersion);
+        dic.Add(":_min_version_id", MinVersion);
+        if (MaxVersion.HasValue) dic.Add(":_max_version_id", MaxVersion.Value);
         return dic;
     }
 }

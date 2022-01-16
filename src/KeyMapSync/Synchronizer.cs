@@ -57,18 +57,21 @@ public class Synchronizer
             CreateSystemTable(cn, ds);
 
             var root = new Abutment(ds, bridgeName);
-            var pier = new ExpectPier(root);
-            pier.AddFilter(validateFilter);
+            var pier = new ExpectPier(root, validateFilter);
             pier.AddFilter(filter);
             var bridge = new ChangedPier(pier);
 
             var cnt = CreateTemporaryTable(cn, bridge);
             if (cnt == 0) return 0;
 
-            //if (InsertDestinationAsOffset(cn, bridge) != cnt) throw new InvalidOperationException();
-            //if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            //if (InsertReverseDestination(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
+            if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
             //if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
+
+            //TODO:count check!
+            if (InsertDestination(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
+            if (InsertKeyMap(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge, "renewal") != cnt) throw new InvalidOperationException();
             if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
             //InsertExtension(cn, bridge);
@@ -102,11 +105,10 @@ public class Synchronizer
     {
         CreateTemporaryView(cn, bridge.GetAbutment());
 
-        var sql = bridge.ToTemporaryDdl(isTemporary);
-        var prm = bridge.ToTemporaryParameter();
+        var cmd = bridge.ToCreateTableCommand(isTemporary);
 
-        var e = OnBeforeSqlExecute("CreateTemporaryTable", sql, prm);
-        cn.Execute(sql, prm);
+        var e = OnBeforeSqlExecute("CreateTemporaryTable", cmd);
+        cn.Execute(cmd);
         var cntSql = $"select count(*) from {bridge.GetBridgeName()};";
         var cnt = cn.ExecuteScalar<int>(cntSql);
         OnAfterSqlExecute(e, cnt);
@@ -114,22 +116,23 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertDestination(IDbConnection cn, IBridge bridge)
+    public int InsertDestination(IDbConnection cn, IBridge bridge, string prefix = null)
     {
-        var sql = bridge.ToDestinationSql();
+        var cmd = bridge.ToInsertDestinationCommand(prefix);
 
-        var e = OnBeforeSqlExecute("InsertDestination", sql, null);
-        var cnt = cn.Execute(sql);
+        var e = OnBeforeSqlExecute("InsertDestination", cmd);
+        var cnt = cn.Execute(cmd);
         OnAfterSqlExecute(e, cnt);
 
         return cnt;
     }
 
-    public int InsertKeyMap(IDbConnection cn, IBridge bridge)
+    public int InsertKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
     {
-        var sql = bridge.ToKeyMapSql();
-        var e = OnBeforeSqlExecute("InsertKeyMap", sql, null);
-        var cnt = cn.Execute(sql);
+        var cmd = bridge.ToInsertKeyMapCommand(prefix);
+
+        var e = OnBeforeSqlExecute("InsertKeyMap", cmd);
+        var cnt = cn.Execute(cmd);
         OnAfterSqlExecute(e, cnt);
 
         return cnt;
@@ -138,6 +141,7 @@ public class Synchronizer
     public int RemoveKeyMap(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToRemoveKeyMapSql();
+
         var e = OnBeforeSqlExecute("RemoveKeyMap", sql, null);
         var cnt = cn.Execute(sql);
         OnAfterSqlExecute(e, cnt);
@@ -145,11 +149,12 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertSync(IDbConnection cn, IBridge bridge)
+    public int InsertSync(IDbConnection cn, IBridge bridge, string prefix = null)
     {
-        var sql = bridge.ToSyncSql();
-        var e = OnBeforeSqlExecute("InsertSync", sql, null);
-        var cnt = cn.Execute(sql);
+        var cmd = bridge.ToInsertSyncCommand(prefix);
+
+        var e = OnBeforeSqlExecute("InsertSync", cmd);
+        var cnt = cn.Execute(cmd);
         OnAfterSqlExecute(e, cnt);
 
         return cnt;
@@ -157,10 +162,10 @@ public class Synchronizer
 
     public int InsertVersion(IDbConnection cn, IBridge bridge)
     {
-        var sql = bridge.ToVersionSql();
-        var prm = bridge.ToVersionParameter();
-        var e = OnBeforeSqlExecute("InsertVersion", sql, prm);
-        var cnt = cn.Execute(sql, prm);
+        var cmd = bridge.ToInsertVersionCommand();
+
+        var e = OnBeforeSqlExecute("InsertVersion", cmd);
+        var cnt = cn.Execute(cmd);
         OnAfterSqlExecute(e, cnt);
 
         return cnt;
@@ -184,6 +189,17 @@ public class Synchronizer
         if (SyncEvent == null || handler == null) return null;
 
         var e = new SqlEventArgs(SyncEvent, name, sql, prm);
+        handler(this, e);
+        return e;
+    }
+
+    private SqlEventArgs OnBeforeSqlExecute(string name, (string sql, object prm) command)
+    {
+        var handler = BeforeSqlExecute;
+
+        if (SyncEvent == null || handler == null) return null;
+
+        var e = new SqlEventArgs(SyncEvent, name, command.sql, command.prm);
         handler(this, e);
         return e;
     }

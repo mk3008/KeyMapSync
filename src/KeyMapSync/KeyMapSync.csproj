@@ -33,7 +33,6 @@
     <Compile Remove="Filtering\IAdditionalCondition.cs" />
     <Compile Remove="Filtering\IExistsCondition.cs" />
     <Compile Remove="ICustomDatasource.cs" />
-    <Compile Remove="IDbConnectionExtension.cs" />
     <Compile Remove="IValidateOption.cs" />
     <Compile Remove="Result.cs" />
     <Compile Remove="Synchronizer.Delete.cs" />

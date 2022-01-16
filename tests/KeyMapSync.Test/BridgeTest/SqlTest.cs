@@ -27,25 +27,6 @@ public class SqlTest
         Output = output;
     }
 
-
-    [Fact]
-    public void All()
-    {
-/*        var ds = EcShopSaleDetail.GetDatasource();
-        var tmp = "tmp_parse";
-        var root = new Abutment(ds, tmp);
-
-        var expect = @"create temporary table tmp_parse
-as
-select
-    __v.version_id
-    , __p.*
-from _kms_v_ec_shop_sale_detail __p
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = root.ToTemporaryDdl();
-        Assert.Equal(expect, val);*/
-    }
-
     [Fact]
     public void NotExistsAdditional()
     {
@@ -70,8 +51,8 @@ select
     , __p.*
 from _added __p
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = bridge.ToTemporaryDdl();
-        Assert.Equal(expect, val);
+        var val = bridge.ToCreateTableCommand();
+        Assert.Equal(expect, val.commandText);
     }
 
     [Fact]
@@ -81,7 +62,7 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
 
         var root = new Abutment(ds, "tmp_default_parse");
         var pier = new ExpectPier(root);
-        pier.AddFilter(new ExistsVersionRangeCondition() { MinVersion = 1, MaxVersion = 1 });
+        pier.AddFilter(new ExistsVersionRangeCondition(1, 2));
         var bridge = new ChangedPier(pier);
 
         var expect = @"create temporary table tmp_default_parse
@@ -127,7 +108,7 @@ select
     , __p.*
 from _changed __p
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
-        var val = bridge.ToTemporaryDdl();
-        Assert.Equal(expect, val);
+        var val = bridge.ToCreateTableCommand();
+        Assert.Equal(expect, val.commandText);
     }
 }
