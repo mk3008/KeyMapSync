@@ -75,20 +75,5 @@ left join {view} {InnerAlias} on {ds.KeyColumns.Select(x => $"__map.{x} = {Inner
         var sql = CreateInsertSql(toTable, cols, fromTable);
         return sql;
     }*/
-
-    public override string ToRemoveKeyMapSql()
-    {
-        var ds = this.GetDatasource();
-        var dest = this.GetDestination();
-
-        var toTable = ds.KeyMapName;
-        var fromTable = this.GetBridgeName();
-        var key = dest.SequenceKeyColumn;
-
-        var sql = $@"delete from {toTable}
-where
-    exists (select * from {fromTable} t where {toTable}.{key} = t.{key});";
-        return sql;
-    }
 }
 

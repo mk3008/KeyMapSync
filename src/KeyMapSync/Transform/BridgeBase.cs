@@ -84,7 +84,20 @@ from
         return (sql, null);
     }
 
-    public virtual string ToRemoveKeyMapSql() => null;
+    public string ToRemoveKeyMapSql()
+    {
+        var ds = this.GetDatasource();
+        var dest = this.GetDestination();
+
+        var toTable = ds.KeyMapName;
+        var fromTable = this.GetBridgeName();
+        var key = dest.SequenceKeyColumn;
+
+        var sql = $@"delete from {toTable}
+where
+    exists (select * from {fromTable} t where {toTable}.{key} = t.{key});";
+        return sql;
+    }
 
     public (string commandText, IDictionary<string, object> parameter) ToInsertSyncCommand(string prefix)
     {
