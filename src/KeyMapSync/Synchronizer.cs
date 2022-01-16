@@ -13,13 +13,18 @@ namespace KeyMapSync;
 
 public class Synchronizer
 {
-    public IDBMS Dbms { get; set; }
+    public Synchronizer(IDBMS dbms)
+    {
+        Dbms = dbms;
+    }
+
+    public IDBMS Dbms { get; }
 
     public event EventHandler<SqlEventArgs> BeforeSqlExecute;
 
     public event EventHandler<SqlResultArgs> AfterSqlExecute;
 
-    public SyncEventArgs SyncEvent { get; set; }
+    private SyncEventArgs SyncEvent { get; set; }
 
     public int Insert(IDbConnection cn, Datasource ds, string bridgeName = null, IFilter filter = null)
     {
@@ -74,7 +79,7 @@ public class Synchronizer
             // renewwal
             var renewalPrefix = ds.Destination.RenewalColumnPrefix;
             var renewalCount = InsertDestination(cn, bridge, renewalPrefix);
-            if (renewalCount !=0)
+            if (renewalCount != 0)
             {
                 if (InsertKeyMap(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
                 if (InsertSync(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
@@ -97,13 +102,20 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
+    private int ExecuteSql(IDbConnection cn, (string commandText, IDictionary<string, object> parameter) command, string caption, string counterSql = null)
+    {
+        var e = OnBeforeSqlExecute(caption, command);
+        var cnt = cn.Execute(command);
+        if (counterSql != null) cnt = cn.ExecuteScalar<int>(counterSql);
+        OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
     private int CreateTemporaryView(IDbConnection cn, IAbutment root)
     {
         var sql = root.ToTemporaryViewDdl();
-
-        var e = OnBeforeSqlExecute("CreateTemporaryView", sql, null);
-        var cnt = cn.Execute(sql);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, (sql, null), "CreateTemporaryTable");
 
         return cnt;
     }
@@ -113,12 +125,8 @@ public class Synchronizer
         CreateTemporaryView(cn, bridge.GetAbutment());
 
         var cmd = bridge.ToCreateTableCommand(isTemporary);
-
-        var e = OnBeforeSqlExecute("CreateTemporaryTable", cmd);
-        cn.Execute(cmd);
-        var cntSql = $"select count(*) from {bridge.GetBridgeName()};";
-        var cnt = cn.ExecuteScalar<int>(cntSql);
-        OnAfterSqlExecute(e, cnt);
+        var counterSql = $"select count(*) from {bridge.GetBridgeName()};";
+        var cnt = ExecuteSql(cn, cmd, "CreateTemporaryTable", counterSql);
 
         return cnt;
     }
@@ -126,10 +134,7 @@ public class Synchronizer
     public int InsertDestination(IDbConnection cn, IBridge bridge, string prefix = null)
     {
         var cmd = bridge.ToInsertDestinationCommand(prefix);
-
-        var e = OnBeforeSqlExecute("InsertDestination", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "InsertDestination");
 
         return cnt;
     }
@@ -137,10 +142,7 @@ public class Synchronizer
     public int ReverseInsertDestination(IDbConnection cn, IBridge bridge)
     {
         var cmd = bridge.ToReverseInsertDestinationCommand();
-
-        var e = OnBeforeSqlExecute("ReverseInsertDestination", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "ReverseInsertDestination");
 
         return cnt;
     }
@@ -148,10 +150,7 @@ public class Synchronizer
     public int InsertKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
     {
         var cmd = bridge.ToInsertKeyMapCommand(prefix);
-
-        var e = OnBeforeSqlExecute("InsertKeyMap", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "InsertKeyMap");
 
         return cnt;
     }
@@ -159,10 +158,7 @@ public class Synchronizer
     public int InsertOffsetKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
     {
         var cmd = bridge.ToInsertOffsetKeyMapCommand();
-
-        var e = OnBeforeSqlExecute("InsertOffsetKeyMap", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "InsertOffsetKeyMap");
 
         return cnt;
     }
@@ -170,10 +166,7 @@ public class Synchronizer
     public int RemoveKeyMap(IDbConnection cn, IBridge bridge)
     {
         var sql = bridge.ToRemoveKeyMapSql();
-
-        var e = OnBeforeSqlExecute("RemoveKeyMap", sql, null);
-        var cnt = cn.Execute(sql);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, (sql, null), "InsertOffsetKeyMap");
 
         return cnt;
     }
@@ -181,10 +174,7 @@ public class Synchronizer
     public int InsertSync(IDbConnection cn, IBridge bridge, string prefix = null)
     {
         var cmd = bridge.ToInsertSyncCommand(prefix);
-
-        var e = OnBeforeSqlExecute("InsertSync", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "InsertSync");
 
         return cnt;
     }
@@ -192,10 +182,7 @@ public class Synchronizer
     public int InsertVersion(IDbConnection cn, IBridge bridge)
     {
         var cmd = bridge.ToInsertVersionCommand();
-
-        var e = OnBeforeSqlExecute("InsertVersion", cmd);
-        var cnt = cn.Execute(cmd);
-        OnAfterSqlExecute(e, cnt);
+        var cnt = ExecuteSql(cn, cmd, "InsertVersion");
 
         return cnt;
     }
@@ -205,9 +192,7 @@ public class Synchronizer
         var sqls = bridge.ToExtensionSqls();
         foreach (var sql in sqls)
         {
-            var e = OnBeforeSqlExecute("InsertExtension", sql, null);
-            var cnt = cn.Execute(sql);
-            OnAfterSqlExecute(e, cnt);
+             ExecuteSql(cn, (sql, null), "InsertExtension");
         }
     }
 

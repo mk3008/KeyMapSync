@@ -70,7 +70,7 @@ public class SqliteOffsetTest
     private int Sync(Datasource ds)
     {
         IDBMS db = new SQLite();
-        var sync = new Synchronizer() { Dbms = db };
+        var sync = new Synchronizer(db);
         sync.BeforeSqlExecute += OnBeforeSqlExecute;
 
         using (var cn = new SQLiteConnection(CnString))
@@ -88,7 +88,7 @@ public class SqliteOffsetTest
     private int Offset(Datasource ds, IFilter validateFilter)
     {
         IDBMS db = new SQLite();
-        var sync = new Synchronizer() { Dbms = db };
+        var sync = new Synchronizer(db);
         sync.BeforeSqlExecute += OnBeforeSqlExecute;
 
         using (var cn = new SQLiteConnection(CnString))

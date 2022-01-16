@@ -61,7 +61,7 @@ public class SqliteFilterInsertTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
         IDBMS db = new SQLite();
-        var sync = new Synchronizer() { Dbms = db };
+        var sync = new Synchronizer(db);
         sync.BeforeSqlExecute += OnBeforeSqlExecute;
 
         dynamic prm = new Dictionary<string, object>();

@@ -59,7 +59,7 @@ public class SqliteInsertTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
         IDBMS db = new SQLite();
-        var sync = new Synchronizer() { Dbms = db };
+        var sync = new Synchronizer(db);
 
         // Execute DDL test
         var cnt = 0;
