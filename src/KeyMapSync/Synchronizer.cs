@@ -57,18 +57,18 @@ public class Synchronizer
     {
         SyncEvent = new SyncEventArgs("Offset");
 
+        CreateSystemTable(cn, ds);
+
+        var root = new Abutment(ds, bridgeName);
+        var pier = new ExpectPier(root, validateFilter);
+        pier.AddFilter(filter);
+        var bridge = new ChangedPier(pier);
+
+        var offsetCount = CreateTemporaryTable(cn, bridge);
+        if (offsetCount == 0) return 0;
+
         using (var trn = cn.BeginTransaction())
         {
-            CreateSystemTable(cn, ds);
-
-            var root = new Abutment(ds, bridgeName);
-            var pier = new ExpectPier(root, validateFilter);
-            pier.AddFilter(filter);
-            var bridge = new ChangedPier(pier);
-
-            var offsetCount = CreateTemporaryTable(cn, bridge);
-            if (offsetCount == 0) return 0;
-
             // offset
             var offsetPrefix = ds.Destination.OffsetColumnPrefix;
             if (ReverseInsertDestination(cn, bridge) != offsetCount) throw new InvalidOperationException();
