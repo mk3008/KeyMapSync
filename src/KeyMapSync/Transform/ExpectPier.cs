@@ -28,13 +28,13 @@ public class ExpectPier : PierBase
         var keymap = ds.KeyMapName;
 
         var cols = datasourceKeys.Select(x => $"__map.{x}").ToList();
-        cols.Add($"{InnerAlias}.*");
+        cols.Add($"{this.GetInnerAlias()}.*");
         var col = cols.ToString("\r\n, ").AddIndent(4);
 
         var sql = $@"select
 {col}
-from {dest.DestinationName} {InnerAlias}
-inner join {keymap} __map on {InnerAlias}.{dest.SequenceKeyColumn} = __map.{dest.SequenceKeyColumn}
+from {dest.DestinationName} {this.GetInnerAlias()}
+inner join {keymap} __map on {this.GetInnerAlias()}.{dest.SequenceKeyColumn} = __map.{dest.SequenceKeyColumn}
 {Filter.ToCondition(this).ToWhereSqlText()}";
 
         return sql;

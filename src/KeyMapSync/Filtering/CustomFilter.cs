@@ -17,7 +17,7 @@ public class CustomFilter : IFilter
 
     public string ToCondition(IPier sender)
     {
-        return string.Format(Condition, sender.InnerAlias);
+        return string.Format(Condition, sender.GetInnerAlias());
     }
 
     public IDictionary<string, object> ToParameter()

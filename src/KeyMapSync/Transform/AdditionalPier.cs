@@ -25,14 +25,14 @@ public class AdditionalPier : PierBase
 
         var cols = new List<string>();
         cols.Add($"{dst.SequenceCommand} as {dst.SequenceKeyColumn}");
-        cols.Add($"{InnerAlias}.*");
+        cols.Add($"{this.GetInnerAlias()}.*");
         var col = cols.ToString("\r\n, ").AddIndent(4);
 
         var whereText = Filter.ToCondition(this).ToWhereSqlText();
 
         var sql = $@"select
 {col}
-from {view} {InnerAlias}
+from {view} {this.GetInnerAlias()}
 {whereText}";
 
         return sql;

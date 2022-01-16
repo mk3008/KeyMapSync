@@ -37,7 +37,7 @@ public class ChangedPier : PierBase
 {col}
 from {PreviousBridge.Name} {InnerExpectAlias}
 inner join {keymap} __map on {InnerExpectAlias}.{destKey} = __map.{destKey}
-left join {view} {InnerAlias} on {ds.KeyColumns.Select(x => $"__map.{x} = {InnerAlias}.{x}").ToString(" and ")}
+left join {view} {this.GetInnerAlias()} on {ds.KeyColumns.Select(x => $"__map.{x} = {this.GetInnerAlias()}.{x}").ToString(" and ")}
 {Filter.ToCondition(this).ToWhereSqlText()}";
 
         return sql;
@@ -56,9 +56,9 @@ left join {view} {InnerAlias} on {ds.KeyColumns.Select(x => $"__map.{x} = {Inner
         //offset remarks
         if (!string.IsNullOrEmpty(dest.OffsetRemarksColumn)) cols.Add(DiffCondition.BuildRemarksSql(this));
         //renewal key
-        cols.Add($"case when {InnerAlias}.{ds.KeyColumns.First()} is null then null else count(*) over() + {dest.SequenceCommand} end as {dest.RenewalColumnPrefix}{dest.SequenceKeyColumn}");
+        cols.Add($"case when {this.GetInnerAlias()}.{ds.KeyColumns.First()} is null then null else count(*) over() + {dest.SequenceCommand} end as {dest.RenewalColumnPrefix}{dest.SequenceKeyColumn}");
         //renewal values
-        cols.Add($"{InnerAlias}.*");
+        cols.Add($"{this.GetInnerAlias()}.*");
 
         return cols;
     }

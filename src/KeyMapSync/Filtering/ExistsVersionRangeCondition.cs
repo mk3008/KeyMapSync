@@ -23,7 +23,7 @@ public class ExistsVersionRangeCondition : IFilter
     public string ToCondition(IPier sender)
     {
         var ds = sender.GetDatasource();
-        var datasourceAlias = sender.InnerAlias;
+        var datasourceAlias = sender.GetInnerAlias();
         var sync = ds.Destination.SyncName;
         var key = ds.Destination.SequenceKeyColumn;
 

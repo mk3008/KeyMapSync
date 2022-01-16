@@ -20,7 +20,7 @@ public class DifferentCondition : IFilter
         //var expect = changed.PreviousPrier;
         var ds = sender.GetDatasource();
 
-        return BuildRemarksSql(changed.InnerAlias, ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+        return BuildRemarksSql(changed.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
     public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
@@ -79,7 +79,7 @@ public class DifferentCondition : IFilter
         var changed = sender as ChangedPier;
         var ds = sender.GetDatasource();
 
-        return BuildWhereSql(sender.InnerAlias, ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+        return BuildWhereSql(sender.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
     public IDictionary<string, object> ToParameter()

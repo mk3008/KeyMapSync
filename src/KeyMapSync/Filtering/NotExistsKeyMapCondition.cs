@@ -13,7 +13,7 @@ public class NotExistsKeyMapCondition : IFilter
     {
         var ds = sender.GetDatasource();
         var keymap = ds.KeyMapName;
-        var datasourceAlias = sender.InnerAlias;
+        var datasourceAlias = sender.GetInnerAlias();
         var datasourceKeys = ds.KeyColumns;
         return BuildSql(keymap, datasourceAlias, datasourceKeys);
     }

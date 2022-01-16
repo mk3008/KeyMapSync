@@ -33,14 +33,8 @@ public interface IPier : IBridge
 
     IPier PreviousPrier { get; }
 
-    string GetWithQuery();
+    string BuildCurrentSelectQuery();
 
     FilterContainer Filter { get; }
-
-    string InnerAlias { get; }
-
-    (string commandText, IDictionary<string, object> parameter) ToCreateTableCommand(bool isTemporary = true);
-
-    IDictionary<string, object> ToCreateTableParameter();
 }
 
