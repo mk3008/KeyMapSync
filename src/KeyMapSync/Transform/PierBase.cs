@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Transform;
 
-public abstract class PierBase : BridgeBase, IPier
+public abstract class PierBase : IPier
 {
     public PierBase(IBridge bridge)
     {
@@ -15,15 +15,17 @@ public abstract class PierBase : BridgeBase, IPier
         if (bridge is IPier) PreviousPrier = (IPier)bridge;
     }
 
+    public abstract string Name { get; }
+
     protected IBridge PreviousBridge { get; }
 
     public IPier PreviousPrier { get; }
 
     public FilterContainer Filter { get; } = new FilterContainer();
 
-    public override IAbutment GetAbutment() => PreviousBridge.GetAbutment();
+    public IAbutment GetAbutment() => PreviousBridge.GetAbutment();
 
-    public override IPier GetCurrentPier() => this;
+    public IPier GetCurrentPier() => this;
 
     public string GetWithQuery()
     {

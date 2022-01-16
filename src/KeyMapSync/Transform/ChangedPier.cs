@@ -62,18 +62,5 @@ left join {view} {InnerAlias} on {ds.KeyColumns.Select(x => $"__map.{x} = {Inner
 
         return cols;
     }
-
-/*    public override string ToDestinationSql()
-    {
-        var ds = this.GetDatasource();
-        var dest = this.GetDestination();
-
-        var toTable = dest.DestinationName;
-        var fromTable = this.GetBridgeName();
-        var cols = dest.Columns.Where(x => dest.SequenceKeyColumn != x).Where(x => ds.Columns.Contains(x)).ToList();
-
-        var sql = CreateInsertSql(toTable, cols, fromTable);
-        return sql;
-    }*/
 }
 

@@ -22,5 +22,4 @@ public static class IBridgeExtension
     {
         return source.GetAbutment().Datasource.Destination;
     }
-
 }
