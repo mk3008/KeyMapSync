@@ -41,13 +41,5 @@ public class Abutment : IAbutment
     public IAbutment GetAbutment() => this;
 
     public IPier GetCurrentPier() => null;
-
-    public string ToTemporaryViewDdl()
-    {
-        var sql = $@"create temporary view {Name}
-as
-{Datasource.Query}";
-        return sql;
-    }
 }
 

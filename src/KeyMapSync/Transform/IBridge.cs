@@ -26,8 +26,6 @@ public interface IAbutment : IBridge
     /// ex."tmp01"
     /// </summary>
     string BridgeName { get; }
-
-    string ToTemporaryViewDdl();
 }
 
 public interface IPier : IBridge
