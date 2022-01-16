@@ -57,6 +57,15 @@ public class SqliteOffsetTest
         }
     }
 
+    internal void DeleteRow()
+    {
+        using (var cn = new SQLiteConnection(CnString))
+        {
+            cn.Open();
+            cn.Execute("delete from ec_shop_sale_detail where ec_shop_sale_detail_id = 2");
+        }
+    }
+
 
     private int Sync(Datasource ds)
     {
@@ -128,10 +137,12 @@ public class SqliteOffsetTest
         cnt = Offset(ecShopDs, validateFilter);
         Assert.Equal(1, cnt);
 
-
         //delete ecshop
+        DeleteRow();
 
         //hit
+        cnt = Offset(ecShopDs, validateFilter);
+        Assert.Equal(1, cnt);
 
     }
 }

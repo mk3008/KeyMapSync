@@ -61,31 +61,31 @@ public class Synchronizer
             pier.AddFilter(filter);
             var bridge = new ChangedPier(pier);
 
-            var cnt = CreateTemporaryTable(cn, bridge);
-            if (cnt == 0) return 0;
-
-            var renewalPrefix = ds.Destination.RenewalColumnPrefix;
-            var offsetPrefix = ds.Destination.OffsetColumnPrefix;
+            var offsetCount = CreateTemporaryTable(cn, bridge);
+            if (offsetCount == 0) return 0;
 
             // offset
-            if (ReverseInsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge, offsetPrefix) != cnt) throw new InvalidOperationException();
-
-            //TODO:count check!
+            var offsetPrefix = ds.Destination.OffsetColumnPrefix;
+            if (ReverseInsertDestination(cn, bridge) != offsetCount) throw new InvalidOperationException();
+            if (RemoveKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
+            if (InsertOffsetKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge, offsetPrefix) != offsetCount) throw new InvalidOperationException();
 
             // renewwal
-            if (InsertDestination(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
-            if (InsertKeyMap(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge, renewalPrefix) != cnt) throw new InvalidOperationException();
+            var renewalPrefix = ds.Destination.RenewalColumnPrefix;
+            var renewalCount = InsertDestination(cn, bridge, renewalPrefix);
+            if (renewalCount !=0)
+            {
+                if (InsertKeyMap(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
+                if (InsertSync(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
+            }
             if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
             //InsertExtension(cn, bridge, prefix);
 
             trn.Commit();
 
-            return cnt;
+            return offsetCount;
         }
     }
 
