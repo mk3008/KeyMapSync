@@ -38,19 +38,18 @@ public class Synchronizer
         var cnt = CreateTemporaryTable(cn, bridge);
         if (cnt == 0) return 0;
 
-        using (var trn = cn.BeginTransaction())
-        {
-            if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
+        using var trn = cn.BeginTransaction();
 
-            InsertExtension(cn, bridge);
+        if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
-            trn.Commit();
+        InsertExtension(cn, bridge);
 
-            return cnt;
-        }
+        trn.Commit();
+
+        return cnt;
     }
 
     public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, string bridgeName = null, IFilter filter = null)
@@ -192,7 +191,7 @@ public class Synchronizer
         var sqls = bridge.ToExtensionSqls();
         foreach (var sql in sqls)
         {
-             ExecuteSql(cn, (sql, null), "InsertExtension");
+            ExecuteSql(cn, (sql, null), "InsertExtension");
         }
     }
 

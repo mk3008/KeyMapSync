@@ -11,18 +11,18 @@ public class Datasource
     /// <summary>
     /// ex."ec_shop_sales_detail"
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; set; } = String.Empty;
 
     /// <summary>
     /// datasource description.
     /// ex."transfrom 'ec_shop_sales_detail' to 'integration_sale_detail'." 
     /// </summary>
-    public string Description { get; set; }
+    public string Description { get; set; } = String.Empty;
 
     /// <summary>
     /// ex."with ds as (select * from ec_shop_sales_detail) select * from select * from ds"
     /// </summary>
-    public string Query { get; set; }
+    public string Query { get; set; } = String.Empty;
 
     /// <summary>
     /// ex.
@@ -32,20 +32,20 @@ public class Datasource
     /// "SequenceCommand":"(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0))",
     /// }
     /// </summary>
-    public Destination Destination { get; set; }
+    public Destination Destination { get; set; } = new Destination();
 
     /// <summary>
     /// datasource key column names.
     /// ex.
     /// "ec_shop_sales_id, ex_shop_sales_dtail_id"
     /// </summary>
-    public IList<string> KeyColumns { get; set; }
+    public IList<string> KeyColumns { get; init; } = new List<string>();
 
     /// <summary>
     /// ex.
     /// "sales_date, article_name, unit_price, quantity, price"
     /// </summary>
-    public IList<string> Columns { get; set; }
+    public IList<string> Columns { get; init; } = new List<string>();
 
     /// <summary>
     /// ex
@@ -57,7 +57,7 @@ public class Datasource
 
     public IList<ExtensionDatasource> Extensions { get; set; } = new List<ExtensionDatasource>();
 
-    public HeaderOption HeaderOption { get; set; }
+    public HeaderOption? HeaderOption { get; set; }
 
     /// <summary>
     /// keymap table name format.

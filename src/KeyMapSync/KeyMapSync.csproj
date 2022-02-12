@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -29,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="EnumerableExtension.cs" />
     <Compile Remove="Filtering\FilterExtension.cs" />
     <Compile Remove="Filtering\IAdditionalCondition.cs" />
     <Compile Remove="Filtering\IExistsCondition.cs" />

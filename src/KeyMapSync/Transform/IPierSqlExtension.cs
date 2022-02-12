@@ -47,18 +47,30 @@ public static class IPierSqlExtension
 
         var versionKey = source.GetDestination().VersionKeyColumn;
         var versionQuery = source.ToSelectVersionSql();
+        var header = source.ToHeaderInfo();
+
+        var columns = new List<string>();
+        columns.Add($"__v.{versionKey}");
+        header.Columns.ForEach(x => columns.Add(x));
+        columns.Add($"{source.GetInnerAlias()}.*");
+
+        var tables = new List<string>();
+        tables.Add($"{source.Name} {source.GetInnerAlias()}");
+        header.Tables.ForEach(x => tables.Add(x));
+        tables.Add($"cross join ({versionQuery}) __v");
+
+        var column = columns.ToString("\r\n, ").AddIndent(4);
+        var table = tables.ToString("\r\n");
 
         var sql = $@"{command}{withQuery}
 select
-    __v.{versionKey}
-    , {source.GetInnerAlias()}.*
-from {source.Name} {source.GetInnerAlias()}
-cross join ({versionQuery}) __v;";
+{column}
+from {table};";
 
         return sql;
     }
 
-    public static IDictionary<string, object> ToCreateTableParameter(this IPier source)
+    public static IDictionary<string, object>? ToCreateTableParameter(this IPier source)
     {
         var pier = source.GetCurrentPier();
         if (pier == null) return null;
@@ -73,5 +85,31 @@ cross join ({versionQuery}) __v;";
         var dest = source.GetDestination();
         var sql = $"select {dest.VersionSequenceCommand} as {dest.VersionKeyColumn}";
         return sql;
+    }
+
+    private static (List<string> Columns, List<string> Tables) ToHeaderInfo(this IPier source)
+    {
+        var dest = source.GetDestination();
+
+        var columns = new List<string>();
+        var tables = new List<string>();
+
+        foreach (var item in dest.Groups)
+        {
+            var alias = item.GetInnerAlias;
+            var sql = @$"inner join (
+    select
+        h.*
+        , {item.SequenceCommand} as {item.SequenceKeyColumn}
+    from
+        (
+            select distinct {item.GroupColumns.ToString(", ")} from {source.Name}
+        ) h
+    ) {alias} on {item.GroupColumns.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
+            columns.Add($"{alias}.{item.SequenceKeyColumn}");
+            tables.Add(sql);
+        }
+
+        return (columns, tables);
     }
 }

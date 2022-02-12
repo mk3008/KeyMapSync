@@ -11,30 +11,32 @@ namespace KeyMapSync.Entity
         /// <summary>
         /// Destination table name.
         /// </summary>
-        public string DestinationName { get; set; }
+        public string DestinationName { get; set; } = String.Empty;
+
+        public List<GroupDestination> Groups { get; set; } = new();
 
         /// <summary>
         /// Sequence key column name.
         /// </summary>
-        public string SequenceKeyColumn { get; set; }
+        public string SequenceKeyColumn { get; set; } = String.Empty;
 
         /// <summary>
         /// Sequence next value command.
         /// ex.
         /// "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over()"
         /// </summary>
-        public string SequenceCommand { get; set; }
+        public string SequenceCommand { get; set; } = String.Empty;
 
         /// <summary>
         /// Destination columns.
         /// </summary>
-        public IList<string> Columns { get; set; }
+        public IList<string> Columns { get; init; } = new List<string>();
 
         /// <summary>
         /// ex
         /// "quantity, price"
         /// </summary>
-        public IList<string> SingInversionColumns { get; set; }
+        public IList<string> SingInversionColumns { get; init; } = new List<string>();
 
         /// <summary>
         /// Sync-table name format.
@@ -123,6 +125,6 @@ namespace KeyMapSync.Entity
         /// <summary>
         /// Version sequence next value command.
         /// </summary>
-        public string VersionSequenceCommand { get; set; }
+        public string VersionSequenceCommand { get; set; } = String.Empty;
     }
 }
