@@ -29,7 +29,7 @@ public static class IPierSqlExtension
         return sql;
     }
 
-    public static (string commandText, IDictionary<string, object> parameter) ToCreateTableCommand(this IPier source, bool isTemporary = true)
+    public static (string commandText, IDictionary<string, object>? parameter) ToCreateTableCommand(this IPier source, bool isTemporary = true)
     {
         var cmd = (source.ToCreateTableCommandText(isTemporary), source.ToCreateTableParameter());
         return cmd;

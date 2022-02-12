@@ -11,10 +11,10 @@ namespace KeyMapSync.Transform;
 
 public class Abutment : IAbutment
 {
-    public Abutment(Datasource datasource, string bridgeName = null)
+    public Abutment(Datasource datasource, string bridgeName = "")
     {
         Datasource = datasource;
-        BridgeName = bridgeName ?? string.Format(BridgeNameFormat, Datasource.Name);
+        BridgeName = string.IsNullOrEmpty(bridgeName) ? string.Format(BridgeNameFormat, Datasource.Name) : bridgeName;
     }
 
     /// <summary>
@@ -40,6 +40,6 @@ public class Abutment : IAbutment
 
     public IAbutment GetAbutment() => this;
 
-    public IPier GetCurrentPier() => null;
+    public IPier? GetCurrentPier() => null;
 }
 

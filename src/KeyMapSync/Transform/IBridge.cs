@@ -13,7 +13,7 @@ public interface IBridge
 {
     IAbutment GetAbutment();
 
-    IPier GetCurrentPier();
+    IPier? GetCurrentPier();
 
     string Name { get; }
 }
