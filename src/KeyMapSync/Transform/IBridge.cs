@@ -31,7 +31,7 @@ public interface IAbutment : IBridge
 public interface IPier : IBridge
 {
 
-    IPier PreviousPrier { get; }
+    IPier? PreviousPrier { get; }
 
     string BuildCurrentSelectQuery();
 

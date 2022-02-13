@@ -9,7 +9,7 @@ namespace KeyMapSync
     /// </summary>
     public class SqlEventArgs : EventArgs
     {
-        public SqlEventArgs(SyncEventArgs owner, string name, string sql, object param)
+        public SqlEventArgs(SyncEventArgs owner, string name, string sql, object? param)
         {
             Owner = owner;
             Name = name;
@@ -23,7 +23,7 @@ namespace KeyMapSync
 
         public string Sql { get; }
 
-        public object Param { get; }
+        public object? Param { get; }
 
         public string GetSqlInfo()
         {

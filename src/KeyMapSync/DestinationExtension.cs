@@ -11,7 +11,7 @@ namespace KeyMapSync;
 
 internal static class DestinationExtension
 {
-    public static (IList<string> fromCols, IList<string> toCols, string where) GetInsertDestinationInfo(this Destination source, string prefix = null)
+    public static (IList<string> fromCols, IList<string> toCols, string? where) GetInsertDestinationInfo(this Destination source, string? prefix = null)
     {
         var vals = source.Columns.Where(x => source.SequenceKeyColumn != x).Where(x => source.Columns.Contains(x)).ToList();
 
@@ -28,7 +28,7 @@ internal static class DestinationExtension
         return (fromCols, toCols, where);
     }
 
-    public static (IList<string> fromColumns, IList<string> toColumns, string where) GetReverseInsertDestinationInfo(this Destination source)
+    public static (IList<string> fromColumns, IList<string> toColumns, string? where) GetReverseInsertDestinationInfo(this Destination source)
     {
         var lst = source.Columns.Where(x => source.SequenceKeyColumn != x).Where(x => source.Columns.Contains(x)).ToList();
 
@@ -68,7 +68,7 @@ internal static class DestinationExtension
         return lst;
     }
 
-    public static (IList<string> fromCols, IList<string> toCols, string where) GetInsertSyncInfoset(this Destination source, string prefix = null)
+    public static (IList<string> fromCols, IList<string> toCols, string? where) GetInsertSyncInfoset(this Destination source, string? prefix = null)
     {
         var fromCols = new List<string>();
         fromCols.Add($"{prefix}{source.SequenceKeyColumn}");
@@ -93,7 +93,7 @@ internal static class DestinationExtension
         return cols;
     }
 
-    public static (IList<string> fromColumns, IList<string> toColumns, string where) GetInsertOffsetKeyMapInfoset(this Destination source, string prefix = null)
+    public static (IList<string> fromColumns, IList<string> toColumns, string? where) GetInsertOffsetKeyMapInfoset(this Destination source, string? prefix = null)
     {
         var toColumns = source.GetOffsetKeyMapColumns();
 

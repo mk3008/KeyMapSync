@@ -19,7 +19,7 @@ internal static class DatasourceExtension
         return lst;
     }
 
-    public static (IList<string> fromColumns, IList<string> toColumns, string where) GetInsertKeyMapInfoset(this Datasource source, string prefix = null)
+    public static (IList<string> fromColumns, IList<string> toColumns, string? where) GetInsertKeyMapInfoset(this Datasource source, string? prefix = null)
     {
         var key = source.Destination.SequenceKeyColumn;
 

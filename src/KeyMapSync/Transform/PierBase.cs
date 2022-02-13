@@ -19,7 +19,7 @@ public abstract class PierBase : IPier
 
     protected IBridge PreviousBridge { get; }
 
-    public IPier PreviousPrier { get; }
+    public IPier? PreviousPrier { get; }
 
     public FilterContainer Filter { get; } = new FilterContainer();
 

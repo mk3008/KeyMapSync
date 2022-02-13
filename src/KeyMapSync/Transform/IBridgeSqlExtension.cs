@@ -8,7 +8,7 @@ namespace KeyMapSync.Transform;
 
 public static class IBridgeSqlExtension
 {
-    private static string CreateInsertSql(string toTable, IList<string> toColumns, string fromTable, IList<string> fromColumns = null, bool useDistinct = false, string withQuery = null, string whereQuery = null)
+    private static string CreateInsertSql(string toTable, IList<string> toColumns, string fromTable, IList<string>? fromColumns = null, bool useDistinct = false, string? withQuery = null, string? whereQuery = null)
     {
         fromColumns ??= toColumns;
 
@@ -28,7 +28,7 @@ from
         return sql;
     }
 
-    public static (string commandText, IDictionary<string, object> parameter) ToInsertDestinationCommand(this IBridge source, string prefix)
+    public static (string commandText, IDictionary<string, object>? parameter) ToInsertDestinationCommand(this IBridge source, string? prefix)
     {
         var dest = source.GetDestination();
 
@@ -40,7 +40,7 @@ from
         return (sql, null);
     }
 
-    public static (string commandText, IDictionary<string, object> parameter) ToReverseInsertDestinationCommand(this IBridge source)
+    public static (string commandText, IDictionary<string, object>? parameter) ToReverseInsertDestinationCommand(this IBridge source)
     {
         var dest = source.GetDestination();
         var key = dest.SequenceKeyColumn;
@@ -54,7 +54,7 @@ from
     }
 
 
-    public static (string commandText, IDictionary<string, object> parameter) ToInsertKeyMapCommand(this IBridge source, string prefix)
+    public static (string commandText, IDictionary<string, object>? parameter) ToInsertKeyMapCommand(this IBridge source, string? prefix)
     {
         var ds = source.GetDatasource();
 
@@ -66,7 +66,7 @@ from
         return (sql, null);
     }
 
-    public static(string commandText, IDictionary<string, object> parameter) ToInsertOffsetKeyMapCommand(this IBridge source)
+    public static(string commandText, IDictionary<string, object>? parameter) ToInsertOffsetKeyMapCommand(this IBridge source)
     {
         var dest = source.GetDatasource().Destination;
 
@@ -93,7 +93,7 @@ where
         return sql;
     }
 
-    public static (string commandText, IDictionary<string, object> parameter) ToInsertSyncCommand(this IBridge source, string prefix)
+    public static (string commandText, IDictionary<string, object>? parameter) ToInsertSyncCommand(this IBridge source, string? prefix)
     {
         var dest = source.GetDestination();
 

@@ -20,53 +20,55 @@ public class Synchronizer
 
     public IDBMS Dbms { get; }
 
-    public event EventHandler<SqlEventArgs> BeforeSqlExecute;
+    public event EventHandler<SqlEventArgs>? BeforeSqlExecute = null;
 
-    public event EventHandler<SqlResultArgs> AfterSqlExecute;
+    public event EventHandler<SqlResultArgs>? AfterSqlExecute = null;
 
-    private SyncEventArgs SyncEvent { get; set; }
+    private SyncEventArgs? SyncEvent { get; set; } = null;
 
-    public int Insert(IDbConnection cn, Datasource ds, string bridgeName = null, IFilter filter = null)
+    public int Insert(IDbConnection cn, Datasource ds, string bridgeName = "", IFilter? filter = null)
     {
         SyncEvent = new SyncEventArgs("Insert");
 
         CreateSystemTable(cn, ds);
+
+        //create bridge instance.
         var root = new Abutment(ds, bridgeName);
         var bridge = new AdditionalPier(root);
-        bridge.AddFilter(filter);
+        if (filter != null) bridge.AddFilter(filter);
 
         var cnt = CreateTemporaryTable(cn, bridge);
         if (cnt == 0) return 0;
 
-        using var trn = cn.BeginTransaction();
+        cn.Transaction(_ =>
+        {
+            if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
+            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
-        if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
-        if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-        if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
-        if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
-
-        InsertExtension(cn, bridge);
-
-        trn.Commit();
+            InsertExtension(cn, bridge);
+        });
 
         return cnt;
     }
 
-    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, string bridgeName = null, IFilter filter = null)
+    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, string? bridgeName = null, IFilter? filter = null)
     {
         SyncEvent = new SyncEventArgs("Offset");
 
         CreateSystemTable(cn, ds);
 
+        //create bridge instance.
         var root = new Abutment(ds, bridgeName);
         var pier = new ExpectPier(root, validateFilter);
-        pier.AddFilter(filter);
+        if (filter != null) pier.AddFilter(filter);
         var bridge = new ChangedPier(pier);
 
         var offsetCount = CreateTemporaryTable(cn, bridge);
         if (offsetCount == 0) return 0;
 
-        using (var trn = cn.BeginTransaction())
+        cn.Transaction(_ =>
         {
             // offset
             var offsetPrefix = ds.Destination.OffsetColumnPrefix;
@@ -86,11 +88,9 @@ public class Synchronizer
             if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
 
             //InsertExtension(cn, bridge, prefix);
+        });
 
-            trn.Commit();
-
-            return offsetCount;
-        }
+        return offsetCount;
     }
 
     public void CreateSystemTable(IDbConnection cn, Datasource ds)
@@ -101,12 +101,12 @@ public class Synchronizer
         cn.Execute(Dbms.ToOffsetDDL(ds));
     }
 
-    private int ExecuteSql(IDbConnection cn, (string commandText, IDictionary<string, object> parameter) command, string caption, string counterSql = null)
+    private int ExecuteSql(IDbConnection cn, (string commandText, IDictionary<string, object>? parameter) command, string caption, string? counterSql = null)
     {
         var e = OnBeforeSqlExecute(caption, command);
         var cnt = cn.Execute(command);
         if (counterSql != null) cnt = cn.ExecuteScalar<int>(counterSql);
-        OnAfterSqlExecute(e, cnt);
+        if (e != null) OnAfterSqlExecute(e, cnt);
 
         return cnt;
     }
@@ -130,7 +130,7 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertDestination(IDbConnection cn, IBridge bridge, string prefix = null)
+    public int InsertDestination(IDbConnection cn, IBridge bridge, string? prefix = null)
     {
         var cmd = bridge.ToInsertDestinationCommand(prefix);
         var cnt = ExecuteSql(cn, cmd, "InsertDestination");
@@ -146,7 +146,7 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
+    public int InsertKeyMap(IDbConnection cn, IBridge bridge, string? prefix = null)
     {
         var cmd = bridge.ToInsertKeyMapCommand(prefix);
         var cnt = ExecuteSql(cn, cmd, "InsertKeyMap");
@@ -154,7 +154,7 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertOffsetKeyMap(IDbConnection cn, IBridge bridge, string prefix = null)
+    public int InsertOffsetKeyMap(IDbConnection cn, IBridge bridge, string? prefix = null)
     {
         var cmd = bridge.ToInsertOffsetKeyMapCommand();
         var cnt = ExecuteSql(cn, cmd, "InsertOffsetKeyMap");
@@ -170,7 +170,7 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertSync(IDbConnection cn, IBridge bridge, string prefix = null)
+    public int InsertSync(IDbConnection cn, IBridge bridge, string? prefix = null)
     {
         var cmd = bridge.ToInsertSyncCommand(prefix);
         var cnt = ExecuteSql(cn, cmd, "InsertSync");
@@ -195,18 +195,7 @@ public class Synchronizer
         }
     }
 
-    private SqlEventArgs OnBeforeSqlExecute(string name, string sql, object prm)
-    {
-        var handler = BeforeSqlExecute;
-
-        if (SyncEvent == null || handler == null) return null;
-
-        var e = new SqlEventArgs(SyncEvent, name, sql, prm);
-        handler(this, e);
-        return e;
-    }
-
-    private SqlEventArgs OnBeforeSqlExecute(string name, (string sql, object prm) command)
+    private SqlEventArgs? OnBeforeSqlExecute(string name, (string sql, object? prm) command)
     {
         var handler = BeforeSqlExecute;
 

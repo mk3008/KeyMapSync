@@ -11,7 +11,7 @@ namespace KeyMapSync.Transform;
 
 public class Abutment : IAbutment
 {
-    public Abutment(Datasource datasource, string bridgeName = "")
+    public Abutment(Datasource datasource, string? bridgeName = null)
     {
         Datasource = datasource;
         BridgeName = string.IsNullOrEmpty(bridgeName) ? string.Format(BridgeNameFormat, Datasource.Name) : bridgeName;

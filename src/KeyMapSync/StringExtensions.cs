@@ -10,7 +10,7 @@ namespace KeyMapSync;
 /// </summary>
 internal static class StringExtensions
 {
-    public static string ToString(this IEnumerable<string> source, string splitter, Func<string, string> func = null)
+    public static string ToString(this IEnumerable<string> source, string splitter, Func<string, string>? func = null)
     {
         func ??= x => x;
         var s = new StringBuilder();
@@ -27,10 +27,8 @@ internal static class StringExtensions
     public static string AddIndent(this string source, int space, string separator = "\r\n")
     {
         var sp = "";
-        for (int i = 0; i < space; i++)
-        {
-            sp += " ";
-        }
+        for (int i = 0; i < space; i++) sp += " ";
+
         var sb = new StringBuilder();
         var isFirst = true;
         foreach (var item in source.Split(separator))
@@ -48,7 +46,7 @@ internal static class StringExtensions
         return source.Remove(startIndex);
     }
 
-    public static string ToWhereSqlText(this string source)
+    public static string? ToWhereSqlText(this string source)
     {
         return string.IsNullOrEmpty(source) ? null : $@"where
 {source.AddIndent(4)}";
