@@ -9,7 +9,7 @@ namespace KeyMapSync;
 
 internal static class IDictionaryExtension
 {
-    public static IDictionary<string, object> Merge(this IDictionary<string, object> source, IDictionary<string, object>? additional)
+    public static Dictionary<string, object> Merge(this Dictionary<string, object> source, IDictionary<string, object>? additional)
     {
         if (additional != null) foreach (var item in additional) source[item.Key] = item.Value;
         return source;

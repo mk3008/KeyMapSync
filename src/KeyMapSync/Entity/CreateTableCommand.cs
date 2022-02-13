@@ -5,31 +5,33 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace KeyMapSync.Entity;
-
-public class InsertCommand
+public class CreateTableCommand
 {
-    public InsertCommand(string table, List<string> columns, SelectCommand sql)
+    public CreateTableCommand(string table, SelectCommand sql)
     {
         Table = table;
-        columns.ForEach(x => Columns.Add(x));
         SelectSql = sql;
     }
 
+    public string WithQuery { get; set; } = string.Empty;
+
     public string Table { get; init; }
 
-    public List<string> Columns { get; init; } = new();
+    public bool IsTemporary { get; set; } = true;
 
     public SelectCommand SelectSql { get; init; }
 
     public SqlCommand ToSqlCommand()
     {
-        var column = Columns.ToString("\r\n, ").AddIndent(4);
+
+        var temporary = IsTemporary ? "temporary " : null;
+        var with = (WithQuery == string.Empty) ? WithQuery : $"{WithQuery}\r\n";
+
         var cmd = SelectSql.ToSqlCommand();
 
-        var sql = $@"insert into {Table} (
-{column}
-)
-{cmd.CommandText};";
+        var sql = $@"create {temporary}table {Table}
+as
+{with}{cmd.CommandText};";
 
         return new SqlCommand() { CommandText = sql, Parameters = cmd.Parameters };
     }

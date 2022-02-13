@@ -52,7 +52,7 @@ select
 from _added __p
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToCreateTableCommand();
-        Assert.Equal(expect, val.commandText);
+        Assert.Equal(expect, val.CommandText);
     }
 
     [Fact]
@@ -109,6 +109,6 @@ select
 from _changed __p
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
         var val = bridge.ToCreateTableCommand();
-        Assert.Equal(expect, val.commandText);
+        Assert.Equal(expect, val.CommandText);
     }
 }

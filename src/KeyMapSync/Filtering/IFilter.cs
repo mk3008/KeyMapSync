@@ -12,7 +12,7 @@ public interface IFilter
 {
     string ToCondition(IPier sender);
 
-    IDictionary<string, object> ToParameter();
+    Dictionary<string, object>? ToParameter();
 }
 
 public class FilterContainer : IFilter
@@ -29,7 +29,7 @@ public class FilterContainer : IFilter
         return Filters.Select(x => x.ToCondition(sender)).ToString("\r\nand ");
     }
 
-    public IDictionary<string, object> ToParameter()
+    public Dictionary<string, object>? ToParameter()
     {
         var prm = new Dictionary<string, object>();
         var hasValue = false;

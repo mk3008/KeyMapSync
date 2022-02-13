@@ -46,7 +46,7 @@ public class ExistsVersionRangeCondition : IFilter
         return sql;
     }
 
-    public IDictionary<string, object> ToParameter()
+    public Dictionary<string, object> ToParameter()
     {
         var dic = new Dictionary<string, object>();
         dic.Add(":_min_version_id", MinVersion);

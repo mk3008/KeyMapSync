@@ -1,4 +1,5 @@
-﻿using KeyMapSync.Filtering;
+﻿using KeyMapSync.Entity;
+using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,22 +30,14 @@ public static class IPierSqlExtension
         return sql;
     }
 
-    public static (string commandText, IDictionary<string, object>? parameter) ToCreateTableCommand(this IPier source, bool isTemporary = true)
+    //public static (string commandText, IDictionary<string, object>? parameter) ToCreateTableCommand(this IPier source, bool isTemporary = true)
+    //{
+    //    var cmd = (source.ToCreateTableCommandText(isTemporary), source.ToCreateTableParameter());
+    //    return cmd;
+    //}
+
+    public static SqlCommand ToCreateTableCommand(this IPier source, bool isTemporary = true)
     {
-        var cmd = (source.ToCreateTableCommandText(isTemporary), source.ToCreateTableParameter());
-        return cmd;
-    }
-
-    private static string ToCreateTableCommandText(this IPier source, bool isTemporary = true)
-    {
-        var bridgeName = source.GetBridgeName();
-
-        var command = isTemporary ? "create temporary table" : "create table";
-        command = $"{command} {bridgeName}\r\nas";
-
-        var withQuery = source.GetWithQuery();
-        withQuery = (withQuery == null) ? null : $"\r\n{withQuery}"; ;
-
         var versionKey = source.GetDestination().VersionKeyColumn;
         var versionQuery = source.ToSelectVersionSql();
         var header = source.ToHeaderInfo();
@@ -59,18 +52,23 @@ public static class IPierSqlExtension
         header.Tables.ForEach(x => tables.Add(x));
         tables.Add($"cross join ({versionQuery}) __v");
 
-        var column = columns.ToString("\r\n, ").AddIndent(4);
-        var table = tables.ToString("\r\n");
+        var selectcmd = new SelectCommand()
+        {
+            WithQuery = source.GetWithQuery(),
+            Tables = tables,
+            Columns = columns,
+        };
+        var prm = source.ToCreateTableParameter();
+        if (prm != null) selectcmd.Parameters = prm;
 
-        var sql = $@"{command}{withQuery}
-select
-{column}
-from {table};";
+        var sql = new CreateTableCommand(source.GetBridgeName(), selectcmd);
+        sql.IsTemporary = isTemporary;
+        var cmd = sql.ToSqlCommand();
 
-        return sql;
+        return cmd;
     }
 
-    public static IDictionary<string, object>? ToCreateTableParameter(this IPier source)
+    public static Dictionary<string, object>? ToCreateTableParameter(this IPier source)
     {
         var pier = source.GetCurrentPier();
         if (pier == null) return null;
