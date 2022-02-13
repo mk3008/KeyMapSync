@@ -33,9 +33,6 @@ public class SqlTest
 
         EcShop.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
         EcShop.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
-
-        Store.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
-        Store.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
     }
 
 

@@ -97,7 +97,7 @@ from {table};";
         foreach (var item in dest.Groups)
         {
             var alias = item.GetInnerAlias;
-            var sql = @$"inner join (
+            var sql = @$"left join (
     select
         h.*
         , {item.SequenceCommand} as {item.SequenceKeyColumn}

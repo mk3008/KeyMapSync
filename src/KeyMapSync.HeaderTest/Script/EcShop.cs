@@ -78,9 +78,9 @@ insert into ec_shop_article (ec_shop_article_id, article_name, unit_price, creat
 values 
 (50, 'beef' , 500, current_timestamp)
 ;
-insert into ec_shop_sale (ec_shop_sale_id, sale_date, create_timestamp)
+insert into ec_shop_sale (ec_shop_sale_id, shop_id, sale_date, create_timestamp)
 values 
-(800, '2000/03/10', '2000/03/10')
+(800, 3, '2000/03/10', '2000/03/10')
 ;
 insert into ec_shop_sale_detail (ec_shop_sale_id, ec_shop_article_id, unit_price, quantity, price)
 select

@@ -29,7 +29,7 @@ namespace KeyMapSync
         {
             var s = Sql;
             var dic = Param as Dictionary<string, object>;
-            if (dic != null) s = $"{s}\r\n--{dic.Select(x => $"{x.Key} = {x.Value}").ToString(" and ")}";
+            if (dic != null) s = $"{s};\r\n--{dic.Select(x => $"{x.Key} = {x.Value}").ToString(" and ")}";
             return s;
         }
     }

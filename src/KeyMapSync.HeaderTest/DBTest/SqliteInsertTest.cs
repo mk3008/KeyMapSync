@@ -22,7 +22,7 @@ public class SqliteInsertTest
 
     private readonly ITestOutputHelper Output;
 
-    public static string CnString => "Data Source=./insert_test.sqlite;Cache=Shared";
+    public static string CnString => "Data Source=./sql_test.sqlite;Cache=Shared";
 
     public SqliteInsertTest(ITestOutputHelper output)
     {
@@ -35,9 +35,6 @@ public class SqliteInsertTest
 
         EcShop.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
         EcShop.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
-
-        Store.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
-        Store.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
     }
 
     [Fact]
