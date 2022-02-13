@@ -60,7 +60,7 @@ select
     , __g1.integration_sale_id
     , __p.*
 from _added __p
-inner join (
+left join (
     select
         h.*
         , (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale' union all select 0)) + row_number() over() as integration_sale_id
@@ -132,7 +132,7 @@ select
     , __g1.integration_sale_id
     , __p.*
 from _changed __p
-inner join (
+left join (
     select
         h.*
         , (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale' union all select 0)) + row_number() over() as integration_sale_id
