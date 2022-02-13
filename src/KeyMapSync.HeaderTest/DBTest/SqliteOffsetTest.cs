@@ -78,9 +78,9 @@ public class SqliteOffsetTest
         }
     }
 
-    private void OnBeforeSqlExecute(object sender, SqlEventArgs e)
+    private void OnBeforeSqlExecute(object? sender, SqlEventArgs? e)
     {
-        Output.WriteLine(e.GetSqlInfo());
+        if (e != null) Output.WriteLine(e.GetSqlInfo());
     }
 
     private int Offset(Datasource ds, IFilter validateFilter, bool isLogging = false)

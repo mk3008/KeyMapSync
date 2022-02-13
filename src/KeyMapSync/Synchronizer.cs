@@ -211,10 +211,7 @@ public class Synchronizer
     public void InsertExtension(IDbConnection cn, IBridge bridge)
     {
         var sqls = bridge.ToExtensionSqls();
-        foreach (var sql in sqls)
-        {
-            ExecuteSql(cn, (sql, null), "InsertExtension");
-        }
+        foreach (var sql in sqls) ExecuteSql(cn, (sql, null), "InsertExtension");
     }
 
     private SqlEventArgs? OnBeforeSqlExecute(string name, (string sql, object? prm) command)

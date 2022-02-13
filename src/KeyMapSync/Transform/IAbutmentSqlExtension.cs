@@ -12,7 +12,7 @@ public static class IAbutmentSqlExtension
     {
         var sql = $@"create temporary view {source.Name}
 as
-{source.Datasource.Query}";
+{source.Datasource.Query};";
         return sql;
     }
 }

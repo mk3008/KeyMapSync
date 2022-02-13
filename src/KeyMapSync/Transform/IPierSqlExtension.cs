@@ -30,12 +30,6 @@ public static class IPierSqlExtension
         return sql;
     }
 
-    //public static (string commandText, IDictionary<string, object>? parameter) ToCreateTableCommand(this IPier source, bool isTemporary = true)
-    //{
-    //    var cmd = (source.ToCreateTableCommandText(isTemporary), source.ToCreateTableParameter());
-    //    return cmd;
-    //}
-
     public static SqlCommand ToCreateTableCommand(this IPier source, bool isTemporary = true)
     {
         var versionKey = source.GetDestination().VersionKeyColumn;

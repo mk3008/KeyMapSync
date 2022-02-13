@@ -8,21 +8,16 @@ namespace KeyMapSync.Entity;
 
 public class ExtensionDatasource
 {
-    public string Name { get; set; }
-
-    /// <summary>
-    /// owner datasource
-    /// </summary>
-    public Datasource Datasource { get; set; }
+    public string Name { get; set; } = String.Empty;
 
     /// <summary>
     /// ex."select integration_sales_slip_id, article_id from {0}/*{0} is bridge table name*/"
     /// </summary>
-    public string QueryFormat { get; set; }
+    public string QueryFormat { get; set; } = String.Empty;
 
     /// <summary>
     /// ex."ec_shop_sales_article"
     /// </summary>
-    public ExtensionDestination Destination { get; set; }
+    public ExtensionDestination? Destination { get; set; } = null;
 }
 

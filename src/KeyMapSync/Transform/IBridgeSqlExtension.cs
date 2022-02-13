@@ -196,6 +196,7 @@ where
         foreach (var item in ds.Extensions)
         {
             var exDest = item.Destination;
+            if (exDest == null) throw new NullReferenceException(nameof(exDest));
 
             var dest = exDest.DestinationName;
 

@@ -13,11 +13,9 @@ public class DifferentCondition : IFilter
 
     public string BuildRemarksSql(IPier sender)
     {
-        if (string.IsNullOrEmpty(RemarksColumn)) return null;
-        if (!(sender is ChangedPier)) throw new NotSupportedException();
+        if (string.IsNullOrEmpty(RemarksColumn)) throw new NullReferenceException(nameof(RemarksColumn));
+        if (!(sender is ChangedPier changed)) throw new NotSupportedException();
 
-        var changed = sender as ChangedPier;
-        //var expect = changed.PreviousPrier;
         var ds = sender.GetDatasource();
 
         return BuildRemarksSql(changed.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
@@ -74,16 +72,12 @@ public class DifferentCondition : IFilter
 
     public string ToCondition(IPier sender)
     {
-        if (!(sender is ChangedPier)) throw new NotSupportedException();
+        if (!(sender is ChangedPier changed)) throw new NotSupportedException();
 
-        var changed = sender as ChangedPier;
         var ds = sender.GetDatasource();
 
         return BuildWhereSql(sender.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
 
-    public Dictionary<string, object>? ToParameter()
-    {
-        return null;
-    }
+    public Dictionary<string, object>? ToParameter() => null;
 }

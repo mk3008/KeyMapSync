@@ -11,17 +11,11 @@ namespace KeyMapSync.Filtering;
 
 public class CustomFilter : IFilter
 {
-    public string Condition { get; set; }
+    public string Condition { get; set; } = String.Empty;
 
-    public Dictionary<string, object> Parameter { get; set; }
+    public Dictionary<string, object> Parameter { get; set; } = new();
 
-    public string ToCondition(IPier sender)
-    {
-        return string.Format(Condition, sender.GetInnerAlias());
-    }
+    public string ToCondition(IPier sender) => string.Format(Condition, sender.GetInnerAlias());
 
-    public Dictionary<string, object> ToParameter()
-    {
-        return Parameter;
-    }
+    public Dictionary<string, object> ToParameter() => Parameter;
 }

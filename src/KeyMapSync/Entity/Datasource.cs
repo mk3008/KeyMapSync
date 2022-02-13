@@ -57,8 +57,6 @@ public class Datasource
 
     public IList<ExtensionDatasource> Extensions { get; set; } = new List<ExtensionDatasource>();
 
-    public HeaderOption? HeaderOption { get; set; }
-
     /// <summary>
     /// keymap table name format.
     /// </summary>
