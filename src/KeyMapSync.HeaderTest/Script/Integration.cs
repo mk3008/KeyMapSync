@@ -11,6 +11,12 @@ drop table if exists integration_sale_detail_ext_ec_shop_article
 ;
 drop table if exists integration_sale_detail_ext_store_sale_detail
 ;
+drop table if exists integration_sale_detail__map_ec_shop_sale_detail
+;
+drop table if exists integration_sale_detail__sync
+;
+drop table if exists integration_sale_detail__version
+;
 create table integration_sale (
     integration_sale_id integer primary key autoincrement,
     shop_id integer, 

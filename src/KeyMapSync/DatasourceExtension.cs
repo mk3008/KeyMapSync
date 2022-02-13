@@ -11,7 +11,7 @@ namespace KeyMapSync;
 
 internal static class DatasourceExtension
 {
-    public static IList<string> GetKeyMapColumns(this Datasource source)
+    public static List<string> GetKeyMapColumns(this Datasource source)
     {
         var lst = new List<string>();
         lst.Add(source.Destination.SequenceKeyColumn);
@@ -19,7 +19,7 @@ internal static class DatasourceExtension
         return lst;
     }
 
-    public static (IList<string> fromColumns, IList<string> toColumns, string? where) GetInsertKeyMapInfoset(this Datasource source, string? prefix = null)
+    public static (List<string> fromColumns, List<string> toColumns, string? where) GetInsertKeyMapInfoset(this Datasource source, string? prefix = null)
     {
         var key = source.Destination.SequenceKeyColumn;
 

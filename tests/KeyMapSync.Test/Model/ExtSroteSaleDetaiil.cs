@@ -14,7 +14,7 @@ public class ExtSroteSaleDetaiil
         var c = new ExtensionDestination()
         {
             DestinationName = "integration_sale_detail_ext_store_sale_detail",
-            Columns = new[] { "store_article_id", "remarks" },
+            Columns = new[] { "store_article_id", "remarks" }.ToList(),
         };
         return c;
     }

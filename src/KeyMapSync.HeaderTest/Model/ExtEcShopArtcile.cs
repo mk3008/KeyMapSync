@@ -14,7 +14,7 @@ public class ExtEcShopArtcile
         var c = new ExtensionDestination()
         {
             DestinationName = "integration_sale_detail_ext_ec_shop_article",
-            Columns = new[] { "integration_sale_detail_id", "ec_shop_article_id" },
+            Columns = new[] { "integration_sale_detail_id", "ec_shop_article_id" }.ToList(),
         };
         return c;
     }

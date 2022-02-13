@@ -43,6 +43,7 @@ public class Synchronizer
         cn.Transaction(_ =>
         {
             if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
+            InsertGroupDestinations(cn, bridge);
             if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
             if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
             if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
@@ -111,6 +112,16 @@ public class Synchronizer
         return cnt;
     }
 
+    private int ExecuteSql(IDbConnection cn, SqlCommand command, string caption, string? counterSql = null)
+    {
+        var e = OnBeforeSqlExecute(caption, command);
+        var cnt = cn.Execute(command);
+        if (counterSql != null) cnt = cn.ExecuteScalar<int>(counterSql);
+        if (e != null) OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
     private int CreateTemporaryView(IDbConnection cn, IAbutment root)
     {
         var sql = root.ToTemporaryViewDdl();
@@ -135,6 +146,17 @@ public class Synchronizer
         var cmd = bridge.ToInsertDestinationCommand(prefix);
         var cnt = ExecuteSql(cn, cmd, "InsertDestination");
 
+        return cnt;
+    }
+
+    public int InsertGroupDestinations(IDbConnection cn, IBridge bridge)
+    {
+        var cnt = 0;
+        foreach (var item in bridge.GetDestination().Groups)
+        {
+            var cmd = bridge.ToInsertHeaderCommand(item);
+            cnt += ExecuteSql(cn, cmd, "InsertDestination");
+        }
         return cnt;
     }
 
@@ -202,6 +224,17 @@ public class Synchronizer
         if (SyncEvent == null || handler == null) return null;
 
         var e = new SqlEventArgs(SyncEvent, name, command.sql, command.prm);
+        handler(this, e);
+        return e;
+    }
+
+    private SqlEventArgs? OnBeforeSqlExecute(string name, SqlCommand command)
+    {
+        var handler = BeforeSqlExecute;
+
+        if (SyncEvent == null || handler == null) return null;
+
+        var e = new SqlEventArgs(SyncEvent, name, command.CommandText, command.Parameters);
         handler(this, e);
         return e;
     }

@@ -26,6 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="insert_sqltest.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="database_sqltest.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
