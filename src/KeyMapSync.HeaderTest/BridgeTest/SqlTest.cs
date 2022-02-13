@@ -1,10 +1,10 @@
 using Dapper;
+using KeyMapSync;
 using KeyMapSync.Entity;
 using KeyMapSync.Filtering;
-using KeyMapSync.Test.ModelHeaderDetail;
-using KeyMapSync.Test.ScriptHeaderDetail;
+using KeyMapSync.HeaderTest.Model;
+using KeyMapSync.HeaderTest.Script;
 using KeyMapSync.Transform;
-using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -14,42 +14,28 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace KeyMapSync.Test.BridgeHeaderTest;
+namespace KeyMapSync.HeaderTest.BridgeTest;
 
 public class SqlTest
 {
     private readonly ITestOutputHelper Output;
 
-    public static string CnString => "Data Source=./database_headerdetail.sqlite;Cache=Shared";
+    public static string CnString => "Data Source=./database_sqltest.sqlite;Cache=Shared";
 
     public SqlTest(ITestOutputHelper output)
     {
         Output = output;
 
-        using (var cn = new SQLiteConnection(CnString))
-        {
-            cn.Open();
-            foreach (var item in Integration.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in EcShop.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in EcShop.CreateDataSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in Store.InitializeSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in Store.CreateDataSql.Split(";"))
-            {
-                cn.Execute(item);
-            };
-        }
+        using var cn = new SQLiteConnection(CnString);
+        cn.Open();
+
+        Integration.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
+
+        EcShop.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
+        EcShop.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
+
+        Store.InitializeSql.Split(";").ToList().ForEach(item => cn.Execute(item));
+        Store.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
     }
 
 

@@ -1,4 +1,4 @@
-﻿namespace KeyMapSync.Test.ScriptHeaderDetail;
+﻿namespace KeyMapSync.HeaderTest.Script;
 
 public static class Integration
 {

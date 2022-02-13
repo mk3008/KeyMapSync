@@ -42,9 +42,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="database_headerdetail.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="filter_insert_test.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
