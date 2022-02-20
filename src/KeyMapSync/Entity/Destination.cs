@@ -30,13 +30,13 @@ namespace KeyMapSync.Entity
         /// <summary>
         /// Destination columns.
         /// </summary>
-        public IList<string> Columns { get; init; } = new List<string>();
+        public List<string> Columns { get; set; } = new();
 
         /// <summary>
         /// ex
         /// "quantity, price"
         /// </summary>
-        public IList<string> SingInversionColumns { get; init; } = new List<string>();
+        public List<string> SingInversionColumns { get; set; } = new();
 
         /// <summary>
         /// Sync-table name format.

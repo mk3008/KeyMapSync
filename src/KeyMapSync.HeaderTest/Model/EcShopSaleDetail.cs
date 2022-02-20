@@ -33,9 +33,9 @@ ds as (
 )
 select * from ds",
                 //Alias = "ds",
-                Columns = new[] { "ec_shop_sale_detail_id", "shop_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price" },
-                KeyColumns = new[] { "ec_shop_sale_detail_id" },
-                InspectionIgnoreColumns = new[] { "ec_shop_article_id", "article_name" },
+                Columns = new() { "ec_shop_sale_detail_id", "shop_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price" },
+                KeyColumns = new() { "ec_shop_sale_detail_id" },
+                InspectionIgnoreColumns = new() { "ec_shop_article_id", "article_name" },
             };
             ds.Extensions.Add(GetExtensionDatasource());
             return ds;

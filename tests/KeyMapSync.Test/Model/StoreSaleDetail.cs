@@ -30,9 +30,9 @@ from
     inner join store_sale ss on ssd.store_sale_id = ss.store_sale_id
     inner join store_article sa on ssd.store_article_id = sa.store_article_id",
 
-                Columns = new[] { "store_sale_detail_id", "sale_date", "store_article_id", "article_name", "unit_price", "quantity", "price", "remarks" },
-                KeyColumns = new[] { "store_sale_detail_id" },
-                InspectionIgnoreColumns = new[] { "store_article_id", "article_name", "remarks" },
+                Columns = new() { "store_sale_detail_id", "sale_date", "store_article_id", "article_name", "unit_price", "quantity", "price", "remarks" },
+                KeyColumns = new() { "store_sale_detail_id" },
+                InspectionIgnoreColumns = new() { "store_article_id", "article_name", "remarks" },
             };
             ds.Extensions.Add(GetExtensionDatasource());
             return ds;
