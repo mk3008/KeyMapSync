@@ -12,7 +12,10 @@ public class NotExistsKeyMapCondition : IFilter
     public string ToCondition(IPier sender)
     {
         var ds = sender.GetDatasource();
-        var keymap = ds.KeyMapName;
+        var config = ds.Destination.KeyMapConfig;
+        if (config == null) throw new NotSupportedException($"keymap is not supportes.(table:{ds.Destination.DestinationTableName})");
+
+        var keymap = config.ToDbTable(ds).Table;
         var datasourceAlias = sender.GetInnerAlias();
         var datasourceKeys = ds.KeyColumns;
         return BuildSql(keymap, datasourceAlias, datasourceKeys);

@@ -26,42 +26,60 @@ public class Synchronizer
 
     private SyncEventArgs? SyncEvent { get; set; } = null;
 
-    public int Insert(IDbConnection cn, Datasource ds, string bridgeName = "", IFilter? filter = null)
+    public int Insert(IDbConnection cn, Datasource ds, IFilter? filter = null)
     {
         SyncEvent = new SyncEventArgs("Insert");
 
-        CreateSystemTable(cn, ds);
-
         //create bridge instance.
-        var root = new Abutment(ds, bridgeName);
+        var root = new Abutment(ds);
         var bridge = new AdditionalPier(root);
         if (filter != null) bridge.AddFilter(filter);
+
+        return cn.Transaction(trn => Insert(cn, trn, bridge));
+    }
+
+    public int Insert(IDbConnection cn, IDbTransaction trn, IPier bridge)
+    {
+        var ds = bridge.GetDatasource();
+
+        CreateSystemTable(cn, ds);
 
         var cnt = CreateTemporaryTable(cn, bridge);
         if (cnt == 0) return 0;
 
-        cn.Transaction(_ =>
-        {
-            if (InsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
-            InsertGroupDestinations(cn, bridge);
-            if (InsertKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge) != cnt) throw new InvalidOperationException();
-            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
+        if (InsertDestination(cn, ds) != cnt) throw new InvalidOperationException();
+        InsertGroupDestinations(cn, ds);
 
-            InsertExtension(cn, bridge);
+        var kmconfig = ds.Destination.KeyMapConfig;
+        if (kmconfig != null && InsertKeyMap(cn, ds, kmconfig) != cnt) throw new InvalidOperationException();
+
+        var vconfig = ds.Destination.VersioningConfig;
+        if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig) != cnt) throw new InvalidOperationException();
+
+        //nest
+        ds.Extensions.ForEach(x =>
+        {
+            var abutment = new Abutment(x);
+            var pier = new ExtensionAdditionalPier(abutment);
+            Insert(cn, trn, pier);
         });
 
         return cnt;
     }
 
-    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, string? bridgeName = null, IFilter? filter = null)
+    public int Offset(IDbConnection cn, Datasource ds, IFilter validateFilter, IFilter? filter = null)
     {
         SyncEvent = new SyncEventArgs("Offset");
 
         CreateSystemTable(cn, ds);
 
+        var kmconfig = ds.Destination.KeyMapConfig;
+        if (kmconfig == null) throw new NotSupportedException($"keymap is not supported.(table:{ds.Destination.DestinationTableName})");
+        var offsetconfig = kmconfig.OffsetConfig;
+        if (offsetconfig == null) throw new NotSupportedException($"offset is not supported.(table:{ds.Destination.DestinationTableName})");
+
         //create bridge instance.
-        var root = new Abutment(ds, bridgeName);
+        var root = new Abutment(ds);
         var pier = new ExpectPier(root, validateFilter);
         if (filter != null) pier.AddFilter(filter);
         var bridge = new ChangedPier(pier);
@@ -71,22 +89,20 @@ public class Synchronizer
 
         cn.Transaction(_ =>
         {
+            var vconfig = ds.Destination.VersioningConfig;
+
             // offset
-            var offsetPrefix = ds.Destination.OffsetColumnPrefix;
+            var offsetPrefix = offsetconfig.OffsetColumnPrefix;
             if (ReverseInsertDestination(cn, bridge) != offsetCount) throw new InvalidOperationException();
             if (RemoveKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
             if (InsertOffsetKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
-            if (InsertSync(cn, bridge, offsetPrefix) != offsetCount) throw new InvalidOperationException();
+            if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig, offsetPrefix) != offsetCount) throw new InvalidOperationException();
 
             // renewwal
-            var renewalPrefix = ds.Destination.RenewalColumnPrefix;
-            var renewalCount = InsertDestination(cn, bridge, renewalPrefix);
-            if (renewalCount != 0)
-            {
-                if (InsertKeyMap(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
-                if (InsertSync(cn, bridge, renewalPrefix) != renewalCount) throw new InvalidOperationException();
-            }
-            if (InsertVersion(cn, bridge) != 1) throw new InvalidOperationException();
+            var renewalPrefix = offsetconfig.RenewalColumnPrefix;
+            var renewalCount = InsertDestination(cn, ds, renewalPrefix);
+            if (renewalCount != 0 && InsertKeyMap(cn, ds, kmconfig, renewalPrefix) != renewalCount) throw new InvalidOperationException();
+            if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig) != renewalCount) throw new InvalidOperationException();
 
             //InsertExtension(cn, bridge, prefix);
         });
@@ -96,10 +112,7 @@ public class Synchronizer
 
     public void CreateSystemTable(IDbConnection cn, Datasource ds)
     {
-        cn.Execute(Dbms.ToKeyMapDDL(ds));
-        cn.Execute(Dbms.ToSyncDDL(ds));
-        cn.Execute(Dbms.ToVersionDDL(ds));
-        cn.Execute(Dbms.ToOffsetDDL(ds));
+        ds.ToSystemDbTables().ForEach(x => cn.Execute(Dbms.ToCreateTableSql(x)));
     }
 
     private int ExecuteSql(IDbConnection cn, (string commandText, IDictionary<string, object>? parameter) command, string caption, string? counterSql = null)
@@ -130,32 +143,31 @@ public class Synchronizer
         return cnt;
     }
 
-    public int CreateTemporaryTable(IDbConnection cn, IPier bridge, bool isTemporary = true)
+    public int CreateTemporaryTable(IDbConnection cn, IPier bridge)
     {
         CreateTemporaryView(cn, bridge.GetAbutment());
 
-        var cmd = bridge.ToCreateTableCommand(isTemporary);
-        var counterSql = $"select count(*) from {bridge.GetBridgeName()};";
+        var cmd = bridge.ToCreateTableCommand();
+        var counterSql = $"select count(*) from {bridge.GetDatasource().BridgeName};";
         var cnt = ExecuteSql(cn, cmd, "CreateTemporaryTable", counterSql);
 
         return cnt;
     }
 
-    public int InsertDestination(IDbConnection cn, IBridge bridge, string? prefix = null)
+    public int InsertDestination(IDbConnection cn, Datasource d, string? sequencePrefix = null)
     {
-        var cmd = bridge.ToInsertDestinationCommand(prefix);
+        var cmd = d.Destination.ToInsertCommand(d, sequencePrefix);
         var cnt = ExecuteSql(cn, cmd, "InsertDestination");
 
         return cnt;
     }
 
-    public int InsertGroupDestinations(IDbConnection cn, IBridge bridge)
+    public int InsertGroupDestinations(IDbConnection cn, Datasource d)
     {
         var cnt = 0;
-        foreach (var item in bridge.GetDestination().Groups)
+        foreach (var cmd in d.Destination.Groups.Select(x => x.ToInsertCommand(d)))
         {
-            var cmd = bridge.ToInsertHeaderCommand(item);
-            cnt += ExecuteSql(cn, cmd, "InsertDestination");
+            cnt += ExecuteSql(cn, cmd, "InsertDestination(Group)");
         }
         return cnt;
     }
@@ -168,9 +180,9 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertKeyMap(IDbConnection cn, IBridge bridge, string? prefix = null)
+    public int InsertKeyMap(IDbConnection cn, Datasource d, KeyMapConfig config, string? sequencePrefix = null)
     {
-        var cmd = bridge.ToInsertKeyMapCommand(prefix);
+        var cmd = config.ToInsertCommand(d, sequencePrefix);
         var cnt = ExecuteSql(cn, cmd, "InsertKeyMap");
 
         return cnt;
@@ -178,7 +190,7 @@ public class Synchronizer
 
     public int InsertOffsetKeyMap(IDbConnection cn, IBridge bridge, string? prefix = null)
     {
-        var cmd = bridge.ToInsertOffsetKeyMapCommand();
+        var cmd = bridge.ToInsertOffsetCommand();
         var cnt = ExecuteSql(cn, cmd, "InsertOffsetKeyMap");
 
         return cnt;
@@ -186,33 +198,44 @@ public class Synchronizer
 
     public int RemoveKeyMap(IDbConnection cn, IBridge bridge)
     {
-        var sql = bridge.ToRemoveKeyMapSql();
-        var cnt = ExecuteSql(cn, (sql, null), "InsertOffsetKeyMap");
+        var sql = bridge.ToRemoveKeyMapCommand();
+        var cnt = ExecuteSql(cn, sql, "InsertOffsetKeyMap");
 
         return cnt;
     }
 
-    public int InsertSync(IDbConnection cn, IBridge bridge, string? prefix = null)
+    public int InsertSyncAndVersion(IDbConnection cn, Datasource d, VersioningConfig config, string? prefix = null)
     {
-        var cmd = bridge.ToInsertSyncCommand(prefix);
+        var cnt = InsertSync(cn, d, config, prefix);
+        if (prefix == null)
+        {
+            var cnt2 = InsertVersion(cn, d, config);
+            if (cnt2 != 1) throw new InvalidOperationException();
+        }
+        return cnt;
+    }
+
+    private int InsertSync(IDbConnection cn, Datasource d, VersioningConfig config, string? prefix = null)
+    {
+        var cmd = config.SyncConfig.ToInsertCommand(d, prefix);
         var cnt = ExecuteSql(cn, cmd, "InsertSync");
 
         return cnt;
     }
 
-    public int InsertVersion(IDbConnection cn, IBridge bridge)
+    private int InsertVersion(IDbConnection cn, Datasource d, VersioningConfig config)
     {
-        var cmd = bridge.ToInsertVersionCommand();
+        var cmd = config.VersionConfig.ToInsertCommand(d);
         var cnt = ExecuteSql(cn, cmd, "InsertVersion");
 
         return cnt;
     }
 
-    public void InsertExtension(IDbConnection cn, IBridge bridge)
-    {
-        var sqls = bridge.ToExtensionSqls();
-        foreach (var sql in sqls) ExecuteSql(cn, (sql, null), "InsertExtension");
-    }
+    //public void InsertExtension(IDbConnection cn, IBridge bridge)
+    //{
+    //    var sqls = bridge.ToExtensionSqls();
+    //    foreach (var sql in sqls) ExecuteSql(cn, (sql, null), "InsertExtension");
+    //}
 
     private SqlEventArgs? OnBeforeSqlExecute(string name, (string sql, object? prm) command)
     {

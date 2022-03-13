@@ -106,8 +106,7 @@ public class SqliteFilterInsertTest
 
     private void OnBeforeSqlExecute(object sender, SqlEventArgs e)
     {
-        Debug.WriteLine(e.GetSqlInfo());
-        Debug.WriteLine("--");
+        Output.WriteLine(e.GetSqlInfo());
     }
 }
 

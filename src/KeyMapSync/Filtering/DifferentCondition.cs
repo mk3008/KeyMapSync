@@ -9,7 +9,7 @@ using System.Text;
 namespace KeyMapSync.Transform;
 public class DifferentCondition : IFilter
 {
-    public string RemarksColumn { get; set; } = "_remarks";
+    public string RemarksColumn { get; set; } = "offset_remarks";
 
     public string BuildRemarksSql(IPier sender)
     {

@@ -31,6 +31,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Entity\ExtensionDatasource.cs" />
+    <Compile Remove="Entity\ExtensionDestination.cs" />
     <Compile Remove="EnumerableExtension.cs" />
     <Compile Remove="Filtering\FilterExtension.cs" />
     <Compile Remove="Filtering\IAdditionalCondition.cs" />

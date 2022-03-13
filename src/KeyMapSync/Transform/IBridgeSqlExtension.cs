@@ -28,226 +28,195 @@ public static class IBridgeSqlExtension
     //        return sql;
     //    }
 
-    public static SqlCommand ToInsertDestinationCommand(this IBridge source, string? prefix)
-    {
-        var dest = source.GetDestination();
+    //public static SqlCommand ToInsertDestinationCommand(this IBridge source, string? prefix)
+    //{
+    //    var dest = source.GetDestination();
 
-        var toTable = dest.DestinationName;
-        var fromTable = source.GetBridgeName();
+    //    var toTable = dest.DestinationTableName;
+    //    var fromTable = source.GetBridgeName();
 
-        var info = dest.GetInsertDestinationInfo(prefix);
+    //    var info = dest.GetInsertDestinationInfo(prefix);
 
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = info.fromCols,
-            WhereText = info.where,
-        };
+    //    var selectcmd = new SelectCommand()
+    //    {
+    //        Tables = { fromTable },
+    //        Columns = info.fromCols,
+    //        WhereText = info.where,
+    //    };
 
-        var sql = new InsertCommand(toTable, info.toCols, selectcmd);
-        var cmd = sql.ToSqlCommand();
+    //    var sql = new InsertCommand(toTable, info.toCols, selectcmd);
+    //    var cmd = sql.ToSqlCommand();
 
-        return cmd;
-    }
+    //    return cmd;
+    //}
+
+
+    //public static SqlCommand ToInsertKeyMapCommand(this IBridge source, string? prefix)
+    //{
+    //    var ds = source.GetDatasource();
+
+    //    var toTable = ds.KeyMapName;
+    //    var fromTable = source.GetBridgeName();
+    //    var info = ds.GetInsertKeyMapInfoset(prefix);
+
+    //    var selectcmd = new SelectCommand()
+    //    {
+    //        Tables = { fromTable },
+    //        Columns = info.fromColumns,
+    //        WhereText = info.where,
+    //    };
+
+    //    var sql = new InsertCommand(toTable, info.toColumns, selectcmd);
+    //    var cmd = sql.ToSqlCommand();
+
+    //    return cmd;
+    //}
 
     public static SqlCommand ToReverseInsertDestinationCommand(this IBridge source)
     {
-        var dest = source.GetDestination();
-        var key = dest.SequenceKeyColumn;
+        var d = source.GetDatasource();
+        var config = d.Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) throw new NotSupportedException();
 
-        var toTable = dest.DestinationName;
-        var fromTable = $"(select __p.offset_{key}, __d.* from {source.GetBridgeName()} __p inner join {dest.DestinationName} __d on __p.{key} = __d.{key}) __p";
-
-        var info = dest.GetReverseInsertDestinationInfo();
-
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = info.fromColumns,
-            WhereText = info.where,
-        };
-
-        var sql = new InsertCommand(toTable, info.toColumns, selectcmd);
-        var cmd = sql.ToSqlCommand();
-
-        return cmd;
+        return config.ToReverseInsertDestinationCommand(d);
     }
 
-    public static SqlCommand ToInsertKeyMapCommand(this IBridge source, string? prefix)
+    public static SqlCommand ToInsertOffsetCommand(this IBridge source)
     {
-        var ds = source.GetDatasource();
+        var d = source.GetDatasource();
+        var config = d.Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) throw new NotSupportedException();
 
-        var toTable = ds.KeyMapName;
-        var fromTable = source.GetBridgeName();
-        var info = ds.GetInsertKeyMapInfoset(prefix);
-
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = info.fromColumns,
-            WhereText = info.where,
-        };
-
-        var sql = new InsertCommand(toTable, info.toColumns, selectcmd);
-        var cmd = sql.ToSqlCommand();
-
-        return cmd;
+        return config.ToInsertCommand(d);
     }
 
-    public static SqlCommand ToInsertOffsetKeyMapCommand(this IBridge source)
+    public static SqlCommand ToRemoveKeyMapCommand(this IBridge source)
     {
-        var dest = source.GetDatasource().Destination;
+        var d = source.GetDatasource();
+        var config = d.Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) throw new NotSupportedException();
 
-        var toTable = dest.OffsetName;
-        var fromTable = source.GetBridgeName();
-        var info = dest.GetInsertOffsetKeyMapInfoset();
-
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = info.fromColumns,
-            WhereText = info.where,
-        };
-
-        var sql = new InsertCommand(toTable, info.toColumns, selectcmd);
-        var cmd = sql.ToSqlCommand();
-
-        return cmd;
+        return config.ToRmoveKeyMapCommand(d);
     }
 
-    public static string ToRemoveKeyMapSql(this IBridge source)
-    {
-        var ds = source.GetDatasource();
-        var dest = source.GetDestination();
+    //public static SqlCommand ToInsertSyncCommand(this IBridge source, string? prefix)
+    //{
+    //    var dest = source.GetDestination();
 
-        var toTable = ds.KeyMapName;
-        var fromTable = source.GetBridgeName();
-        var key = dest.SequenceKeyColumn;
+    //    var toTable = dest.SyncName;
+    //    var toCols = dest.GetSyncColumns();
+    //    var fromTable = source.GetBridgeName();
 
-        var sql = $@"delete from {toTable}
-where
-    exists (select * from {fromTable} t where {toTable}.{key} = t.{key});";
-        return sql;
-    }
+    //    var info = dest.GetInsertSyncInfoset(prefix);
 
-    public static SqlCommand ToInsertSyncCommand(this IBridge source, string? prefix)
-    {
-        var dest = source.GetDestination();
+    //    var selectcmd = new SelectCommand()
+    //    {
+    //        Tables = { fromTable },
+    //        Columns = info.fromCols,
+    //        WhereText = info.where,
+    //    };
 
-        var toTable = dest.SyncName;
-        var toCols = dest.GetSyncColumns();
-        var fromTable = source.GetBridgeName();
+    //    var sql = new InsertCommand(toTable, info.toCols, selectcmd);
+    //    var cmd = sql.ToSqlCommand();
 
-        var info = dest.GetInsertSyncInfoset(prefix);
+    //    return cmd;
+    //}
 
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = info.fromCols,
-            WhereText = info.where,
-        };
+    //public static SqlCommand ToInsertVersionCommand(this IBridge source)
+    //{
+    //    var dest = source.GetDestination();
 
-        var sql = new InsertCommand(toTable, info.toCols, selectcmd);
-        var cmd = sql.ToSqlCommand();
+    //    var toTable = dest.VersionName;
+    //    var fromTable = source.GetBridgeName();
 
-        return cmd;
-    }
+    //    var cols = new List<string>();
+    //    cols.Add(dest.VersionKeyColumn);
+    //    cols.Add(dest.NameColumn);
 
-    public static SqlCommand ToInsertVersionCommand(this IBridge source)
-    {
-        var dest = source.GetDestination();
+    //    var vals = new List<string>();
+    //    vals.Add(dest.VersionKeyColumn);
+    //    vals.Add(":name");
 
-        var toTable = dest.VersionName;
-        var fromTable = source.GetBridgeName();
+    //    var ds = source.GetDatasource();
+    //    var prm = new Dictionary<string, object>();
+    //    prm[":name"] = ds.DatasourceName;
 
-        var cols = new List<string>();
-        cols.Add(dest.VersionKeyColumn);
-        cols.Add(dest.NameColumn);
+    //    var selectcmd = new SelectCommand()
+    //    {
+    //        Tables = { fromTable },
+    //        Columns = vals,
+    //        UseDistinct = true,
+    //        Parameters = prm
+    //    };
 
-        var vals = new List<string>();
-        vals.Add(dest.VersionKeyColumn);
-        vals.Add(":name");
+    //    var sql = new InsertCommand(toTable, cols, selectcmd);
+    //    var cmd = sql.ToSqlCommand();
 
-        var ds = source.GetDatasource();
-        var prm = new Dictionary<string, object>();
-        prm[":name"] = ds.Name;
+    //    return cmd;
+    //}
 
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = vals,
-            UseDistinct = true,
-            Parameters = prm
-        };
+    //public static List<string> ToExtensionSqls(this IBridge source)
+    //{
+    //    var lst = new List<string>();
 
-        var sql = new InsertCommand(toTable, cols, selectcmd);
-        var cmd = sql.ToSqlCommand();
+    //    var ds = source.GetDatasource();
+    //    var bridgeName = ds.BridgeName;
 
-        return cmd;
-    }
+    //    foreach (var item in ds.Extensions)
+    //    {
+    //        var exDest = item.Destination;
+    //        if (exDest == null) throw new NullReferenceException(nameof(exDest));
 
-    public static IList<string> ToExtensionSqls(this IBridge source)
-    {
-        var lst = new List<string>();
+    //        var dest = exDest.DestinationTableName;
 
-        var ds = source.GetDatasource();
-        var bridgeName = source.GetBridgeName();
+    //        //create temporary view
+    //        var view = CreateTemporaryViewDdl(item.Name, string.Format(item.QueryFormat, bridgeName));
+    //        lst.Add(view.ddl);
 
-        foreach (var item in ds.Extensions)
-        {
-            var exDest = item.Destination;
-            if (exDest == null) throw new NullReferenceException(nameof(exDest));
+    //        //create insert 
+    //        var cols = exDest.Columns;
 
-            var dest = exDest.DestinationName;
+    //        var selectcmd = new SelectCommand()
+    //        {
+    //            Tables = { view.name },
+    //            Columns = cols
+    //        };
 
-            //create temporary view
-            var view = CreateTemporaryViewDdl(item.Name, string.Format(item.QueryFormat, bridgeName));
-            lst.Add(view.ddl);
+    //        var sql = new InsertCommand(dest, cols, selectcmd);
+    //        var cmd = sql.ToSqlCommand();
 
-            //create insert 
-            var cols = exDest.Columns;
+    //        lst.Add(cmd.CommandText);
+    //    }
 
-            var selectcmd = new SelectCommand()
-            {
-                Tables = { view.name },
-                Columns = cols
-            };
+    //    return lst;
+    //}
 
-            var sql = new InsertCommand(dest, cols, selectcmd);
-            var cmd = sql.ToSqlCommand();
+    //    public static SqlCommand ToInsertHeaderCommand(this IBridge source, GroupDestination grp)
+    //    {
+    //        var toTable = grp.GroupDestinationName;
+    //        var fromTable = source.GetBridgeName();
 
-            lst.Add(cmd.CommandText);
-        }
+    //        var cols = new[] { grp.SequenceKeyColumn }.Union(grp.GroupColumns).ToList();
 
-        return lst;
-    }
+    //        var selectcmd = new SelectCommand()
+    //        {
+    //            Tables = { fromTable },
+    //            Columns = cols,
+    //            UseDistinct = true
+    //        };
 
-    public static SqlCommand ToInsertHeaderCommand(this IBridge source, GroupDestination grp)
-    {
-        var toTable = grp.GroupDestinationName;
-        var fromTable = source.GetBridgeName();
+    //        var sql = new InsertCommand(toTable, cols, selectcmd);
+    //        var cmd = sql.ToSqlCommand();
 
-        var cols = new[] { grp.SequenceKeyColumn }.Union(grp.GroupColumns).ToList();
+    //        return cmd;
+    //    }
 
-        var selectcmd = new SelectCommand()
-        {
-            Tables = { fromTable },
-            Columns = cols,
-            UseDistinct = true
-        };
-
-        var sql = new InsertCommand(toTable, cols, selectcmd);
-        var cmd = sql.ToSqlCommand();
-
-        return cmd;
-    }
-
-    private static (string name, string ddl) CreateTemporaryViewDdl(string name, string query)
-    {
-        var viewName = $"{name}_{DateTime.Now.ToString("ssfff")}";
-        var ddl = $@"create temporary view {viewName}
-as
-{query}";
-        return (viewName, ddl);
-    }
+    //    private static (string name, string ddl) CreateTemporaryViewDdl(string name, string query)
+    //    {
+    //        var viewName = $"{name}_{DateTime.Now.ToString("ssfff")}";
+    //        var ddl = $@"create temporary view {viewName}
+    //as
+    //{query}";
+    //        return (viewName, ddl);
+    //    }
 }

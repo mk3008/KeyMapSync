@@ -10,70 +10,44 @@ public class SQLite : IDBMS
 {
     private static int TableNameMaxLength => 128;
 
-    public string ToKeyMapDDL(Datasource ds)
+    public string ToCreateTableSql(DbTable tbl)
     {
-        var tbl = ds.KeyMapName.RemoveOrDefault(TableNameMaxLength);
+        var types = new Dictionary<DbColumn.Types, string>();
+        types[DbColumn.Types.Numeric] = " integer";
+        types[DbColumn.Types.Text] = " text";
+        types[DbColumn.Types.Timestamp] = " timestamp";
 
-        var cols = ds.GetKeyMapColumns().Select(x => $"{x} integer not null").ToList();
-        cols.Add($"primary key({ds.KeyColumns.ToString(", ")})");
-        var col = cols.ToString("\r\n, ");
-        var sql = $@"create table if not exists {tbl}
+        var nulls = new Dictionary<bool, string>();
+        nulls[true] = "";
+        nulls[false] = " not null";
+
+        var seqs = new Dictionary<bool, string>();
+        seqs[true] = " autoincrement";
+        seqs[false] = "";
+
+        var defs = new Dictionary<DbColumn.Types, string>();
+        defs[DbColumn.Types.Numeric] = "";
+        defs[DbColumn.Types.Text] = "";
+        defs[DbColumn.Types.Timestamp] = " default current_timestamp";
+
+        var cols = tbl.DbColumns.Select(x =>
+        {
+            if (x.Column == tbl.Sequence?.Column)
+            {
+                return $"{x.Column}{types[x.ColumnType]} primary key autoincrement";
+            }
+            else
+            {
+                return $"{x.Column}{types[x.ColumnType]}{nulls[x.IsNullable]}{seqs[x.Column == tbl.Sequence?.Column]}{defs[x.ColumnType]}";
+            }
+        }).ToList();
+
+        if (tbl.Sequence == null) cols.Add($"primary key({tbl.Primarykeys.ToString(", ")})");
+        tbl.UniqueKeyGroups.ForEach(keys => cols.Add($"unique({keys.ToString(", ")})"));
+
+        var sql = $@"create table if not exists {tbl.Table}
 (
-{col.AddIndent(4)}
-)";
-
-        return sql;
-    }
-
-    public string ToSyncDDL(Datasource ds)
-    {
-        var dest = ds.Destination;
-        var tbl = dest.SyncName.RemoveOrDefault(TableNameMaxLength);
-        var cols = dest.GetSyncColumns().Select(x => $"{x} integer not null").ToList();
-        cols.Add($"primary key({ds.Destination.SequenceKeyColumn})");
-        var col = cols.ToString("\r\n, ");
-        var sql = $@"create table if not exists {tbl}
-(
-{col.AddIndent(4)}
-)";
-
-        return sql;
-    }
-
-    public string ToVersionDDL(Datasource ds)
-    {
-        var dest = ds.Destination;
-        var tbl = dest.VersionName.RemoveOrDefault(TableNameMaxLength);
-        var cols = new List<string>();
-        cols.Add($"{dest.VersionKeyColumn} integer primary key autoincrement");
-        cols.Add($"{dest.NameColumn} text not null");
-        cols.Add($"{dest.TimestampColumn} timestamp not null default current_timestamp");
-        //cols.Add($"primary key({dest.VersionKeyColumn})");
-        var col = cols.ToString("\r\n, ");
-        var sql = $@"create table if not exists {tbl}
-(
-{col.AddIndent(4)}
-)";
-
-        return sql;
-    }
-
-    public string ToOffsetDDL(Datasource ds)
-    {
-        var dest = ds.Destination;
-        var tbl = dest.OffsetName.RemoveOrDefault(TableNameMaxLength);
-        var cols = new List<string>();
-        cols.Add($"{dest.SequenceKeyColumn} integer not null");
-        cols.Add($"{dest.OffsetColumnName} integer not null");
-        cols.Add($"{dest.RenewalColumnName} integer");
-        cols.Add($"{dest.OffsetRemarksColumn} text not null");
-        cols.Add($"primary key({dest.SequenceKeyColumn})");
-        cols.Add($"unique({dest.OffsetColumnName})");
-        cols.Add($"unique({dest.RenewalColumnName})");
-        var col = cols.ToString("\r\n, ");
-        var sql = $@"create table if not exists {tbl}
-(
-{col.AddIndent(4)}
+{cols.ToString("\r\n, ").AddIndent(4)}
 )";
 
         return sql;

@@ -33,7 +33,7 @@ public class ExpectBridgeTest
         var root = new Abutment(ds);
         var bridge = new ExpectPier(root);
         bridge.AddFilter(new ExistsVersionRangeCondition(1, 2));
-        var val = bridge.BuildCurrentSelectQuery();
+        var val = bridge.ToSelectQuery();
 
         var expect = $@"select
     __map.ec_shop_sale_detail_id
@@ -54,7 +54,7 @@ where
         var root = new Abutment(ds);
         var bridge = new ExpectPier(root);
         bridge.AddFilter(new ExistsVersionRangeCondition());
-        var val = bridge.BuildCurrentSelectQuery();
+        var val = bridge.ToSelectQuery();
 
         var expect = $@"select
     __map.ec_shop_sale_detail_id

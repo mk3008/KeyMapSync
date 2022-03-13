@@ -8,10 +8,10 @@ namespace KeyMapSync.Transform;
 
 public static class IBridgeExtension
 {
-    public static string GetBridgeName(this IBridge source)
-    {
-        return source.GetAbutment().BridgeName;
-    }
+    //public static string GetBridgeName(this IBridge source)
+    //{
+    //    return source.GetAbutment().BridgeName;
+    //}
 
     public static Datasource GetDatasource(this IBridge source)
     {

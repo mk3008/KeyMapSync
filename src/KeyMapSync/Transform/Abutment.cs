@@ -11,10 +11,9 @@ namespace KeyMapSync.Transform;
 
 public class Abutment : IAbutment
 {
-    public Abutment(Datasource datasource, string? bridgeName = null)
+    public Abutment(Datasource datasource)
     {
         Datasource = datasource;
-        BridgeName = string.IsNullOrEmpty(bridgeName) ? string.Format(BridgeNameFormat, Datasource.Name) : bridgeName;
     }
 
     /// <summary>
@@ -22,21 +21,9 @@ public class Abutment : IAbutment
     /// </summary>
     public Datasource Datasource { get; }
 
-    public string ViewNameFormat => "_kms_v_{0}";
+    public string ViewName => $"_v_{Datasource.BridgeName}";
 
-    /// <summary>
-    /// Name of the view wrapping the data source.
-    /// ex."_kms_v_datasource"
-    /// </summary>
-    public string Name => String.Format(ViewNameFormat, Datasource.Name);
-
-    public string BridgeNameFormat => "_kms_tmp_{0}";
-
-    /// <summary>
-    /// Name of the temporary table that will eventually be created.
-    /// ex."tmp01"
-    /// </summary>
-    public string BridgeName { get; }
+    public string ViewOrCteName => ViewName;
 
     public IAbutment GetAbutment() => this;
 

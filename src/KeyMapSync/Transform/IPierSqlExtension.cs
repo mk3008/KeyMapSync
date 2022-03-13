@@ -15,14 +15,14 @@ public static class IPierSqlExtension
         return "__p";
     }
 
-    public static string GetWithQuery(this IPier source)
+    public static string GetCteQuery(this IPier source)
     {
-        var w = source.PreviousPrier?.GetWithQuery();
+        var w = source.PreviousPrier?.GetCteQuery();
         w = (w == null) ? "with\r\n" : $"{w},\r\n";
 
-        var currentSql = source.BuildCurrentSelectQuery();
+        var currentSql = source.ToSelectQuery();
         // with sql
-        currentSql = $@"{source.Name} as (
+        currentSql = $@"{source.CteName} as (
 {currentSql.AddIndent(4)}
 )";
 
@@ -30,33 +30,37 @@ public static class IPierSqlExtension
         return sql;
     }
 
-    public static SqlCommand ToCreateTableCommand(this IPier source, bool isTemporary = true)
+    public static SqlCommand ToCreateTableCommand(this IPier source)
     {
-        var versionKey = source.GetDestination().VersionKeyColumn;
-        var versionQuery = source.ToSelectVersionSql();
-        var header = source.ToHeaderInfo();
-
         var columns = new List<string>();
-        columns.Add($"__v.{versionKey}");
-        header.Columns.ForEach(x => columns.Add(x));
-        columns.Add($"{source.GetInnerAlias()}.*");
-
         var tables = new List<string>();
-        tables.Add($"{source.Name} {source.GetInnerAlias()}");
+        columns.Add($"{source.GetInnerAlias()}.*");
+        tables.Add($"{source.CteName} {source.GetInnerAlias()}");
+
+        //header
+        var header = source.ToHeaderJoinInfo();
+        header.Columns.ForEach(x => columns.Add(x));
         header.Tables.ForEach(x => tables.Add(x));
-        tables.Add($"cross join ({versionQuery}) __v");
+
+        //version
+        var vconfig = source.GetDestination().VersioningConfig;
+        if (vconfig != null)
+        {
+            columns.Add($"__version.{vconfig.Sequence.Column}");
+            tables.Add($"cross join ({source.ToSelectVersionSql()}) __version");
+        }
 
         var selectcmd = new SelectCommand()
         {
-            WithQuery = source.GetWithQuery(),
+            WithQuery = source.GetCteQuery(),
             Tables = tables,
             Columns = columns,
         };
         var prm = source.ToCreateTableParameter();
         if (prm != null) selectcmd.Parameters = prm;
 
-        var sql = new CreateTableCommand(source.GetBridgeName(), selectcmd);
-        sql.IsTemporary = isTemporary;
+        var sql = new CreateTableCommand(source.GetDatasource().BridgeName, selectcmd);
+        sql.IsTemporary = true;
         var cmd = sql.ToSqlCommand();
 
         return cmd;
@@ -74,12 +78,13 @@ public static class IPierSqlExtension
 
     private static string ToSelectVersionSql(this IPier source)
     {
-        var dest = source.GetDestination();
-        var sql = $"select {dest.VersionSequenceCommand} as {dest.VersionKeyColumn}";
+        var config = source.GetDestination().VersioningConfig;
+        if (config == null) throw new NotSupportedException($"versioning not supported.(table:{source.GetDestination().DestinationTableName})");
+        var sql = $"select {config.Sequence.Command} as {config.Sequence.Column}";
         return sql;
     }
 
-    private static (List<string> Columns, List<string> Tables) ToHeaderInfo(this IPier source)
+    private static (List<string> Columns, List<string> Tables) ToHeaderJoinInfo(this IPier source)
     {
         var dest = source.GetDestination();
 
@@ -88,17 +93,19 @@ public static class IPierSqlExtension
 
         foreach (var item in dest.Groups)
         {
-            var alias = item.GetInnerAlias;
+            var alias = item.GetInnerAlias();
+            var cols = item.GetColumnsWithoutKey();
             var sql = @$"left join (
     select
         h.*
-        , {item.SequenceCommand} as {item.SequenceKeyColumn}
+        , {item.Sequence.Command} as {item.Sequence.Column}
     from
         (
-            select distinct {item.GroupColumns.ToString(", ")} from {source.Name}
+            select distinct {cols.ToString(", ")} from {source.GetAbutment().ViewName}
         ) h
-    ) {alias} on {item.GroupColumns.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
-            columns.Add($"{alias}.{item.SequenceKeyColumn}");
+    ) {alias} on {cols.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
+
+            columns.Add($"{alias}.{item.Sequence.Column}");
             tables.Add(sql);
         }
 

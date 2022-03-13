@@ -11,97 +11,124 @@ namespace KeyMapSync;
 
 internal static class DestinationExtension
 {
-    public static (List<string> fromCols, List<string> toCols, string? where) GetInsertDestinationInfo(this Destination source, string? prefix = null)
-    {
-        var vals = source.Columns.Where(x => source.SequenceKeyColumn != x).Where(x => source.Columns.Contains(x)).ToList();
+    //public static (List<string> fromCols, List<string> toCols, string? where) GetInsertDestinationInfo(this Destination source, string? prefix = null)
+    //{
+    //    var fromCols = new List<string>();
+    //    var toCols = new List<string>();
 
-        var fromCols = new List<string>();
-        fromCols.Add($"{prefix}{source.SequenceKeyColumn}");
-        fromCols.AddRange(vals);
+    //    var seq = source.Sequence;
+    //    if (seq != null)
+    //    {
+    //        fromCols.Add($"{prefix}{seq.Column}");
+    //        toCols.Add(seq.Column);
+    //    }
 
-        var toCols = new List<string>();
-        toCols.Add(source.SequenceKeyColumn);
-        toCols.AddRange(vals);
+    //    var vals = source.Columns.Where(x => seq?.Column != x).Where(x => source.Columns.Contains(x)).ToList();
+    //    fromCols.AddRange(vals);
+    //    toCols.AddRange(vals);
 
-        var where = (string.IsNullOrEmpty(prefix)) ? null : $"where {prefix}{source.SequenceKeyColumn} is not null";
+    //    var where = (string.IsNullOrEmpty(prefix) || seq == null) ? null : $"where {prefix}{seq.Column} is not null";
+    //    return (fromCols, toCols, where);
+    //}
 
-        return (fromCols, toCols, where);
-    }
+    //public static (List<string> fromColumns, List<string> toColumns, string? where) GetReverseInsertDestinationInfo(this Destination source)
+    //{
+    //    var fromCols = new List<string>();
+    //    var toCols = new List<string>();
 
-    public static (List<string> fromColumns, List<string> toColumns, string? where) GetReverseInsertDestinationInfo(this Destination source)
-    {
-        var lst = source.Columns.Where(x => source.SequenceKeyColumn != x).Where(x => source.Columns.Contains(x)).ToList();
+    //    var seq = source.Sequence;
+    //    if (seq != null)
+    //    {
+    //        fromCols.Add($"{source.OffsetColumnPrefix}{seq.Column}");
+    //        toCols.Add(seq.Column);
+    //    }
 
-        //to
-        var toCols = new List<string>();
-        toCols.Add(source.SequenceKeyColumn);
-        toCols.AddRange(lst);
+    //    var vals = source.Columns.Where(x => seq?.Column != x).Where(x => source.Columns.Contains(x)).ToList();
 
-        //from
-        var fromCols = new List<string>();
-        fromCols.Add($"{source.OffsetColumnPrefix}{source.SequenceKeyColumn}");
-        foreach (var item in lst)
-        {
-            if (source.SingInversionColumns.Contains(item))
-            {
-                fromCols.Add($"{item} * -1 as {item}");
-            }
-            else
-            {
-                fromCols.Add(item);
-            }
-        }
-        return (fromCols, toCols, null);
-    }
+    //    //from
+    //    foreach (var item in vals)
+    //    {
+    //        if (source.SingInversionColumns.Contains(item))
+    //        {
+    //            fromCols.Add($"{item} * -1 as {item}");
+    //        }
+    //        else
+    //        {
+    //            fromCols.Add(item);
+    //        }
+    //    }
 
-    /// <summary>
-    /// Get sync-table column list.
-    /// </summary>
-    /// <returns></returns>
-    public static List<string> GetSyncColumns(this Destination source)
-    {
+    //    //to
+    //    toCols.AddRange(vals);
 
-        var lst = new List<string>();
-        lst.Add(source.SequenceKeyColumn);
-        lst.Add(source.VersionKeyColumn);
+    //    return (fromCols, toCols, null);
+    //}
 
-        return lst;
-    }
+    ///// <summary>
+    ///// Get sync-table column list.
+    ///// </summary>
+    ///// <returns></returns>
+    //public static List<string> GetSyncColumns(this Destination source)
+    //{
+    //    var lst = new List<string>();
 
-    public static (List<string> fromCols, List<string> toCols, string? where) GetInsertSyncInfoset(this Destination source, string? prefix = null)
-    {
-        var fromCols = new List<string>();
-        fromCols.Add($"{prefix}{source.SequenceKeyColumn}");
-        fromCols.Add(source.VersionKeyColumn);
+    //    var seq = source.Sequence;
+    //    if (seq == null) return lst;
 
-        var toCols = new List<string>();
-        toCols.Add(source.SequenceKeyColumn);
-        toCols.Add(source.VersionKeyColumn);
+    //    lst.Add(seq.Column);
+    //    lst.Add(source.VersionKeyColumn);
 
-        var where = (string.IsNullOrEmpty(prefix)) ? null : $"where {prefix}{source.SequenceKeyColumn} is not null";
+    //    return lst;
+    //}
 
-        return (fromCols, toCols, where);
-    }
+    //public static (List<string> fromCols, List<string> toCols, string? where) GetInsertSyncInfoset(this Destination source, string? prefix = null)
+    //{
+    //    var fromCols = new List<string>();
+    //    var toCols = new List<string>();
 
-    public static List<string> GetOffsetKeyMapColumns(this Destination source)
-    {
-        var cols = new List<string>();
-        cols.Add(source.SequenceKeyColumn);
-        cols.Add(source.OffsetColumnName);
-        cols.Add(source.RenewalColumnName);
-        cols.Add(source.OffsetRemarksColumn);
-        return cols;
-    }
+    //    var seq = source.Sequence;
+    //    if (seq == null) return (fromCols, toCols, null);
 
-    public static (List<string> fromColumns, List<string> toColumns, string? where) GetInsertOffsetKeyMapInfoset(this Destination source, string? prefix = null)
-    {
-        var toColumns = source.GetOffsetKeyMapColumns();
+    //    fromCols.Add($"{prefix}{seq.Column}");
+    //    fromCols.Add(source.VersionKeyColumn);
 
-        var fromColumns = new List<string>();
-        fromColumns.Add(source.SequenceKeyColumn);
-        fromColumns.Add(source.OffsetColumnName);
-        fromColumns.Add(source.RenewalColumnName);
-        fromColumns.Add($"_{source.OffsetRemarksColumn}");
-        return (fromColumns, toColumns, null);
-    }
+    //    toCols.Add(seq.Column);
+    //    toCols.Add(source.VersionKeyColumn);
+
+    //    var where = (string.IsNullOrEmpty(prefix) || seq == null) ? null : $"where {prefix}{seq.Column} is not null";
+
+    //    return (fromCols, toCols, where);
+    //}
+
+    //public static List<string> GetOffsetKeyMapColumns(this Destination source)
+    //{
+    //    var cols = new List<string>();
+        
+    //    var seq = source.Sequence;
+    //    if (seq == null ) return cols;
+
+    //    cols.Add(seq.Column);
+    //    cols.Add(source.OffsetColumnName);
+    //    cols.Add(source.RenewalColumnName);
+    //    cols.Add(source.OffsetRemarksColumn);
+    //    return cols;
+    //}
+
+    //public static (List<string> fromColumns, List<string> toColumns, string? where) GetInsertOffsetKeyMapInfoset(this Destination source, string? prefix = null)
+    //{
+    //    var fromCols = new List<string>();
+    //    var toCols = new List<string>();
+
+    //    var seq = source.Sequence;
+    //    if (seq == null) return (fromCols, toCols, null);
+
+    //    fromCols.Add(seq.Column);
+    //    fromCols.Add(source.OffsetColumnName);
+    //    fromCols.Add(source.RenewalColumnName);
+    //    fromCols.Add($"_{source.OffsetRemarksColumn}");
+
+    //    toCols = source.GetOffsetKeyMapColumns();
+
+    //    return (fromCols, toCols, null);
+    //}
 }

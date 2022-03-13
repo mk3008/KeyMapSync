@@ -18,26 +18,30 @@ public class ExpectPier : PierBase
         if (validateFilter != null) Filter.Add(validateFilter);
     }
 
-    public override string Name => "_expect";
+    public override string CteName => "_expect";
 
-    public override string BuildCurrentSelectQuery()
+    public override string ToSelectQuery()
     {
         var ds = this.GetDatasource();
-        var datasourceKeys = ds.KeyColumns;
         var dest = ds.Destination;
-        var keymap = ds.KeyMapName;
+
+        var tbl = dest.KeyMapConfig?.ToDbTable(ds);
+        if (tbl == null) throw new InvalidOperationException();
+
+        var keymap = tbl.Table;
         var header = HeaderInfo();
+        var seq = dest.Sequence;
 
         //columns
-        var columns = datasourceKeys.Select(x => $"__map.{x}").ToList();
+        var columns = ds.KeyColumns.Select(x => $"__map.{x}").ToList();
         header.Columns.ForEach(x => columns.Add(x));
         columns.Add($"{this.GetInnerAlias()}.*");
 
         //from table, join talbes
         var tables = new List<string>();
-        tables.Add($"{dest.DestinationName} {this.GetInnerAlias()}");
+        tables.Add($"{dest.DestinationTableName} {this.GetInnerAlias()}");
         header.Tables.ForEach(x => tables.Add(x));
-        tables.Add($"inner join {keymap} __map on {this.GetInnerAlias()}.{dest.SequenceKeyColumn} = __map.{dest.SequenceKeyColumn}");
+        if (seq != null) tables.Add($"inner join {keymap} __map on {this.GetInnerAlias()}.{seq.Column} = __map.{seq.Column}");
 
         var column = columns.ToString("\r\n, ").AddIndent(4);
         var table = tables.ToString("\r\n");
@@ -59,9 +63,9 @@ from {table}
 
         foreach (var item in dest.Groups)
         {
-            var alias = item.GetInnerAlias;
-            var sql = @$"inner join {item.GroupDestinationName} {alias} on {this.GetInnerAlias()}.{item.SequenceKeyColumn} = {alias}.{ item.SequenceKeyColumn}";
-            item.GroupColumns.ForEach(x => columns.Add($"{alias}.{x}"));
+            var alias = item.GetInnerAlias();
+            var sql = @$"inner join {item.DestinationTableName} {alias} on {this.GetInnerAlias()}.{item.Sequence.Column} = {alias}.{ item.Sequence.Column}";
+            item.Columns.ForEach(x => columns.Add($"{alias}.{x}"));
             joins.Add(sql);
         }
 

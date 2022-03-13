@@ -9,11 +9,11 @@ namespace KeyMapSync.HeaderTest.Model;
 
 public class ExtEcShopArtcile
 {
-    public static ExtensionDestination GetDestination()
+    public static Destination GetDestination()
     {
-        var c = new ExtensionDestination()
+        var c = new Destination()
         {
-            DestinationName = "integration_sale_detail_ext_ec_shop_article",
+            DestinationTableName = "integration_sale_detail_ext_ec_shop_article",
             Columns = new[] { "integration_sale_detail_id", "ec_shop_article_id" }.ToList(),
         };
         return c;

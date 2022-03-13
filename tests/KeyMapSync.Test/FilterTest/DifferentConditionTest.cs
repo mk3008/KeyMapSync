@@ -34,7 +34,7 @@ public class DifferentConditionTest
     'deleted'
 else
     case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
-end as _remarks";
+end as offset_remarks";
 
         Assert.Equal(expect, val);
     }
@@ -48,7 +48,7 @@ end as _remarks";
     'deleted'
 else
     case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
-end as _remarks";
+end as offset_remarks";
 
         Assert.Equal(expect, val);
     }
@@ -63,7 +63,7 @@ end as _remarks";
 else
     case when not coalesce((_e.val1 = ds.val1) or (_e.val1 is null and ds.val1 is null), false) then 'val1 is changed, ' else '' end
     || case when not coalesce((_e.val2 = ds.val2) or (_e.val2 is null and ds.val2 is null), false) then 'val2 is changed, ' else '' end
-end as _remarks";
+end as offset_remarks";
 
         Assert.Equal(expect, val);
     }

@@ -15,17 +15,14 @@ public interface IBridge
 
     IPier? GetCurrentPier();
 
-    string Name { get; }
+    string ViewOrCteName { get; }
 }
 
 public interface IAbutment : IBridge
 {
     Datasource Datasource { get; }
 
-    /// <summary>
-    /// ex."tmp01"
-    /// </summary>
-    string BridgeName { get; }
+    public string ViewName { get; }
 }
 
 public interface IPier : IBridge
@@ -33,8 +30,10 @@ public interface IPier : IBridge
 
     IPier? PreviousPrier { get; }
 
-    string BuildCurrentSelectQuery();
+    string ToSelectQuery();
 
     FilterContainer Filter { get; }
+
+    public string CteName { get; }
 }
 

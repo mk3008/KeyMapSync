@@ -9,14 +9,13 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Transform;
 
-public class AdditionalPier : PierBase
+public class ExtensionAdditionalPier : PierBase
 {
-    public AdditionalPier(IBridge bridge) : base(bridge)
+    public ExtensionAdditionalPier(IBridge bridge) : base(bridge)
     {
-        Filter.Add(new NotExistsKeyMapCondition());
     }
 
-    public override string CteName => "_added";
+    public override string CteName => "_insert";
 
     private List<string> GetColumns()
     {

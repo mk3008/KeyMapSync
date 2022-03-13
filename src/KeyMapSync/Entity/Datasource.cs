@@ -1,4 +1,6 @@
-﻿using System;
+﻿using KeyMapSync.DMBS;
+using KeyMapSync.Transform;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,7 +13,12 @@ public class Datasource
     /// <summary>
     /// ex."ec_shop_sales_detail"
     /// </summary>
-    public string Name { get; set; } = String.Empty;
+    public string DatasourceName { get; set; } = String.Empty;
+
+    /// <summary>
+    /// ex."ec_shop_sales_detail_bridge"
+    /// </summary>
+    public string BridgeName { get; set; } = String.Empty;
 
     /// <summary>
     /// datasource description.
@@ -43,7 +50,7 @@ public class Datasource
 
     /// <summary>
     /// ex.
-    /// "sales_date, article_name, unit_price, quantity, price"
+    /// "ec_shop_sales_id, ex_shop_sales_dtail_id, sales_date, article_name, unit_price, quantity, price"
     /// </summary>
     public List<string> Columns { get; set; } = new();
 
@@ -55,18 +62,23 @@ public class Datasource
 
     public IEnumerable<string> InspectionColumns => Columns.Where(x => !InspectionIgnoreColumns.Contains(x)).Where(x => !KeyColumns.Contains(x));
 
-    public List<ExtensionDatasource> Extensions { get; set; } = new();
+    public List<Datasource> Extensions { get; set; } = new();
 
-    /// <summary>
-    /// keymap table name format.
-    /// </summary>
-    public string KeyMapFormat { get; set; } = "{0}__map_{1}";
+    public List<DbTable> ToSystemDbTables()
+    {
+        var lst = new List<DbTable>();
 
-    /// <summary>
-    /// ex
-    /// "integration_sale_detail__map_ec_shop_sales_detail"
-    /// </summary>
-    public string KeyMapName => string.Format(KeyMapFormat, Destination.DestinationName, Name);
+        if (Destination.KeyMapConfig != null) lst.Add(Destination.KeyMapConfig.ToDbTable(this));
+        if (Destination.VersioningConfig != null)
+        {
+            var config = Destination.VersioningConfig;
+            lst.Add(config.SyncConfig.ToDbTable(this, config));
+            lst.Add(config.VersionConfig.ToDbTable(this, config));
+        }
+        if (Destination.KeyMapConfig?.OffsetConfig != null) lst.Add(Destination.KeyMapConfig.OffsetConfig.ToDbTable(this));
+
+        return lst;
+    }
 }
 
 

@@ -19,14 +19,18 @@ create table integration_sale_detail (
 )
 ;
 create table integration_sale_detail_ext_ec_shop_article (
-    integration_sale_detail_id integer primary key,
-    ec_shop_article_id integer
+    extension_id integer primary key autoincrement,
+    integration_sale_detail_id integer,
+    ec_shop_article_id integer,
+    unique(integration_sale_detail_id)
 )
 ;
 create table integration_sale_detail_ext_store_sale_detail (
-    integration_sale_detail_id integer primary key,
+    extension_id integer primary key autoincrement,
+    integration_sale_detail_id integer,
     store_article_id integer, 
-    remarks text
+    remarks text,
+    unique(integration_sale_detail_id)
 )
 ;";
 }

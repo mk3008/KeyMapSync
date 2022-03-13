@@ -13,7 +13,8 @@ namespace KeyMapSync.Test.Model
         {
             var ds = new Datasource()
             {
-                Name = "ec_shop_sale_detail",
+                DatasourceName = "ec_shop_sale_detail",
+                BridgeName = "bridge_ec_shop_sale_detail",
                 Destination = IntegrationSaleDetail.GetDestination(),
                 Query = @"with 
 ds as (
@@ -36,21 +37,23 @@ select * from ds",
                 KeyColumns = new() { "ec_shop_sale_detail_id" },
                 InspectionIgnoreColumns = new() { "ec_shop_article_id", "article_name" },
             };
-            ds.Extensions.Add(GetExtensionDatasource());
+            ds.Extensions.Add(GetExtensionDatasource(ds));
             return ds;
         }
 
-        private static ExtensionDatasource GetExtensionDatasource()
+        private static Datasource GetExtensionDatasource(Datasource owner)
         {
-            var ext = new ExtensionDatasource()
+            var ext = new Datasource()
             {
                 Destination = ExtEcShopArtcile.GetDestination(),
-                QueryFormat = @"
+                BridgeName = "bridge_ec_shop_sale_detail_ex",
+                Columns = new() { "integration_sale_detail_id", "ec_shop_article_id" },
+                Query = $@"
 select
     integration_sale_detail_id
     , ec_shop_article_id 
 from
-    {0}
+    {owner.BridgeName}
 where
     ec_shop_article_id is not null"
             };

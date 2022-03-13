@@ -54,37 +54,37 @@ public class SqliteSyntaxTest
         }
     }
 
-    [Fact]
-    public void SqlSyntaxTest()
-    {
-        var ds = EcShopSaleDetail.GetDatasource();
-        IDBMS db = new SQLite();
-        var sync = new Synchronizer(db);
+    //[Fact]
+    //public void SqlSyntaxTest()
+    //{
+    //    var ds = EcShopSaleDetail.GetDatasource();
+    //    IDBMS db = new SQLite();
+    //    var sync = new Synchronizer(db);
 
-        // Execute DDL test
-        using (var cn = new SQLiteConnection(CnString))
-        {
-            sync.CreateSystemTable(cn, ds);
-        }
+    //    // Execute DDL test
+    //    using (var cn = new SQLiteConnection(CnString))
+    //    {
+    //        sync.CreateSystemTable(cn, ds);
+    //    }
 
-        // create temporary table test
-        var root = new Abutment(ds);
-        var bridge = new AdditionalPier(root);
+    //    // create temporary table test
+    //    var root = new Abutment(ds);
+    //    var bridge = new AdditionalPier(root);
 
-        using (var cn = new SQLiteConnection(CnString))
-        {
-            cn.Open();
-            using (var tran = cn.BeginTransaction())
-            {
-                sync.CreateTemporaryTable(cn, bridge, false);
-                sync.InsertDestination(cn, bridge);
-                sync.InsertKeyMap(cn, bridge);
-                sync.InsertSync(cn, bridge);
-                sync.InsertVersion(cn, bridge);
-                sync.InsertExtension(cn, bridge);
-            }
-        }
-    }
+    //    using (var cn = new SQLiteConnection(CnString))
+    //    {
+    //        cn.Open();
+    //        using (var tran = cn.BeginTransaction())
+    //        {
+    //            sync.CreateTemporaryTable(cn, bridge, false);
+    //            sync.InsertDestination(cn, bridge);
+    //            sync.InsertKeyMap(cn, bridge);
+    //            sync.InsertSync(cn, bridge);
+    //            sync.InsertVersion(cn, bridge);
+    //            sync.InsertExtension(cn, bridge);
+    //        }
+    //    }
+    //}
 
     //TODO Filter Test
 

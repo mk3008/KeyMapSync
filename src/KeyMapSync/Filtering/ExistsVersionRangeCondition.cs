@@ -22,12 +22,15 @@ public class ExistsVersionRangeCondition : IFilter
 
     public string ToCondition(IPier sender)
     {
-        var ds = sender.GetDatasource();
         var datasourceAlias = sender.GetInnerAlias();
-        var sync = ds.Destination.SyncName;
-        var key = ds.Destination.SequenceKeyColumn;
 
-        return BuildSql(sync, datasourceAlias, key);
+        var ds = sender.GetDatasource();
+        var vconfig = ds.Destination.VersioningConfig;
+        if (vconfig == null) throw new InvalidOperationException();
+
+        var tbl = vconfig.SyncConfig.ToDbTable(ds, vconfig);
+
+        return BuildSql(tbl.Table, datasourceAlias, ds.Destination.Sequence.Column);
     }
 
     public string BuildSql(string sync, string datasourceAlias, string destinationKey)

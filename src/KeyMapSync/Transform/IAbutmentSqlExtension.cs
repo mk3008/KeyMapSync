@@ -10,7 +10,7 @@ public static class IAbutmentSqlExtension
 {
     public static string ToTemporaryViewDdl(this IAbutment source)
     {
-        var sql = $@"create temporary view {source.Name}
+        var sql = $@"create temporary view {source.ViewName}
 as
 {source.Datasource.Query};";
         return sql;

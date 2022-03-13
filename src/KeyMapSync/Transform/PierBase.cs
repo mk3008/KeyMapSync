@@ -15,7 +15,7 @@ public abstract class PierBase : IPier
         if (bridge is IPier) PreviousPrier = (IPier)bridge;
     }
 
-    public abstract string Name { get; }
+    public abstract string CteName { get; }
 
     protected IBridge PreviousBridge { get; }
 
@@ -23,9 +23,11 @@ public abstract class PierBase : IPier
 
     public FilterContainer Filter { get; } = new FilterContainer();
 
+    public string ViewOrCteName => CteName;
+
     public IAbutment GetAbutment() => PreviousBridge.GetAbutment();
 
     public IPier GetCurrentPier() => this;
 
-    public abstract string BuildCurrentSelectQuery();
+    public abstract string ToSelectQuery();
 }

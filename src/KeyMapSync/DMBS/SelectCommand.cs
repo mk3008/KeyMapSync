@@ -11,6 +11,7 @@ public class SelectCommand
     public string WithQuery { get; set; } = string.Empty;
 
     public List<string> Columns { get; set; } = new();
+
     public List<string> Tables { get; set; } = new();
 
     public bool UseDistinct { get; set; } = false;
@@ -18,17 +19,23 @@ public class SelectCommand
 
     public Dictionary<string, object> Parameters { get; set; } = new();
 
+    public void SetParameters(Dictionary<string, object>? prms)
+    {
+        if (prms == null) return;
+        Parameters = prms;
+    }
+
     public SqlCommand ToSqlCommand()
     {
         var with = (WithQuery == string.Empty) ? WithQuery : $"{WithQuery}\r\n";
         var distinct = UseDistinct ? " distinct" : "";
         var column = Columns.ToString("\r\n, ").AddIndent(4);
         var table = Tables.ToString("\r\n");
-        var where = (WhereText == string.Empty) ?WhereText : $"\r\n{WhereText}";
+        var where = (WhereText == string.Empty) ? WhereText : $"\r\n{WhereText}";
         var sql = $@"{with}select{distinct}
 {column}
 from {table}{where}";
 
-        return new SqlCommand() { CommandText = sql, Parameters = Parameters};
+        return new SqlCommand() { CommandText = sql, Parameters = Parameters };
     }
 }
