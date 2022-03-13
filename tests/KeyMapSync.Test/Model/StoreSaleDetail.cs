@@ -43,6 +43,7 @@ from
         {
             var ext = new Datasource()
             {
+                BridgeName = "bridge_store_shop_sale_detail_ex",
                 Destination = ExtSroteSaleDetaiil.GetDestination(),
                 Query = $@"
 select

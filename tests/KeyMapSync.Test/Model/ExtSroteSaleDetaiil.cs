@@ -14,7 +14,12 @@ public class ExtSroteSaleDetaiil
         var c = new Destination()
         {
             DestinationTableName = "integration_sale_detail_ext_store_sale_detail",
-            Columns = new[] { "store_article_id", "remarks" }.ToList(),
+            Sequence = new Sequence()
+            {
+                Column = "extension_id",
+                Command = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail_ext_store_sale_detail' union all select 0)) + row_number() over()"
+            },
+            Columns = new[] { "extension_id", "integration_sale_detail_id", "store_article_id", "remarks" }.ToList(),
         };
         return c;
     }
