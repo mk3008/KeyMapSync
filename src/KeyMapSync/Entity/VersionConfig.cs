@@ -1,4 +1,5 @@
 ﻿using KeyMapSync.DBMS;
+using KeyMapSync.Transform;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,8 @@ public class VersionConfig
     /// Datasourcename column name.
     /// </summary>
     public string DatasourceNameColumn { get; set; } = "datasource_name";
+
+    public string BridgeInfoColumn { get; set; } = "bridge_info";
 
     /// <summary>
     /// Timestamp column name.
@@ -39,13 +42,16 @@ public class VersionConfig
 
         tbl.AddDbColumn(versioning.Sequence.Column);
         tbl.AddDbColumn(DatasourceNameColumn, DbColumn.Types.Text);
+        tbl.AddDbColumn(BridgeInfoColumn, DbColumn.Types.Text);
         tbl.AddDbColumn(TimestampColumn, DbColumn.Types.Timestamp);
 
         return tbl;
     }
 
-    public TablePair ToTablePair(Datasource d)
+    public TablePair ToTablePair(IPier pier)
     {
+        var d = pier.GetDatasource();
+
         var config = d.Destination.VersioningConfig;
         if (config == null) throw new InvalidOperationException();
 
@@ -56,21 +62,24 @@ public class VersionConfig
             FromTable = d.BridgeName,
             ToTable = versionTable.Table
         };
-       
+
         p.AddColumnPair(config.Sequence.Column);
         p.AddColumnPair(":datasource", DatasourceNameColumn);
+        p.AddColumnPair(":bridge_info", BridgeInfoColumn);
 
         return p;
     }
 
-    public SqlCommand ToInsertCommand(Datasource d)
+    public SqlCommand ToInsertCommand(IPier pier)
     {
-        var p = ToTablePair(d);
+        var d = pier.GetDatasource();
+
+        var p = ToTablePair(pier);
         var ic = p.ToInsertCommand();
         ic.SelectSql.UseDistinct = true;
         var cmd = ic.ToSqlCommand();
         cmd.Parameters.Add(":datasource", d.DatasourceName);
-
+        cmd.Parameters.Add(":bridge_info", Utf8Json.JsonSerializer.ToJsonString<object>(pier));
         return cmd;
     }
 }

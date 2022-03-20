@@ -11,9 +11,9 @@ namespace KeyMapSync.Transform;
 
 public interface IBridge
 {
-    IAbutment GetAbutment();
+    IAbutment Abutment { get; }
 
-    IPier? GetCurrentPier();
+    IPier? CurrentPier { get; }
 
     string ViewOrCteName { get; }
 }

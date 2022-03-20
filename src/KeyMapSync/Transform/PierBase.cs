@@ -25,9 +25,9 @@ public abstract class PierBase : IPier
 
     public string ViewOrCteName => CteName;
 
-    public IAbutment GetAbutment() => PreviousBridge.GetAbutment();
+    public IAbutment Abutment => PreviousBridge.Abutment;
 
-    public IPier GetCurrentPier() => this;
+    public IPier? CurrentPier => this;
 
     public abstract string ToSelectQuery();
 }

@@ -20,6 +20,8 @@ public class ExistsVersionRangeCondition : IFilter
 
     public int? MaxVersion { get; }
 
+    public string Summary => typeof(ExistsVersionRangeCondition).Name;
+
     public string ToCondition(IPier sender)
     {
         var datasourceAlias = sender.GetInnerAlias();

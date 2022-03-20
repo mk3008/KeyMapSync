@@ -11,6 +11,8 @@ public class DifferentCondition : IFilter
 {
     public string RemarksColumn { get; set; } = "offset_remarks";
 
+    public string Summary => typeof(DifferentCondition).Name;
+
     public string BuildRemarksSql(IPier sender)
     {
         if (string.IsNullOrEmpty(RemarksColumn)) throw new NullReferenceException(nameof(RemarksColumn));

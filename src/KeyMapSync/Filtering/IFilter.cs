@@ -10,6 +10,8 @@ namespace KeyMapSync.Filtering;
 
 public interface IFilter
 {
+    string Summary { get; }
+
     string ToCondition(IPier sender);
 
     Dictionary<string, object>? ToParameter();
@@ -17,7 +19,9 @@ public interface IFilter
 
 public class FilterContainer : IFilter
 {
-    private IList<IFilter> Filters { get; set; } = new List<IFilter>();
+    public List<IFilter> Filters { get; set; } = new List<IFilter>();
+
+    public string Summary => String.Empty;
 
     public void Add(IFilter item)
     {

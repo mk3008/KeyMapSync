@@ -46,7 +46,7 @@ public class Synchronizer
     {
         var ds = bridge.GetDatasource();
         CreateSystemTable(cn, ds);
-        CreateTemporaryView(cn, bridge.GetAbutment());
+        CreateTemporaryView(cn, bridge.Abutment);
         CreateTemporaryTable(cn, bridge);
 
         //nest
@@ -72,7 +72,7 @@ public class Synchronizer
         if (kmconfig != null && InsertKeyMap(cn, ds, kmconfig) != cnt) throw new InvalidOperationException();
 
         var vconfig = ds.Destination.VersioningConfig;
-        if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig) != cnt) throw new InvalidOperationException();
+        if (vconfig != null && InsertSyncAndVersion(cn, bridge, vconfig) != cnt) throw new InvalidOperationException();
 
         //nest
         ds.Extensions.ForEach(x =>
@@ -129,7 +129,7 @@ public class Synchronizer
         if (renewalCount != 0 && vconfig != null && InsertSync(cn, ds, vconfig, renewalPrefix) != renewalCount) throw new InvalidOperationException();
 
         //version
-        if (vconfig != null) InsertVersion(cn, ds, vconfig);
+        if (vconfig != null) InsertVersion(cn, bridge, vconfig);
 
         //InsertExtension(cn, bridge, prefix);
         //nest
@@ -240,11 +240,12 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertSyncAndVersion(IDbConnection cn, Datasource d, VersioningConfig config)
+    public int InsertSyncAndVersion(IDbConnection cn, IPier pier, VersioningConfig config)
     {
+        var d = pier.GetDatasource();
         var cnt = InsertSync(cn, d, config);
 
-        var cnt2 = InsertVersion(cn, d, config);
+        var cnt2 = InsertVersion(cn, pier, config);
         if (cnt2 != 1) throw new InvalidOperationException();
 
         return cnt;
@@ -258,9 +259,9 @@ public class Synchronizer
         return cnt;
     }
 
-    private int InsertVersion(IDbConnection cn, Datasource d, VersioningConfig config)
+    private int InsertVersion(IDbConnection cn, IPier pier, VersioningConfig config)
     {
-        var cmd = config.VersionConfig.ToInsertCommand(d);
+        var cmd = config.VersionConfig.ToInsertCommand(pier);
         var cnt = ExecuteSql(cn, cmd, "InsertVersion");
 
         return cnt;

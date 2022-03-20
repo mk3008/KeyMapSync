@@ -9,6 +9,8 @@ namespace KeyMapSync.Filtering;
 
 public class NotExistsKeyMapCondition : IFilter
 {
+    public string Summary => typeof(NotExistsKeyMapCondition).Name;
+
     public string ToCondition(IPier sender)
     {
         var ds = sender.GetDatasource();

@@ -25,8 +25,8 @@ public class Abutment : IAbutment
 
     public string ViewOrCteName => ViewName;
 
-    public IAbutment GetAbutment() => this;
+    public IPier? CurrentPier => null;
 
-    public IPier? GetCurrentPier() => null;
+    IAbutment IBridge.Abutment =>this;
 }
 

@@ -15,11 +15,11 @@ public static class IBridgeExtension
 
     public static Datasource GetDatasource(this IBridge source)
     {
-        return source.GetAbutment().Datasource;
+        return source.Abutment.Datasource;
     }
 
     public static Destination GetDestination(this IBridge source)
     {
-        return source.GetAbutment().Datasource.Destination;
+        return source.Abutment.Datasource.Destination;
     }
 }

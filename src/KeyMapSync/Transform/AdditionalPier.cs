@@ -33,7 +33,7 @@ public class AdditionalPier : PierBase
 
     public override string ToSelectQuery()
     {
-        var view = this.GetAbutment().ViewName;
+        var view = this.Abutment.ViewName;
 
         var cmd = new SelectCommand()
         {

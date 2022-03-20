@@ -69,7 +69,7 @@ public static class IPierSqlExtension
 
     public static Dictionary<string, object>? ToCreateTableParameter(this IPier source)
     {
-        var pier = source.GetCurrentPier();
+        var pier = source.CurrentPier;
         if (pier == null) return null;
 
         var current = pier.Filter?.ToParameter();
@@ -102,7 +102,7 @@ public static class IPierSqlExtension
         , {item.Sequence.Command} as {item.Sequence.Column}
     from
         (
-            select distinct {cols.ToString(", ")} from {source.GetAbutment().ViewName}
+            select distinct {cols.ToString(", ")} from {source.Abutment.ViewName}
         ) h
     ) {alias} on {cols.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
 

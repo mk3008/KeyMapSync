@@ -32,7 +32,7 @@ public class ChangedPier : PierBase
 
         var ds = this.GetDatasource();
         var dest = this.GetDestination();
-        var view = GetAbutment().ViewName;
+        var view = Abutment.ViewName;
         var keymap = config.ToDbTable(ds).Table;
 
         var seq = dest.Sequence;
