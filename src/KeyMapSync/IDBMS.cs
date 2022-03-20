@@ -1,4 +1,4 @@
-﻿using KeyMapSync.Entity;
+﻿using KeyMapSync.DBMS;
 
 namespace KeyMapSync;
 

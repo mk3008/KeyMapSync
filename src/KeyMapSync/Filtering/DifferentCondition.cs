@@ -1,12 +1,12 @@
 ﻿using KeyMapSync.Entity;
-using KeyMapSync.Filtering;
+using KeyMapSync.Transform;
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Text;
 
-namespace KeyMapSync.Transform;
+namespace KeyMapSync.Filtering;
 public class DifferentCondition : IFilter
 {
     public string RemarksColumn { get; set; } = "offset_remarks";

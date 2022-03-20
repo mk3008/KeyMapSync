@@ -1,5 +1,5 @@
 ﻿using Dapper;
-using KeyMapSync.Entity;
+using KeyMapSync.DBMS;
 using System;
 using System.Collections.Generic;
 using System.Data;

@@ -1,15 +1,16 @@
-﻿using System;
+﻿using KeyMapSync.Entity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static KeyMapSync.Entity.DbColumn;
+using static KeyMapSync.DBMS.DbColumn;
 
-namespace KeyMapSync.Entity;
+namespace KeyMapSync.DBMS;
 
 public class DbTable
 {
-    public string Table { get; set; } = String.Empty;
+    public string Table { get; set; } = string.Empty;
 
     public Sequence? Sequence { get; set; }
 
@@ -21,7 +22,7 @@ public class DbTable
 
     public List<string> GetColumnsWithoutKey() => DbColumns.Where(x => !Primarykeys.Contains(x.Column)).Select(x => x.Column).ToList();
 
-    public void AddDbColumn(string columnName, Types type = DbColumn.Types.Numeric, bool isNullable = false)
+    public void AddDbColumn(string columnName, Types type = Types.Numeric, bool isNullable = false)
     {
         DbColumns.Add(new DbColumn { Column = columnName, ColumnType = type, IsNullable = isNullable });
     }

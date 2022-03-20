@@ -1,4 +1,7 @@
-﻿using System;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,12 +11,15 @@ namespace KeyMapSync.Transform;
 
 public static class IAbutmentSqlExtension
 {
-    public static string ToTemporaryViewDdl(this IAbutment source)
+    public static SqlCommand ToTemporaryViewDdl(this IAbutment source)
     {
-        var sql = $@"create temporary view {source.ViewName}
-as
-{source.Datasource.Query};";
-        return sql;
+        var cmd = new ViewCommand()
+        {
+            Query = source.Datasource.Query, 
+            ViewName = source.ViewName, 
+        };
+
+        return cmd.ToSqlCommand();
     }
 }
 

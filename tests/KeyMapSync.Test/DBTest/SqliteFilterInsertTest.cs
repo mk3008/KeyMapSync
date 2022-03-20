@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using KeyMapSync.DBMS;
 using KeyMapSync;
 using KeyMapSync.Filtering;
 using KeyMapSync.Test.Model;
@@ -16,6 +15,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 using System.Diagnostics;
+using KeyMapSync.DBMS;
 
 namespace KeyMapSync.Test.DBTest;
 

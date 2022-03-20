@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KeyMapSync.Entity;
+namespace KeyMapSync.DBMS;
 public class CreateTableCommand
 {
     public CreateTableCommand(string table, SelectCommand sql)
@@ -25,7 +25,7 @@ public class CreateTableCommand
     {
 
         var temporary = IsTemporary ? "temporary " : null;
-        var with = (WithQuery == string.Empty) ? WithQuery : $"{WithQuery}\r\n";
+        var with = WithQuery == string.Empty ? WithQuery : $"{WithQuery}\r\n";
 
         var cmd = SelectSql.ToSqlCommand();
 

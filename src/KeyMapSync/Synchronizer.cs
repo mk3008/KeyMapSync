@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using KeyMapSync.DBMS;
 using KeyMapSync.Entity;
 using KeyMapSync.Filtering;
 using KeyMapSync.Transform;
@@ -35,16 +36,33 @@ public class Synchronizer
         var bridge = new AdditionalPier(root);
         if (filter != null) bridge.AddFilter(filter);
 
+        //create system table, temporary view, temporary table.
+        CreateEnvironment(cn, bridge);
+
         return cn.Transaction(trn => Insert(cn, trn, bridge));
+    }
+
+    private void CreateEnvironment(IDbConnection cn, IPier bridge)
+    {
+        var ds = bridge.GetDatasource();
+        CreateSystemTable(cn, ds);
+        CreateTemporaryView(cn, bridge.GetAbutment());
+        CreateTemporaryTable(cn, bridge);
+
+        //nest
+        ds.Extensions.ForEach(x =>
+        {
+            var abutment = new Abutment(x);
+            var pier = new ExtensionAdditionalPier(abutment);
+            CreateEnvironment(cn, pier);
+        });
     }
 
     public int Insert(IDbConnection cn, IDbTransaction trn, IPier bridge)
     {
         var ds = bridge.GetDatasource();
 
-        CreateSystemTable(cn, ds);
-
-        var cnt = CreateTemporaryTable(cn, bridge);
+        var cnt = GetCountTemporaryTable(cn, bridge);
         if (cnt == 0) return 0;
 
         if (InsertDestination(cn, ds) != cnt) throw new InvalidOperationException();
@@ -71,43 +89,58 @@ public class Synchronizer
     {
         SyncEvent = new SyncEventArgs("Offset");
 
-        CreateSystemTable(cn, ds);
-
-        var kmconfig = ds.Destination.KeyMapConfig;
-        if (kmconfig == null) throw new NotSupportedException($"keymap is not supported.(table:{ds.Destination.DestinationTableName})");
-        var offsetconfig = kmconfig.OffsetConfig;
-        if (offsetconfig == null) throw new NotSupportedException($"offset is not supported.(table:{ds.Destination.DestinationTableName})");
-
         //create bridge instance.
         var root = new Abutment(ds);
         var pier = new ExpectPier(root, validateFilter);
         if (filter != null) pier.AddFilter(filter);
         var bridge = new ChangedPier(pier);
 
-        var offsetCount = CreateTemporaryTable(cn, bridge);
-        if (offsetCount == 0) return 0;
+        //create system table, temporary view, temporary table.
+        CreateEnvironment(cn, bridge);
 
-        cn.Transaction(_ =>
-        {
-            var vconfig = ds.Destination.VersioningConfig;
+        return cn.Transaction(trn => Offset(cn, trn, bridge));
+    }
 
-            // offset
-            var offsetPrefix = offsetconfig.OffsetColumnPrefix;
-            if (ReverseInsertDestination(cn, bridge) != offsetCount) throw new InvalidOperationException();
-            if (RemoveKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
-            if (InsertOffsetKeyMap(cn, bridge) != offsetCount) throw new InvalidOperationException();
-            if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig, offsetPrefix) != offsetCount) throw new InvalidOperationException();
+    public int Offset(IDbConnection cn, IDbTransaction trn, IPier bridge)
+    {
+        var ds = bridge.GetDatasource();
 
-            // renewwal
-            var renewalPrefix = offsetconfig.RenewalColumnPrefix;
-            var renewalCount = InsertDestination(cn, ds, renewalPrefix);
-            if (renewalCount != 0 && InsertKeyMap(cn, ds, kmconfig, renewalPrefix) != renewalCount) throw new InvalidOperationException();
-            if (vconfig != null && InsertSyncAndVersion(cn, ds, vconfig) != renewalCount) throw new InvalidOperationException();
+        var kmconfig = ds.Destination.KeyMapConfig;
+        if (kmconfig == null) throw new NotSupportedException($"keymap is not supported.(table:{ds.Destination.DestinationTableName})");
+        var offsetconfig = kmconfig.OffsetConfig;
+        if (offsetconfig == null) throw new NotSupportedException($"offset is not supported.(table:{ds.Destination.DestinationTableName})");
 
-            //InsertExtension(cn, bridge, prefix);
-        });
+        var vconfig = ds.Destination.VersioningConfig;
 
-        return offsetCount;
+        var cnt = GetCountTemporaryTable(cn, bridge);
+        if (cnt == 0) return 0;
+
+        // offset
+        var offsetPrefix = offsetconfig.OffsetColumnPrefix;
+        if (ReverseInsertDestination(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (RemoveKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (InsertOffsetKeyMap(cn, bridge) != cnt) throw new InvalidOperationException();
+        if (vconfig != null && InsertSync(cn, ds, vconfig, offsetPrefix) != cnt) throw new InvalidOperationException();
+
+        // renewwal
+        var renewalPrefix = offsetconfig.RenewalColumnPrefix;
+        var renewalCount = InsertDestination(cn, ds, renewalPrefix);
+        if (renewalCount != 0 && InsertKeyMap(cn, ds, kmconfig, renewalPrefix) != renewalCount) throw new InvalidOperationException();
+        if (renewalCount != 0 && vconfig != null && InsertSync(cn, ds, vconfig, renewalPrefix) != renewalCount) throw new InvalidOperationException();
+
+        //version
+        if (vconfig != null) InsertVersion(cn, ds, vconfig);
+
+        //InsertExtension(cn, bridge, prefix);
+        //nest
+        //ds.Extensions.ForEach(x =>
+        //{
+        //    var abutment = new Abutment(x);
+        //    var pier = new ExtensionAdditionalPier(abutment);
+        //    Insert(cn, trn, pier);
+        //});
+
+        return cnt;
     }
 
     public void CreateSystemTable(IDbConnection cn, Datasource ds)
@@ -115,41 +148,44 @@ public class Synchronizer
         ds.ToSystemDbTables().ForEach(x => cn.Execute(Dbms.ToCreateTableSql(x)));
     }
 
-    private int ExecuteSql(IDbConnection cn, (string commandText, IDictionary<string, object>? parameter) command, string caption, string? counterSql = null)
+    private void CreateTemporaryView(IDbConnection cn, IAbutment root)
     {
-        var e = OnBeforeSqlExecute(caption, command);
-        var cnt = cn.Execute(command);
-        if (counterSql != null) cnt = cn.ExecuteScalar<int>(counterSql);
-        if (e != null) OnAfterSqlExecute(e, cnt);
-
-        return cnt;
+        var cmd = root.ToTemporaryViewDdl();
+        ExecuteSql(cn, cmd, $"CreateTemporaryView : {root.ViewName}");
     }
 
-    private int ExecuteSql(IDbConnection cn, SqlCommand command, string caption, string? counterSql = null)
+    public void CreateTemporaryTable(IDbConnection cn, IPier bridge)
     {
-        var e = OnBeforeSqlExecute(caption, command);
-        var cnt = cn.Execute(command);
-        if (counterSql != null) cnt = cn.ExecuteScalar<int>(counterSql);
-        if (e != null) OnAfterSqlExecute(e, cnt);
-
-        return cnt;
-    }
-
-    private int CreateTemporaryView(IDbConnection cn, IAbutment root)
-    {
-        var sql = root.ToTemporaryViewDdl();
-        var cnt = ExecuteSql(cn, (sql, null), "CreateTemporaryTable");
-
-        return cnt;
-    }
-
-    public int CreateTemporaryTable(IDbConnection cn, IPier bridge)
-    {
-        CreateTemporaryView(cn, bridge.GetAbutment());
-
+        var table = bridge.GetDatasource().BridgeName;
         var cmd = bridge.ToCreateTableCommand();
-        var counterSql = $"select count(*) from {bridge.GetDatasource().BridgeName};";
-        var cnt = ExecuteSql(cn, cmd, "CreateTemporaryTable", counterSql);
+        ExecuteSql(cn, cmd, $"CreateTemporaryTable : {table}");
+    }
+
+    public int GetCountTemporaryTable(IDbConnection cn, IPier bridge)
+    {
+        var table = bridge.GetDatasource().BridgeName;
+        var cmd = new SqlCommand()
+        {
+            CommandText = $"select count(*) from {table};"
+        };
+        var cnt = ExecuteScalarSql(cn, cmd, $"GetCountTemporaryTable : {table}");
+        return cnt;
+    }
+
+    private int ExecuteSql(IDbConnection cn, SqlCommand command, string caption)
+    {
+        var e = OnBeforeSqlExecute(caption, command);
+        var cnt = cn.Execute(command);
+        if (e != null) OnAfterSqlExecute(e, cnt);
+
+        return cnt;
+    }
+
+    private int ExecuteScalarSql(IDbConnection cn, SqlCommand command, string caption)
+    {
+        var e = OnBeforeSqlExecute(caption, command);
+        var cnt = cn.ExecuteScalar<int>(command.CommandText);
+        if (e != null) OnAfterSqlExecute(e, cnt);
 
         return cnt;
     }
@@ -204,14 +240,13 @@ public class Synchronizer
         return cnt;
     }
 
-    public int InsertSyncAndVersion(IDbConnection cn, Datasource d, VersioningConfig config, string? prefix = null)
+    public int InsertSyncAndVersion(IDbConnection cn, Datasource d, VersioningConfig config)
     {
-        var cnt = InsertSync(cn, d, config, prefix);
-        if (prefix == null)
-        {
-            var cnt2 = InsertVersion(cn, d, config);
-            if (cnt2 != 1) throw new InvalidOperationException();
-        }
+        var cnt = InsertSync(cn, d, config);
+
+        var cnt2 = InsertVersion(cn, d, config);
+        if (cnt2 != 1) throw new InvalidOperationException();
+
         return cnt;
     }
 
