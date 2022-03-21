@@ -11,9 +11,10 @@ namespace KeyMapSync.Transform;
 
 public class Abutment : IAbutment
 {
-    public Abutment(Datasource datasource)
+    public Abutment(Datasource datasource, BridgeCommand command)
     {
         Datasource = datasource;
+        BridgeCommand = command;
     }
 
     /// <summary>
@@ -27,6 +28,8 @@ public class Abutment : IAbutment
 
     public IPier? CurrentPier => null;
 
-    IAbutment IBridge.Abutment =>this;
+    IAbutment IBridge.Abutment => this;
+
+    public BridgeCommand BridgeCommand { get; }
 }
 

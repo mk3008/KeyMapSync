@@ -31,14 +31,19 @@ public class Synchronizer
     {
         SyncEvent = new SyncEventArgs("Insert");
 
+        var cmd = new BridgeCommand()
+        {
+            Datasource = ds,
+            Filter = filter,
+        };
+
         //create bridge instance.
-        var root = new Abutment(ds);
-        var bridge = new AdditionalPier(root);
-        if (filter != null) bridge.AddFilter(filter);
+        var bridge = cmd.BuildBridge();
 
         //create system table, temporary view, temporary table.
         CreateEnvironment(cn, bridge);
 
+        //synch
         return cn.Transaction(trn => Insert(cn, trn, bridge));
     }
 
@@ -50,12 +55,7 @@ public class Synchronizer
         CreateTemporaryTable(cn, bridge);
 
         //nest
-        ds.Extensions.ForEach(x =>
-        {
-            var abutment = new Abutment(x);
-            var pier = new ExtensionAdditionalPier(abutment);
-            CreateEnvironment(cn, pier);
-        });
+        bridge.Abutment.BridgeCommand.BuildExtensionBridges(ds).ForEach(x => CreateEnvironment(cn, x));
     }
 
     public int Insert(IDbConnection cn, IDbTransaction trn, IPier bridge)
@@ -75,12 +75,7 @@ public class Synchronizer
         if (vconfig != null && InsertSyncAndVersion(cn, bridge, vconfig) != cnt) throw new InvalidOperationException();
 
         //nest
-        ds.Extensions.ForEach(x =>
-        {
-            var abutment = new Abutment(x);
-            var pier = new ExtensionAdditionalPier(abutment);
-            Insert(cn, trn, pier);
-        });
+        bridge.Abutment.BridgeCommand.BuildExtensionBridges(ds).ForEach(x => Insert(cn, trn, x));
 
         return cnt;
     }
@@ -89,11 +84,13 @@ public class Synchronizer
     {
         SyncEvent = new SyncEventArgs("Offset");
 
-        //create bridge instance.
-        var root = new Abutment(ds);
-        var pier = new ExpectPier(root, validateFilter);
-        if (filter != null) pier.AddFilter(filter);
-        var bridge = new ChangedPier(pier);
+        var cmd = new BridgeCommand()
+        {
+            Datasource = ds,
+            ValidateFilter = validateFilter,
+            Filter = filter,
+        };
+        var bridge = cmd.BuildBridge();
 
         //create system table, temporary view, temporary table.
         CreateEnvironment(cn, bridge);

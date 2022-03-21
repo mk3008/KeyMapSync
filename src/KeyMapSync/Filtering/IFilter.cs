@@ -10,18 +10,20 @@ namespace KeyMapSync.Filtering;
 
 public interface IFilter
 {
-    string Summary { get; }
-
     string ToCondition(IPier sender);
 
-    Dictionary<string, object>? ToParameter();
+    string? ConditionInfo { get; }
+
+    Dictionary<string, object>? Parameters { get; }
 }
 
 public class FilterContainer : IFilter
 {
     public List<IFilter> Filters { get; set; } = new List<IFilter>();
 
-    public string Summary => String.Empty;
+    public Dictionary<string, object>? Parameters => ToParameters();
+
+    public string? ConditionInfo => null;
 
     public void Add(IFilter item)
     {
@@ -33,13 +35,13 @@ public class FilterContainer : IFilter
         return Filters.Select(x => x.ToCondition(sender)).ToString("\r\nand ");
     }
 
-    public Dictionary<string, object>? ToParameter()
+    public Dictionary<string, object>? ToParameters()
     {
         var prm = new Dictionary<string, object>();
         var hasValue = false;
         foreach (var item in Filters)
         {
-            var p = item.ToParameter();
+            var p = item.Parameters;
             if (p != null)
             {
                 hasValue = true;

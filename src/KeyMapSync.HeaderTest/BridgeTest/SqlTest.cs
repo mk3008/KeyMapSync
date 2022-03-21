@@ -41,7 +41,7 @@ public class SqlTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
         var tmp = "tmp_parse";
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var bridge = new AdditionalPier(root);
 
         var expect = @"create temporary table tmp_parse
@@ -79,7 +79,7 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
     {
         var ds = EcShopSaleDetail.GetDatasource();
 
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var pier = new ExpectPier(root);
         pier.AddFilter(new ExistsVersionRangeCondition(1, 2));
         var bridge = new ChangedPier(pier);

@@ -72,7 +72,7 @@ public static class IPierSqlExtension
         var pier = source.CurrentPier;
         if (pier == null) return null;
 
-        var current = pier.Filter?.ToParameter();
+        var current = pier.Filter?.ToParameters();
         var previous = pier.PreviousPrier?.ToCreateTableParameter();
         return current == null ? previous : current.Merge(previous);
     }

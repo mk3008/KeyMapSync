@@ -20,7 +20,7 @@ public class VersionConfig
     /// </summary>
     public string DatasourceNameColumn { get; set; } = "datasource_name";
 
-    public string BridgeInfoColumn { get; set; } = "bridge_info";
+    public string BridgeCommandColumn { get; set; } = "bridge_info";
 
     /// <summary>
     /// Timestamp column name.
@@ -42,7 +42,7 @@ public class VersionConfig
 
         tbl.AddDbColumn(versioning.Sequence.Column);
         tbl.AddDbColumn(DatasourceNameColumn, DbColumn.Types.Text);
-        tbl.AddDbColumn(BridgeInfoColumn, DbColumn.Types.Text);
+        tbl.AddDbColumn(BridgeCommandColumn, DbColumn.Types.Text);
         tbl.AddDbColumn(TimestampColumn, DbColumn.Types.Timestamp);
 
         return tbl;
@@ -65,7 +65,7 @@ public class VersionConfig
 
         p.AddColumnPair(config.Sequence.Column);
         p.AddColumnPair(":datasource", DatasourceNameColumn);
-        p.AddColumnPair(":bridge_info", BridgeInfoColumn);
+        p.AddColumnPair(":bridge_command", BridgeCommandColumn);
 
         return p;
     }
@@ -79,7 +79,7 @@ public class VersionConfig
         ic.SelectSql.UseDistinct = true;
         var cmd = ic.ToSqlCommand();
         cmd.Parameters.Add(":datasource", d.DatasourceName);
-        cmd.Parameters.Add(":bridge_info", Utf8Json.JsonSerializer.ToJsonString<object>(pier));
+        cmd.Parameters.Add(":bridge_command", Utf8Json.JsonSerializer.ToJsonString<object>(pier.Abutment.BridgeCommand));
         return cmd;
     }
 }

@@ -14,13 +14,19 @@ public class ExistsVersionRangeCondition : IFilter
     {
         MinVersion = minVersion;
         MaxVersion = maxVersion;
+
+        Parameters = new Dictionary<string, object>();
+        Parameters.Add(":_min_version_id", MinVersion);
+        if (MaxVersion.HasValue) Parameters.Add(":_max_version_id", MaxVersion.Value);
     }
 
     public int MinVersion { get; }
 
     public int? MaxVersion { get; }
 
-    public string Summary => typeof(ExistsVersionRangeCondition).Name;
+    public Dictionary<string, object>? Parameters { get; }
+
+    public string? ConditionInfo => BuildSql("SYNC_TABLE", "DATASOURCE", "DESTINATION_ID");
 
     public string ToCondition(IPier sender)
     {
@@ -49,13 +55,5 @@ public class ExistsVersionRangeCondition : IFilter
         var sql = $"exists (select * from {sync} ___sync where {cnd} and {datasourceAlias}.{destinationKey} = ___sync.{destinationKey})";
 
         return sql;
-    }
-
-    public Dictionary<string, object> ToParameter()
-    {
-        var dic = new Dictionary<string, object>();
-        dic.Add(":_min_version_id", MinVersion);
-        if (MaxVersion.HasValue) dic.Add(":_max_version_id", MaxVersion.Value);
-        return dic;
     }
 }

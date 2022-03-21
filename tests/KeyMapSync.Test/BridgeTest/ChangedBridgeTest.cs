@@ -30,7 +30,7 @@ public class ChangedBridgeTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
 
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var pier = new ExpectPier(root);
         pier.AddFilter(new ExistsVersionRangeCondition(1));
         var bridge = new ChangedPier(pier);

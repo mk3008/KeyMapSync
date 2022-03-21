@@ -11,7 +11,9 @@ public class DifferentCondition : IFilter
 {
     public string RemarksColumn { get; set; } = "offset_remarks";
 
-    public string Summary => typeof(DifferentCondition).Name;
+    public Dictionary<string, object>? Parameters => null;
+
+    public string? ConditionInfo => BuildWhereSql("OWNER", new string[] { "DATASOURCE_ID" }, "EXPECT", Enumerable.Empty<string>());
 
     public string BuildRemarksSql(IPier sender)
     {
@@ -80,6 +82,4 @@ public class DifferentCondition : IFilter
 
         return BuildWhereSql(sender.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
     }
-
-    public Dictionary<string, object>? ToParameter() => null;
 }

@@ -30,7 +30,7 @@ public class ExpectBridgeTest
     {
         var ds = EcShopSaleDetail.GetDatasource();
 
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var bridge = new ExpectPier(root);
         bridge.AddFilter(new ExistsVersionRangeCondition(1, 2));
         var val = bridge.ToSelectQuery();
@@ -51,7 +51,7 @@ where
     {
         var ds = EcShopSaleDetail.GetDatasource();
 
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var bridge = new ExpectPier(root);
         bridge.AddFilter(new ExistsVersionRangeCondition());
         var val = bridge.ToSelectQuery();

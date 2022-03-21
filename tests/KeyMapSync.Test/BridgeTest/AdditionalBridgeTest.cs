@@ -29,7 +29,7 @@ public class AdditionalBridgeTest
     public void BuildExtendWithQueryTest()
     {
         var ds = EcShopSaleDetail.GetDatasource();
-        var root = new Abutment(ds);
+        var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var bridge = new AdditionalPier(root);
 
         var val = bridge.ToSelectQuery();

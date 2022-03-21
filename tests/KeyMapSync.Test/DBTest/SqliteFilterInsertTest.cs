@@ -69,7 +69,7 @@ public class SqliteFilterInsertTest
         var f = new CustomFilter()
         {
             Condition = "{0}.ec_shop_article_id = :ec_shop_article_id",
-            Parameter = prm
+            Parameters = prm
         };
 
         // Execute DDL test

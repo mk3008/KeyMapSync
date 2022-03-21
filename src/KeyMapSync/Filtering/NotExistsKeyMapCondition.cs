@@ -9,7 +9,9 @@ namespace KeyMapSync.Filtering;
 
 public class NotExistsKeyMapCondition : IFilter
 {
-    public string Summary => typeof(NotExistsKeyMapCondition).Name;
+    public Dictionary<string, object>? Parameters => null;
+
+    public string? ConditionInfo => BuildSql("KEYMAP","DATASOURCE", new string[] { "DATASOURCE_ID" });
 
     public string ToCondition(IPier sender)
     {
@@ -27,10 +29,5 @@ public class NotExistsKeyMapCondition : IFilter
     {
         var sql = $"not exists (select * from {keymap} ___map where {datasourceKeys.Select(key => $"{datasourceAlias}.{key} = ___map.{key}").ToString(" and ")})";
         return sql;
-    }
-
-    public Dictionary<string, object>? ToParameter()
-    {
-        return null;
     }
 }

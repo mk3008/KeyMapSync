@@ -23,6 +23,8 @@ public interface IAbutment : IBridge
     Datasource Datasource { get; }
 
     public string ViewName { get; }
+
+    BridgeCommand BridgeCommand { get; }
 }
 
 public interface IPier : IBridge

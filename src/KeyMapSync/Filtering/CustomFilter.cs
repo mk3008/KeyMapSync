@@ -14,29 +14,11 @@ public class CustomFilter : IFilter
 {
     public string Condition { get; set; } = String.Empty;
 
-    public Dictionary<string, object> Parameter { get; set; } = new();
+    public Dictionary<string, object> Parameters { get; set; } = new();
 
-    public string Summary => GetSummary();
-
-    private string GetSummary()
-    {
-        var s = string.Format(Condition + " ", "x");
-        foreach (var item in Parameter)
-        {
-            var val = item.Value?.ToString();
-            if (val == null)
-            {
-                s = Regex.Replace(s, $"{item.Key}\\s", "[NULL]");
-            }
-            else
-            {
-                s = Regex.Replace(s + " ", item.Key + "\\s", val);
-            }
-        }
-        return $"{typeof(CustomFilter).Name} {s.Trim()}";
-    }
+    public string? ConditionInfo => string.Format(Condition, "DATASOURCE");
 
     public string ToCondition(IPier sender) => string.Format(Condition, sender.GetInnerAlias());
 
-    public Dictionary<string, object> ToParameter() => Parameter;
+    public Dictionary<string, object> ToParameters() => Parameters;
 }
