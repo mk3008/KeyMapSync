@@ -15,11 +15,14 @@ namespace KeyMapSync
             Name = name;
             Sql = sql;
             Param = param;
+            Timestamp = DateTime.Now;
         }
 
         public SyncEventArgs Owner { get; set; }
 
         public string Name { get; }
+
+        public DateTime Timestamp { get; }
 
         public string Sql { get; }
 

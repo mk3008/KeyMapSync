@@ -11,9 +11,14 @@ namespace KeyMapSync
         {
             Owner = owner;
             Count = count;
+            Timestamp = DateTime.Now;
         }
 
         public SqlEventArgs Owner { get; }
+
+        public DateTime Timestamp { get; }
+
+        public TimeSpan LapTime => Timestamp - Owner.Timestamp;
 
         public int Count { get;  }
     }
