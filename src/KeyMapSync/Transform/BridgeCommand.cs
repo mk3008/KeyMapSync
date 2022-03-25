@@ -48,7 +48,7 @@ public class BridgeCommand
         //create bridge instance.
         if (ValidateFilter != null)
         {
-            foreach (var item in parent.Extensions)
+            foreach (var item in parent.OffsetExtensions)
             {
                 var abutment = new Abutment(item, this);
                 var bridge = new ExtensionAdditionalPier(abutment);

@@ -128,14 +128,8 @@ public class Synchronizer
         //version
         if (vconfig != null) InsertVersion(cn, bridge, vconfig);
 
-        //InsertExtension(cn, bridge, prefix);
         //nest
-        //ds.Extensions.ForEach(x =>
-        //{
-        //    var abutment = new Abutment(x);
-        //    var pier = new ExtensionAdditionalPier(abutment);
-        //    Insert(cn, trn, pier);
-        //});
+        bridge.Abutment.BridgeCommand.BuildExtensionBridges(ds).ForEach(x => Insert(cn, trn, x));
 
         return cnt;
     }

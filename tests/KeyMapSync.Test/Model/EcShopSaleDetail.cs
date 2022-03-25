@@ -38,6 +38,8 @@ select * from ds",
                 InspectionIgnoreColumns = new() { "ec_shop_article_id", "article_name" },
             };
             ds.Extensions.Add(GetExtensionDatasource(ds));
+            ds.OffsetExtensions.Add(GetOffsetExtensionDatasource(ds));
+            //ds.OffsetExtensions.Add(GetRenewalExtensionDatasource(ds));
             return ds;
         }
 
@@ -56,6 +58,47 @@ from
     {owner.BridgeName}
 where
     ec_shop_article_id is not null"
+            };
+            return ext;
+        }
+
+        private static Datasource GetOffsetExtensionDatasource(Datasource owner)
+        {
+            var ext = new Datasource()
+            {
+                Destination = ExtEcShopArtcile.GetDestination(),
+                BridgeName = "bridge_ec_shop_sale_detail_ex_offset",
+                Columns = new() { "integration_sale_detail_id", "ec_shop_article_id" },
+                Query = $@"
+select
+    d.offset_integration_sale_detail_id as integration_sale_detail_id
+    , e.ec_shop_article_id 
+from
+    {owner.BridgeName} d
+    inner join integration_sale_detail_ext_ec_shop_article e on d.integration_sale_detail_id = e.integration_sale_detail_id
+where
+    d.offset_integration_sale_detail_id is not null
+    and e.ec_shop_article_id is not null"
+            };
+            return ext;
+        }
+
+        private static Datasource GetRenewalExtensionDatasource(Datasource owner)
+        {
+            var ext = new Datasource()
+            {
+                Destination = ExtEcShopArtcile.GetDestination(),
+                BridgeName = "bridge_ec_shop_sale_detail_ex_renew",
+                Columns = new() { "integration_sale_detail_id", "ec_shop_article_id" },
+                Query = $@"
+select
+    renewal_integration_sale_detail_id as integration_sale_detail_id
+    , ec_shop_article_id 
+from
+    {owner.BridgeName}
+where
+    renewal_integration_sale_detail_id is not null
+    and ec_shop_article_id is not null"
             };
             return ext;
         }

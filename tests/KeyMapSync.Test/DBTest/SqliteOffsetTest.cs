@@ -134,7 +134,7 @@ public class SqliteOffsetTest
         UpdateQuantity();
 
         //hit
-        Output.WriteLine("--- offset ---");
+        Output.WriteLine("--- update ---");
         cnt = Offset(ecShopDs, validateFilter);
         Assert.Equal(1, cnt);
 
@@ -142,6 +142,7 @@ public class SqliteOffsetTest
         DeleteRow();
 
         //hit
+        Output.WriteLine("--- delete ---");
         cnt = Offset(ecShopDs, validateFilter);
         Assert.Equal(1, cnt);
 

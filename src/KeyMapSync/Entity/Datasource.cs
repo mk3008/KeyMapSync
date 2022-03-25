@@ -63,6 +63,8 @@ public class Datasource
 
     public List<Datasource> Extensions { get; set; } = new();
 
+    public List<Datasource> OffsetExtensions { get; set; } = new();
+
     public List<DbTable> ToSystemDbTables()
     {
         var lst = new List<DbTable>();
