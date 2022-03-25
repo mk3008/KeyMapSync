@@ -68,7 +68,7 @@ left join (
         (
             select distinct shop_id, sale_date from _added
         ) h
-    ) g_integration_sale on __p.shop_id = g_integration_sale.shop_id and __p.sale_date = __g1.sale_date
+    ) g_integration_sale on __p.shop_id = g_integration_sale.shop_id and __p.sale_date = g_integration_sale.sale_date
 cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __version;";
         var val = bridge.ToCreateTableCommand();
         Assert.Equal(expect, val.CommandText);
@@ -84,17 +84,17 @@ cross join (select (select max(seq) from (select seq from sqlite_sequence where 
         pier.AddFilter(new ExistsVersionRangeCondition(1, 2));
         var bridge = new ChangedPier(pier);
 
-        var expect = @"create temporary table tmp_default_parse
+        var expect = @"create temporary table _ec_shop_sale_detail
 as
 with
 _expect as (
     select
         __map.ec_shop_sale_detail_id
-        , __g1.shop_id
-        , __g1.sale_date
+        , g_integration_sale.shop_id
+        , g_integration_sale.sale_date
         , __p.*
     from integration_sale_detail __p
-    inner join integration_sale __g1 on __p.integration_sale_id = __g1.integration_sale_id
+    inner join integration_sale g_integration_sale on __p.integration_sale_id = g_integration_sale.integration_sale_id
     inner join integration_sale_detail__map_ec_shop_sale_detail __map on __p.integration_sale_detail_id = __map.integration_sale_detail_id
     where
         exists (select * from integration_sale_detail__sync ___sync where ___sync.version_id between :_min_version_id and :_max_version_id and __p.integration_sale_detail_id = ___sync.integration_sale_detail_id)
@@ -102,6 +102,7 @@ _expect as (
 _changed as (
     select
         __e.integration_sale_detail_id
+        , __e.integration_sale_id
         , (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as offset_integration_sale_detail_id
         , case when __p.ec_shop_sale_detail_id is null then
             'deleted'
@@ -111,12 +112,12 @@ _changed as (
             || case when not coalesce((__e.unit_price = __p.unit_price) or (__e.unit_price is null and __p.unit_price is null), false) then 'unit_price is changed, ' else '' end
             || case when not coalesce((__e.quantity = __p.quantity) or (__e.quantity is null and __p.quantity is null), false) then 'quantity is changed, ' else '' end
             || case when not coalesce((__e.price = __p.price) or (__e.price is null and __p.price is null), false) then 'price is changed, ' else '' end
-        end as _remarks
+        end as offset_remarks
         , case when __p.ec_shop_sale_detail_id is null then null else count(*) over() + (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() end as renewal_integration_sale_detail_id
         , __p.*
     from _expect __e
     inner join integration_sale_detail__map_ec_shop_sale_detail __map on __e.integration_sale_detail_id = __map.integration_sale_detail_id
-    left join _kms_v_ec_shop_sale_detail __p on __map.ec_shop_sale_detail_id = __p.ec_shop_sale_detail_id
+    left join _v__ec_shop_sale_detail __p on __map.ec_shop_sale_detail_id = __p.ec_shop_sale_detail_id
     where
         (
             __p.ec_shop_sale_detail_id is null
@@ -128,9 +129,9 @@ _changed as (
         )
 )
 select
-    __v.version_id
-    , __g1.integration_sale_id
-    , __p.*
+    __p.*
+    , g_integration_sale.integration_sale_id
+    , __version.version_id
 from _changed __p
 left join (
     select
@@ -140,8 +141,8 @@ left join (
         (
             select distinct shop_id, sale_date from _changed
         ) h
-    ) __g1 on __p.shop_id = __g1.shop_id and __p.sale_date = __g1.sale_date
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
+    ) g_integration_sale on __p.shop_id = g_integration_sale.shop_id and __p.sale_date = g_integration_sale.sale_date
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __version;";
         var val = bridge.ToCreateTableCommand();
         Assert.Equal(expect, val.CommandText);
     }

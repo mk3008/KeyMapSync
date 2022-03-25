@@ -65,7 +65,7 @@ from {table}
         {
             var alias = item.GetInnerAlias();
             var sql = @$"inner join {item.DestinationTableName} {alias} on {this.GetInnerAlias()}.{item.Sequence.Column} = {alias}.{ item.Sequence.Column}";
-            item.Columns.ForEach(x => columns.Add($"{alias}.{x}"));
+            item.GetColumnsWithoutKey().ForEach(x => columns.Add($"{alias}.{x}"));
             joins.Add(sql);
         }
 
