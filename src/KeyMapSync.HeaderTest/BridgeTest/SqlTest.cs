@@ -44,21 +44,21 @@ public class SqlTest
         var root = new Abutment(ds, new BridgeCommand() { Datasource = ds });
         var bridge = new AdditionalPier(root);
 
-        var expect = @"create temporary table tmp_parse
+        var expect = @"create temporary table _ec_shop_sale_detail
 as
 with
 _added as (
     select
         (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over() as integration_sale_detail_id
         , __p.*
-    from _kms_v_ec_shop_sale_detail __p
+    from _v__ec_shop_sale_detail __p
     where
         not exists (select * from integration_sale_detail__map_ec_shop_sale_detail ___map where __p.ec_shop_sale_detail_id = ___map.ec_shop_sale_detail_id)
 )
 select
-    __v.version_id
-    , __g1.integration_sale_id
-    , __p.*
+    __p.*
+    , g_integration_sale.integration_sale_id
+    , __version.version_id
 from _added __p
 left join (
     select
@@ -68,8 +68,8 @@ left join (
         (
             select distinct shop_id, sale_date from _added
         ) h
-    ) __g1 on __p.shop_id = __g1.shop_id and __p.sale_date = __g1.sale_date
-cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __v;";
+    ) g_integration_sale on __p.shop_id = g_integration_sale.shop_id and __p.sale_date = __g1.sale_date
+cross join (select (select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1 as version_id) __version;";
         var val = bridge.ToCreateTableCommand();
         Assert.Equal(expect, val.CommandText);
     }

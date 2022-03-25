@@ -102,7 +102,7 @@ public static class IPierSqlExtension
         , {item.Sequence.Command} as {item.Sequence.Column}
     from
         (
-            select distinct {cols.ToString(", ")} from {source.Abutment.ViewName}
+            select distinct {cols.ToString(", ")} from {source.ViewOrCteName}
         ) h
     ) {alias} on {cols.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
 

@@ -37,12 +37,20 @@ public class SqliteInsertTest
         EcShop.CreateDataSql.Split(";").ToList().ForEach(item => cn.Execute(item));
     }
 
+    private void OnBeforeSqlExecute(object? sender, SqlEventArgs? e)
+    {
+        if (e != null) Output.WriteLine(e.GetSqlInfo());
+    }
+
     [Fact]
     public void InsertTest()
     {
         var ds = EcShopSaleDetail.GetDatasource();
+        var err = Validation.Validator.Execute(ds);
+
         IDBMS db = new SQLite();
         var sync = new Synchronizer(db);
+        sync.BeforeSqlExecute += OnBeforeSqlExecute;
 
         // Execute DDL test
         var cnt = 0;
@@ -55,6 +63,7 @@ public class SqliteInsertTest
         Assert.Equal(11, cnt);
 
         // rerun
+        Output.WriteLine("---ReRun ---");
         using (var cn = new SQLiteConnection(CnString))
         {
             cn.Open();

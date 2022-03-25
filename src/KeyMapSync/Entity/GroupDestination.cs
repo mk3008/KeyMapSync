@@ -1,6 +1,8 @@
-﻿using KeyMapSync.DBMS;
+﻿using KeyMapSync.Validation;
+using KeyMapSync.DBMS;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,13 +14,16 @@ public class GroupDestination
     /// <summary>
     /// ex.integration_sale
     /// </summary>
+    [Required]
     public string DestinationTableName { get; set; } = string.Empty;
 
+    [Required]
     public Sequence Sequence { get; set; } = new();
 
     /// <summary>
     /// 
     /// </summary>
+    [ListRequired]
     public List<string> Columns { get; init; } = new();
 
     public string GetInnerAlias() => $"g_{DestinationTableName}".ToLower(); 

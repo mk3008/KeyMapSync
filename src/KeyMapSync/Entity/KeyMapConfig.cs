@@ -1,6 +1,7 @@
 ﻿using KeyMapSync.DBMS;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ public class KeyMapConfig
     /// <summary>
     /// keymap table name format.
     /// </summary>
+    [Required]
     public string TableNameFormat { get; set; } = "{0}__map_{1}";
 
     public OffsetConfig? OffsetConfig { get; set; } = null;

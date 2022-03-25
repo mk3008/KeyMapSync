@@ -1,7 +1,9 @@
-﻿using KeyMapSync.DBMS;
+﻿using KeyMapSync.Validation;
+using KeyMapSync.DBMS;
 using KeyMapSync.Transform;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,32 +15,27 @@ public class Datasource
     /// <summary>
     /// ex."ec_shop_sales_detail"
     /// </summary>
+    [Required]
     public string DatasourceName { get; set; } = String.Empty;
 
     /// <summary>
+    /// Temporary table name.
     /// ex."ec_shop_sales_detail_bridge"
     /// </summary>
+    [Required]
     public string BridgeName { get; set; } = String.Empty;
 
     /// <summary>
-    /// datasource description.
-    /// ex."transfrom 'ec_shop_sales_detail' to 'integration_sale_detail'." 
-    /// </summary>
-    //public string Description { get; set; } = String.Empty;
-
-    /// <summary>
+    /// Query string.
     /// ex."with ds as (select * from ec_shop_sales_detail) select * from select * from ds"
     /// </summary>
+    [Required]
     public string Query { get; set; } = String.Empty;
 
     /// <summary>
-    /// ex.
-    /// {
-    /// "DestinationName":"integration_sale_detail"
-    /// "SequenceKeyColumn":"integration_sale_detail_id",
-    /// "SequenceCommand":"(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0))",
-    /// }
+    /// Destination
     /// </summary>
+    [Required]
     public Destination Destination { get; set; } = new();
 
     /// <summary>
@@ -46,12 +43,14 @@ public class Datasource
     /// ex.
     /// "ec_shop_sales_id, ex_shop_sales_dtail_id"
     /// </summary>
+    [ListRequired]
     public List<string> KeyColumns { get; set; } = new();
 
     /// <summary>
     /// ex.
     /// "ec_shop_sales_id, ex_shop_sales_dtail_id, sales_date, article_name, unit_price, quantity, price"
     /// </summary>
+    [ListRequired]
     public List<string> Columns { get; set; } = new();
 
     /// <summary>

@@ -39,8 +39,6 @@ public class ChangedPier : PierBase
         var keymapJoin = $"inner join {keymap} __map on {InnerExpectAlias}.{seq.Column} = __map.{seq.Column}";
         var viewjoin = $"left join {view} {this.GetInnerAlias()} on {ds.KeyColumns.Select(x => $"__map.{x} = {this.GetInnerAlias()}.{x}").ToString(" and ")}";
 
-        var col = GetColumns().ToString("\r\n, ").AddIndent(4);
-
         var cmd = new SelectCommand()
         {
             Tables = { $"{PreviousBridge.ViewOrCteName} {InnerExpectAlias}", keymapJoin, viewjoin },
@@ -64,6 +62,8 @@ public class ChangedPier : PierBase
         var cols = new List<string>();
         //origin key
         cols.Add($"{InnerExpectAlias}.{dest.Sequence.Column}");
+        //origin header key
+        dest.Groups.ForEach(x => cols.Add($"{InnerExpectAlias}.{x.Sequence.Column}"));
         //offset key
         cols.Add($"{dest.Sequence.Command} as {offsetconfig.OffsetColumnPrefix}{dest.Sequence.Column}");
         //offset remarks

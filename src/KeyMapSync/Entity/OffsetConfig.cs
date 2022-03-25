@@ -1,5 +1,7 @@
-﻿using KeyMapSync.DBMS;
+﻿using KeyMapSync.Validation;
+using KeyMapSync.DBMS;
 using KeyMapSync.Transform;
+using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
 
@@ -9,26 +11,31 @@ public class OffsetConfig
     /// ex
     /// "quantity, price"
     /// </summary>
+    [ListRequired]
     public List<string> SingInversionColumns { get; set; } = new();
 
     /// <summary>
     /// Offset-table name format.
     /// </summary>
+    [Required]
     public string TableNameFormat { get; set; } = "{0}__offset";
 
     /// <summary>
     /// Offset column prefix.
     /// </summary>
+    [Required]
     public string OffsetColumnPrefix { get; set; } = "offset_";
 
     /// <summary>
     /// Renewal column prefix.
     /// </summary>
+    [Required]
     public string RenewalColumnPrefix { get; set; } = "renewal_";
 
     /// <summary>
     /// Offest remarks column
     /// </summary>
+    [Required]
     public string OffsetRemarksColumn { get; set; } = "offset_remarks";
 
     private string GetOffsetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.DestinationTableName);
@@ -112,15 +119,17 @@ public class OffsetConfig
 
     public TablePair ToReverseTablePair(Datasource d)
     {
-        var seq = d.Destination.Sequence;
+        var dest = d.Destination;
+        var seq = dest.Sequence;
 
         var pair = new TablePair()
         {
-            FromTable = $"(select _new.offset_{seq.Column}, _old.* from {d.BridgeName} _new inner join {d.Destination.DestinationTableName} _old on _new.{seq.Column} = _old.{seq.Column}) __p",
-            ToTable = d.Destination.DestinationTableName,
+            FromTable = $"(select _new.offset_{seq.Column}, _old.* from {d.BridgeName} _new inner join {dest.DestinationTableName} _old on _new.{seq.Column} = _old.{seq.Column}) __p",
+            ToTable = dest.DestinationTableName,
         };
 
         pair.AddColumnPair($"{OffsetColumnPrefix}{seq.Column}", seq.Column);
+        dest.Groups.ForEach(x => pair.AddColumnPair(x.Sequence.Column));
         d.Columns.Where(x=> d.Destination.Columns.Contains(x)).ToList().ForEach(x =>
         {
             if (SingInversionColumns.Contains(x))

@@ -1,6 +1,7 @@
 ﻿using KeyMapSync.DBMS;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ public class SyncConfig
     /// <summary>
     /// Sync-table name format.
     /// </summary>
+    [Required]
     public string TableNameFormat { get; set; } = "{0}__sync";
 
     private string GetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.DestinationTableName);

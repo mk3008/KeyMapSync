@@ -14,4 +14,10 @@ internal static class IDictionaryExtension
         if (additional != null) foreach (var item in additional) source[item.Key] = item.Value;
         return source;
     }
+
+    public static Dictionary<string, string> Merge(this Dictionary<string, string> source, IDictionary<string, string>? additional)
+    {
+        if (additional != null) foreach (var item in additional) source[item.Key] = item.Value;
+        return source;
+    }
 }

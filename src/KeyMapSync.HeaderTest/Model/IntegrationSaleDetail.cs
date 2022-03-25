@@ -14,12 +14,12 @@ public class IntegrationSaleDetail
         var grp = new GroupDestination()
         {
             DestinationTableName = "integration_sale",
-            Columns = { "integration_sale_id", "shop_id", "sale_date" },
             Sequence = new Sequence()
             {
                 Column = "integration_sale_id",
                 Command = "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale' union all select 0)) + row_number() over()"
-            }
+            },
+            Columns = { "integration_sale_id", "shop_id", "sale_date" },
         };
 
         var c = new Destination()
