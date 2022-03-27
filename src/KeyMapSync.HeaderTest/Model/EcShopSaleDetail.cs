@@ -13,7 +13,7 @@ namespace KeyMapSync.HeaderTest.Model
         {
             var ds = new Datasource()
             {
-                DatasourceName = "ec_shop_sale_detail",
+                TableName = "ec_shop_sale_detail",
                 BridgeName = "_ec_shop_sale_detail",
                 Destination = IntegrationSaleDetail.GetDestination(),
                 Query = @"with 
@@ -47,7 +47,7 @@ select * from ds",
             var ext = new Datasource()
             {
                 Destination = ExtEcShopArtcile.GetDestination(),
-                DatasourceName = d.DatasourceName, 
+                TableName = d.TableName, 
                 BridgeName = "_exteion",
                 Columns = new() { "extension_id", "integration_sale_detail_id", "ec_shop_article_id" },
                 KeyColumns = new() { "extension_id" },

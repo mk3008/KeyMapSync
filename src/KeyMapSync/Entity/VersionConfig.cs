@@ -9,10 +9,13 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.Entity;
 
+/// <summary>
+/// Manage transfer information.
+/// </summary>
 public class VersionConfig
 {
     /// <summary>
-    /// Version-table name format.
+    /// Table name format.
     /// </summary>
     [Required]
     public string TableNameFormat { get; set; } = "{0}__version";
@@ -23,6 +26,9 @@ public class VersionConfig
     [Required]
     public string DatasourceNameColumn { get; set; } = "datasource_name";
 
+    /// <summary>
+    /// Transfer settings.
+    /// </summary>
     [Required]
     public string BridgeCommandColumn { get; set; } = "bridge_info";
 
@@ -32,8 +38,19 @@ public class VersionConfig
     [Required]
     public string TimestampColumn { get; set; } = "create_timestamp";
 
-    private string GetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.DestinationTableName);
+    /// <summary>
+    /// Get the table name.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    private string GetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.TableName);
 
+    /// <summary>
+    /// Get the DDL.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <param name="versioning"></param>
+    /// <returns></returns>
     public DbTable ToDbTable(Datasource d, VersioningConfig versioning)
     {
         var name = GetTableName(d);
@@ -53,6 +70,12 @@ public class VersionConfig
         return tbl;
     }
 
+    /// <summary>
+    /// Convert to table and column mapping information.
+    /// </summary>
+    /// <param name="pier"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public TablePair ToTablePair(IPier pier)
     {
         var d = pier.GetDatasource();
@@ -75,6 +98,12 @@ public class VersionConfig
         return p;
     }
 
+    /// <summary>
+    /// Convert to an additional query command.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <param name="sequencePrefix"></param>
+    /// <returns></returns>
     public SqlCommand ToInsertCommand(IPier pier)
     {
         var d = pier.GetDatasource();

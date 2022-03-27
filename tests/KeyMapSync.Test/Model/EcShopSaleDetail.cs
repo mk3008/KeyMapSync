@@ -13,7 +13,7 @@ namespace KeyMapSync.Test.Model
         {
             var ds = new Datasource()
             {
-                DatasourceName = "ec_shop_sale_detail",
+                TableName = "ec_shop_sale_detail",
                 BridgeName = "bridge_ec_shop_sale_detail",
                 Destination = IntegrationSaleDetail.GetDestination(),
                 Query = @"with 

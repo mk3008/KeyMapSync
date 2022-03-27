@@ -28,7 +28,7 @@ public class ChangedPier : PierBase
     public override string ToSelectQuery()
     {
         var config = this.GetDestination().KeyMapConfig;
-        if (config == null) throw new NotSupportedException($"keymap config is null.(destination:{this.GetDestination().DestinationTableName})");
+        if (config == null) throw new NotSupportedException($"keymap config is null.(destination:{this.GetDestination().TableName})");
 
         var ds = this.GetDatasource();
         var dest = this.GetDestination();

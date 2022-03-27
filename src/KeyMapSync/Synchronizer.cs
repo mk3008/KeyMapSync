@@ -103,9 +103,9 @@ public class Synchronizer
         var ds = bridge.GetDatasource();
 
         var kmconfig = ds.Destination.KeyMapConfig;
-        if (kmconfig == null) throw new NotSupportedException($"keymap is not supported.(table:{ds.Destination.DestinationTableName})");
+        if (kmconfig == null) throw new NotSupportedException($"keymap is not supported.(table:{ds.Destination.TableName})");
         var offsetconfig = kmconfig.OffsetConfig;
-        if (offsetconfig == null) throw new NotSupportedException($"offset is not supported.(table:{ds.Destination.DestinationTableName})");
+        if (offsetconfig == null) throw new NotSupportedException($"offset is not supported.(table:{ds.Destination.TableName})");
 
         var vconfig = ds.Destination.VersioningConfig;
 

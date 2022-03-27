@@ -5,45 +5,55 @@ using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
 
+/// <summary>
+/// Difference transfer settings.
+/// </summary>
 public class OffsetConfig
 {
     /// <summary>
-    /// ex
-    /// "quantity, price"
+    /// A group of columns whose signs need to be inverted when offsetting.
     /// </summary>
+    /// <example>
+    /// {"quantity", "price"}
+    /// </example>
     [ListRequired]
-    public List<string> SingInversionColumns { get; set; } = new();
+    public List<string> SignInversionColumns { get; set; } = new();
 
     /// <summary>
-    /// Offset-table name format.
+    /// Table name format.
     /// </summary>
     [Required]
     public string TableNameFormat { get; set; } = "{0}__offset";
 
     /// <summary>
-    /// Offset column prefix.
+    /// Column prefix for offsetting.
     /// </summary>
     [Required]
     public string OffsetColumnPrefix { get; set; } = "offset_";
 
     /// <summary>
-    /// Renewal column prefix.
+    /// Redesigned column prefix.
     /// </summary>
     [Required]
     public string RenewalColumnPrefix { get; set; } = "renewal_";
 
     /// <summary>
-    /// Offest remarks column
+    /// A column that records the reasons for offsetting.
     /// </summary>
     [Required]
     public string OffsetRemarksColumn { get; set; } = "offset_remarks";
 
-    private string GetOffsetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.DestinationTableName);
+    private string GetOffsetTableName(Datasource d) => string.Format(TableNameFormat, d.Destination.TableName);
 
     private string GetOffsetColumnName(Datasource d) => $"{OffsetColumnPrefix}{d.Destination.Sequence.Column}";
 
     private string GetRenewalColumnName(Datasource d) => $"{RenewalColumnPrefix}{d.Destination.Sequence.Column}";
 
+    /// <summary>
+    /// Convert to DDL.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
     public DbTable ToDbTable(Datasource d)
     {
         var tableName = GetOffsetTableName(d);
@@ -66,6 +76,11 @@ public class OffsetConfig
         return tbl;
     }
 
+    /// <summary>
+    /// Convert to table and column mapping information.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
     public TablePair ToTablePair(Datasource d)
     {
         var offsetTable = ToDbTable(d);
@@ -86,6 +101,11 @@ public class OffsetConfig
         return pair;
     }
 
+    /// <summary>
+    /// Convert to an additional query.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
     public SqlCommand ToInsertCommand(Datasource d)
     {
         var p = ToTablePair(d);
@@ -93,9 +113,15 @@ public class OffsetConfig
         return cmd;
     }
 
+    /// <summary>
+    /// Convert to a query that removes KeyMap.
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    /// <exception cref="NotSupportedException"></exception>
     public SqlCommand ToRmoveKeyMapCommand(Datasource d)
     {
-        if (d.Destination.KeyMapConfig == null) throw new NotSupportedException($"destination is not support keymap.(table:{d.Destination.DestinationTableName})");
+        if (d.Destination.KeyMapConfig == null) throw new NotSupportedException($"destination is not support keymap.(table:{d.Destination.TableName})");
 
         var keymapTable = d.Destination.KeyMapConfig.ToDbTable(d).Table;
         var bridgeTable = d.BridgeName;
@@ -110,29 +136,39 @@ public class OffsetConfig
         return cmd.ToSqlCommand();
     }
 
-    public SqlCommand ToReverseInsertDestinationCommand(Datasource d)
+    /// <summary>
+    /// Convert to an additional query.(offset)
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    public SqlCommand ToInsertCommandForOffset(Datasource d)
     {
-        var p = ToReverseTablePair(d);
+        var p = ToTablePairForOffset(d);
         var cmd = p.ToInsertCommand().ToSqlCommand();
         return cmd;
     }
 
-    public TablePair ToReverseTablePair(Datasource d)
+    /// <summary>
+    /// Convert to table and column mapping information.(offset)
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    public TablePair ToTablePairForOffset(Datasource d)
     {
         var dest = d.Destination;
         var seq = dest.Sequence;
 
         var pair = new TablePair()
         {
-            FromTable = $"(select _new.offset_{seq.Column}, _old.* from {d.BridgeName} _new inner join {dest.DestinationTableName} _old on _new.{seq.Column} = _old.{seq.Column}) __p",
-            ToTable = dest.DestinationTableName,
+            FromTable = $"(select _new.offset_{seq.Column}, _old.* from {d.BridgeName} _new inner join {dest.TableName} _old on _new.{seq.Column} = _old.{seq.Column}) __p",
+            ToTable = dest.TableName,
         };
 
         pair.AddColumnPair($"{OffsetColumnPrefix}{seq.Column}", seq.Column);
         dest.Groups.ForEach(x => pair.AddColumnPair(x.Sequence.Column));
         d.Columns.Where(x=> d.Destination.Columns.Contains(x)).ToList().ForEach(x =>
         {
-            if (SingInversionColumns.Contains(x))
+            if (SignInversionColumns.Contains(x))
             {
                 pair.AddColumnPair($"{x} * -1", x);
             }

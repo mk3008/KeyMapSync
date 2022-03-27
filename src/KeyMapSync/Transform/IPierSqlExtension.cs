@@ -80,7 +80,7 @@ public static class IPierSqlExtension
     private static string ToSelectVersionSql(this IPier source)
     {
         var config = source.GetDestination().VersioningConfig;
-        if (config == null) throw new NotSupportedException($"versioning not supported.(table:{source.GetDestination().DestinationTableName})");
+        if (config == null) throw new NotSupportedException($"versioning not supported.(table:{source.GetDestination().TableName})");
         var sql = $"select {config.Sequence.Command} as {config.Sequence.Column}";
         return sql;
     }

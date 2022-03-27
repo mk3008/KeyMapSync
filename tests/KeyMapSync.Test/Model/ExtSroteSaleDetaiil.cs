@@ -13,7 +13,7 @@ public class ExtSroteSaleDetaiil
     {
         var c = new Destination()
         {
-            DestinationTableName = "integration_sale_detail_ext_store_sale_detail",
+            TableName = "integration_sale_detail_ext_store_sale_detail",
             Sequence = new Sequence()
             {
                 Column = "extension_id",

@@ -13,7 +13,7 @@ public class IntegrationSaleDetail
     {
         var c = new Destination()
         {
-            DestinationTableName = "integration_sale_detail",
+            TableName = "integration_sale_detail",
             Sequence = new()
             {
                 Column = "integration_sale_detail_id",
@@ -32,7 +32,7 @@ public class IntegrationSaleDetail
             {
                 OffsetConfig = new()
                 {
-                    SingInversionColumns = new() { "quantity", "price" },
+                    SignInversionColumns = new() { "quantity", "price" },
                 }
             }
         };

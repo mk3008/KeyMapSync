@@ -78,7 +78,7 @@ public static class IBridgeSqlExtension
         var config = d.Destination.KeyMapConfig?.OffsetConfig;
         if (config == null) throw new NotSupportedException();
 
-        return config.ToReverseInsertDestinationCommand(d);
+        return config.ToInsertCommandForOffset(d);
     }
 
     public static SqlCommand ToInsertOffsetCommand(this IBridge source)

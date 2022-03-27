@@ -17,7 +17,7 @@ public class NotExistsKeyMapCondition : IFilter
     {
         var ds = sender.GetDatasource();
         var config = ds.Destination.KeyMapConfig;
-        if (config == null) throw new NotSupportedException($"keymap is not supportes.(table:{ds.Destination.DestinationTableName})");
+        if (config == null) throw new NotSupportedException($"keymap is not supportes.(table:{ds.Destination.TableName})");
 
         var keymap = config.ToDbTable(ds).Table;
         var datasourceAlias = sender.GetInnerAlias();

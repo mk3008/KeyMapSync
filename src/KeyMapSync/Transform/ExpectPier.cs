@@ -39,7 +39,7 @@ public class ExpectPier : PierBase
 
         //from table, join talbes
         var tables = new List<string>();
-        tables.Add($"{dest.DestinationTableName} {this.GetInnerAlias()}");
+        tables.Add($"{dest.TableName} {this.GetInnerAlias()}");
         header.Tables.ForEach(x => tables.Add(x));
         if (seq != null) tables.Add($"inner join {keymap} __map on {this.GetInnerAlias()}.{seq.Column} = __map.{seq.Column}");
 
@@ -64,7 +64,7 @@ from {table}
         foreach (var item in dest.Groups)
         {
             var alias = item.GetInnerAlias();
-            var sql = @$"inner join {item.DestinationTableName} {alias} on {this.GetInnerAlias()}.{item.Sequence.Column} = {alias}.{ item.Sequence.Column}";
+            var sql = @$"inner join {item.TableName} {alias} on {this.GetInnerAlias()}.{item.Sequence.Column} = {alias}.{ item.Sequence.Column}";
             item.GetColumnsWithoutKey().ForEach(x => columns.Add($"{alias}.{x}"));
             joins.Add(sql);
         }

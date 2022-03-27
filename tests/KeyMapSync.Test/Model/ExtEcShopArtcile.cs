@@ -13,7 +13,7 @@ public class ExtEcShopArtcile
     {
         var c = new Destination()
         {
-            DestinationTableName = "integration_sale_detail_ext_ec_shop_article",
+            TableName = "integration_sale_detail_ext_ec_shop_article",
             Sequence = new Sequence()
             {
                 Column = "extension_id",
