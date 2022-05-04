@@ -33,19 +33,26 @@
 
 ## 特徴
 
-制約は少なめです。
+赤黒転送（変更が生じている場合、元データを相殺するデータを転送する）に対応しています。詳細特徴は以下の通り。
 
-- データ転送元（Datasoutce）とデータ転送先（Destination）のテーブルは同一DBMSインスタンス内に存在する
 - データ転送先（Destination）からデータ転送元（Datasoutce）の逆引きが可能
+- データ転送元（Datasoutce）は選択クエリによる加工に対応
 - 差分転送が可能
 - 赤黒転送が可能
-- データ転送元の制約は「主キーが設定されている」のみ（複合キー可）
-- データ転送先の制約は「シーケンスを持っている」のみ
+
+## 制約
+
+緩めではありますが、KeyMapSyncを利用するには以下の条件を満たす必要があります。
+
+- データ転送元（Datasoutce）とデータ転送先（Destination）のテーブルは同一DBMSインスタンス内に存在すること
+- データ転送元は主キーが設定されていること
+- データ転送先はシーケンス列を持っていること
+
+### 補足
 
 >データ転送元（Datasoutce）とデータ転送先（Destination）のテーブルは同一DBMSインスタンス内に存在する
 
-この条件を満たせない場合は、別のETLを使用して同一DBMSインスタンス内にデータを入れてください。
-なお、全期間のデータを保持しておく必要はありません。差分転送の要件外になった期間は削除しても支障ありません。
+この条件を満たせない場合は、別のETLを使用して同一DBMSインスタンス内にデータを入れてからKeyMapSyncを使用してください。
 
 ## 実行環境
 
@@ -55,7 +62,103 @@
 
 ## 使い方
 
-デモの実際に動かしたい場合は以下の手順で行ってください。
+デモの転送を行うには以下のような手順を踏みます。
+
+### DBMSの準備（PostgreSQL）
+
+転送元テーブル、転送元データを準備します。
+
+```
+--fish_sales
+create table fish_sales (
+      fish_sales_id serial8 primary key
+    , sales_date date not null
+    , fish_name text not null
+    , price int8 not null
+)
+;
+insert into fish_sales(
+    sales_date, fish_name, price
+)
+values 
+      ('2000-01-01', 'tuna', 200)
+    , ('2000-01-01', 'squid', 400)
+    , ('2000-02-01', 'tuna', -200)
+;--fruits_sales
+create table fruits_sales (
+      fruits_sales_id serial8 primary key
+    , sales_date date not null
+    , fruits_name text not null
+    , price int8 not null
+    , delete_date date null
+)
+;
+insert into fruits_sales(
+    sales_date, fruits_name, price, delete_date
+)
+values 
+      ('2000-01-01', 'apple', 100, '2000-02-01')
+    , ('2000-01-01', 'orange', 300, null)
+;
+```
+
+続いて、転送先のテーブルも用意します。
+```
+create table integration_sales (
+      integration_sales_id serial8 primary key
+    , sales_date date not null
+    , product_name text not null
+    , price int8 not null
+)
+```
+
+### データソースSQLの作成(PostgreSQL）
+
+データソースを転送先(integration_sales)の構造に合わせる列マッピング処理を選択クエリで指定します。
+
+fish_sales の場合、このような選択クエリになります。列に転送先の列名を記述するだけです。
+
+```
+--fish sales datasource
+select
+    sales_date
+    , fish_name as product_name
+    , price
+from
+    fish_sales
+;
+```
+
+fruits_sales も同様に選択クエリを記述します。同テーブルは論理削除で実装されているため、売上と取消の2クエリが必要になることに注意ください。
+
+```
+--fruits sales datasource
+select
+    sales_date
+    , fruits_name as product_name
+    , price
+from
+    fruits_sales
+;
+--fruits sales cancel datasource
+select
+    delete_date as sales_date
+    , fruits_name as product_name
+    , price
+from
+    fruits_sales
+where
+    delete_date is not null  
+```
+
+
+
+
+
+
+
+
+
 
 ・・・・
 
