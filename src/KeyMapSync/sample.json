@@ -1,0 +1,90 @@
+﻿{
+  "CteName": "_added",
+  "PreviousPrier": null,
+  "Filter": {
+    "Filters": [
+      { "Summary": "NotExistsKeyMapCondition" },
+      { "Summary": "CustomFilter x.ec_shop_article_id = 10" }
+    ],
+    "Summary": ""
+  },
+  "ViewOrCteName": "_added",
+  "Abutment": {
+    "Datasource": {
+      "DatasourceName": "ec_shop_sale_detail",
+      "BridgeName": "bridge_ec_shop_sale_detail",
+      "Query": "with \r\nds as (\r\n    select\r\n          sd.ec_shop_sale_detail_id\r\n        , s.sale_date\r\n        , sd.ec_shop_article_id\r\n        , a.article_name\r\n        , sd.unit_price\r\n        , sd.quantity\r\n        , sd.price\r\n    from\r\n        ec_shop_sale_detail sd\r\n        inner join ec_shop_sale s on sd.ec_shop_sale_id = s.ec_shop_sale_id\r\n        inner join ec_shop_article a on sd.ec_shop_article_id = a.ec_shop_article_id\r\n)\r\nselect * from ds",
+      "Destination": {
+        "DestinationTableName": "integration_sale_detail",
+        "Groups": [],
+        "Sequence": {
+          "Column": "integration_sale_detail_id",
+          "Command": "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail' union all select 0)) + row_number() over()"
+        },
+        "Columns": [ "integration_sale_detail_id", "sale_date", "article_name", "unit_price", "quantity", "price" ],
+        "KeyMapConfig": {
+          "TableNameFormat": "{0}__map_{1}",
+          "OffsetConfig": {
+            "SingInversionColumns": [ "quantity", "price" ],
+            "TableNameFormat": "{0}__offset",
+            "OffsetColumnPrefix": "offset_",
+            "RenewalColumnPrefix": "renewal_",
+            "OffsetRemarksColumn": "offset_remarks"
+          }
+        },
+        "VersioningConfig": {
+          "Sequence": {
+            "Column": "version_id",
+            "Command": "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail__version' union all select 0)) + 1"
+          },
+          "SyncConfig": { "TableNameFormat": "{0}__sync" },
+          "VersionConfig": {
+            "TableNameFormat": "{0}__version",
+            "DatasourceNameColumn": "datasource_name",
+            "BridgeConfigColumn": "bridge_config",
+            "TimestampColumn": "create_timestamp"
+          }
+        }
+      },
+      "KeyColumns": [ "ec_shop_sale_detail_id" ],
+      "Columns": [ "ec_shop_sale_detail_id", "sale_date", "ec_shop_article_id", "article_name", "unit_price", "quantity", "price" ],
+      "InspectionIgnoreColumns": [ "ec_shop_article_id", "article_name" ],
+      "InspectionColumns": [ "sale_date", "unit_price", "quantity", "price" ],
+      "Extensions": [
+        {
+          "DatasourceName": "",
+          "BridgeName": "bridge_ec_shop_sale_detail_ex",
+          "Query": "\r\nselect\r\n    integration_sale_detail_id\r\n    , ec_shop_article_id \r\nfrom\r\n    bridge_ec_shop_sale_detail\r\nwhere\r\n    ec_shop_article_id is not null",
+          "Destination": {
+            "DestinationTableName": "integration_sale_detail_ext_ec_shop_article",
+            "Groups": [],
+            "Sequence": {
+              "Column": "extension_id",
+              "Command": "(select max(seq) from (select seq from sqlite_sequence where name = 'integration_sale_detail_ext_ec_shop_article' union all select 0)) + row_number() over()"
+            },
+            "Columns": [ "extension_id", "integration_sale_detail_id", "ec_shop_article_id" ],
+            "KeyMapConfig": null,
+            "VersioningConfig": null
+          },
+          "KeyColumns": [],
+          "Columns": [ "integration_sale_detail_id", "ec_shop_article_id" ],
+          "InspectionIgnoreColumns": [],
+          "InspectionColumns": [ "integration_sale_detail_id", "ec_shop_article_id" ],
+          "Extensions": []
+        }
+      ]
+    },
+    "ViewName": "_v_bridge_ec_shop_sale_detail"
+  },
+  "CurrentPier": {
+    "PreviousPrier": null,
+    "Filter": {
+      "Filters": [
+        { "Summary": "NotExistsKeyMapCondition" },
+        { "Summary": "CustomFilter x.ec_shop_article_id = 10" }
+      ],
+      "Summary": ""
+    },
+    "CteName": "_added"
+  }
+}

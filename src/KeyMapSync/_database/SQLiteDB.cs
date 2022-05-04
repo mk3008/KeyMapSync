@@ -47,14 +47,14 @@ select '' as schemaname ,tbl_name as tablename from sqlite_temp_master where typ
             return $"row_number() over() + {sequenceName}";
         }
 
-        public SqlEventArgs GetCreateSyncVersionTableDDL(string tableName, string sequenceColumnName)
+        public SqlEventArgs GetCreateVersionTableDDL(string tableName, string versionColumnName, string datasourceColumnName, string mappingColumnName)
         {
             var sql = $@"
 create table {tableName}
 (
-{sequenceColumnName} integer primary key autoincrement
-, datasource_name text not null
-, mapping_name text not null
+{versionColumnName} integer primary key autoincrement
+, {datasourceColumnName} text not null
+, {mappingColumnName} text not null
 , create_timestamp timestamp not null default current_timestamp
 )"
 ;
@@ -68,12 +68,13 @@ create table {tableName}
 (
 {dest.SequenceColumn.ColumnName} integer primary key
 , {version.SequenceColumn.ColumnName} integer not null
+, create_timestamp timestamp not null default current_timestamp
 )"
 ;
             return new SqlEventArgs(sql);
         }
 
-        public SqlEventArgs GetCreateMappingTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns)
+        public SqlEventArgs GetCreateKeymapTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns)
         {
             var sql = $@"
 create table {tableName}
@@ -81,8 +82,22 @@ create table {tableName}
 {datasourceKeyColumns.ToString(",", x => $"{x} integer not null")}
 , {dest.SequenceColumn.ColumnName} integer unique
 , primary key({datasourceKeyColumns.ToString(",")})
+, create_timestamp timestamp not null default current_timestamp
 )"
 ;
+            return new SqlEventArgs(sql);
+        }
+
+        public SqlEventArgs GetCreateOffsetmapTableDDL(string tableName, Table dest, string offsetsourcePrefix, string offsetcomment)
+        {
+            var sql = $@"
+create table {tableName}
+(
+{dest.SequenceColumn.ColumnName} integer not null unique
+, {offsetsourcePrefix}{dest.SequenceColumn.ColumnName} integer not null unique
+, {offsetcomment} text
+, create_date_time timestamp not null default current_timestamp
+)";
             return new SqlEventArgs(sql);
         }
 

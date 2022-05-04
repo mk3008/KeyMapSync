@@ -46,7 +46,5 @@ namespace KeyMapSync
         public bool IsOffset => false;
 
         public bool IsUpperCascade => false;
-
-        public virtual DatasourceFilter Filter => null;
     }
 }

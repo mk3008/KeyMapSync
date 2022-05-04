@@ -1,8 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssemblyVersion></AssemblyVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Datasouce\**" />
+    <Compile Remove="Filter\**" />
+    <EmbeddedResource Remove="Datasouce\**" />
+    <EmbeddedResource Remove="Filter\**" />
+    <None Remove="Datasouce\**" />
+    <None Remove="Filter\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="BridgeRootTest.cs" />
+    <Compile Remove="BridgeTest\FilterBridgeTest.cs" />
+    <Compile Remove="CascadeTest.cs" />
+    <Compile Remove="CorporationDatasourceMap.cs" />
+    <Compile Remove="CustomerDatasourceMap.cs" />
+    <Compile Remove="SynchronizerDeleteTest.cs" />
+    <Compile Remove="SynchronizerTest.cs" />
+    <Compile Remove="SyncMapBuilderTest.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.78" />
@@ -21,6 +42,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="filter_insert_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="offset_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="insert_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="syntax_test.sqlite">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="database_cascade.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

@@ -24,8 +24,7 @@ from
     information_schema.tables
 where
     (:schema_name = '' or table_schema = :schema_name)
-    and table_name = :table_name
-";
+    and table_name = :table_name;";
             return new SqlEventArgs(sql, new { schema_name = schemaName, table_name = tableName });
         }
 
@@ -40,7 +39,7 @@ where
     table_schema = :schema_name
     and table_name = :table_name
 order by
-    ordinal_position";
+    ordinal_position;";
 
             return new SqlEventArgs(sql, new { schema_name = info.SchemaName, table_name = info.TableName });
         }
@@ -59,8 +58,7 @@ where
 order by
     ordinal_position
 limit
-    1
-";
+    1;";
 
             return new SqlEventArgs(sql, new { schema_name = info.SchemaName, table_name = info.TableName });
         }
@@ -76,8 +74,7 @@ from
 where
     t.table_schema = :schema_name
     and t.table_name = :table_name
-    and c.column_name = :column_name
-";
+    and c.column_name = :column_name;";
             return new SqlEventArgs(sql, new { schema_name = info.SchemaName, table_name = info.TableName, column_name = columnName });
         }
 
@@ -86,20 +83,17 @@ where
             return $"nextval('{sequenceName}')";
         }
 
-        public SqlEventArgs GetCreateSyncVersionTableDDL(string tableName, string sequenceColumnName)
+        public SqlEventArgs GetCreateVersionTableDDL(string tableName, string sequenceColumnName, string datasourceColumnName, string mappingColumnName)
         {
-            var sql = $@"
-create table {tableName}
+            var sql = 
+$@"create table {tableName}
 (
 {sequenceColumnName} serial8 primary key
-, datasource_name text not null
-, mapping_name text not null
+, {datasourceColumnName} text not null
+, {mappingColumnName} text not null
 , create_timestamp timestamp not null default current_timestamp
-)
-;
-create index on {tableName}(datasource_name)
-;
-"
+);
+create index on {tableName}({datasourceColumnName});"
 ;
             return new SqlEventArgs(sql);
         }
@@ -111,25 +105,38 @@ create table {tableName}
 (
 {dest.SequenceColumn.ColumnName} int8 primary key
 , {version.SequenceColumn.ColumnName} int8 not null
-)
-;
-create index on {tableName}({version.SequenceColumn.ColumnName})
-;
+, create_date_time timestamp not null default current_timestamp
+);
+create index on {tableName}({version.SequenceColumn.ColumnName});
 "
 ;
             return new SqlEventArgs(sql);
         }
 
-        public SqlEventArgs GetCreateMappingTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns)
+        public SqlEventArgs GetCreateKeymapTableDDL(string tableName, Table dest, IEnumerable<string> datasourceKeyColumns)
         {
             var sql = $@"
 create table {tableName}
 (
 {datasourceKeyColumns.ToString(",", x => $"{x} int8 not null")}
 , {dest.SequenceColumn.ColumnName} int8 unique
+, create_date_time timestamp not null default current_timestamp
 , primary key({datasourceKeyColumns.ToString(",")})
 )"
 ;
+            return new SqlEventArgs(sql);
+        }
+
+        public SqlEventArgs GetCreateOffsetmapTableDDL(string tableName, Table dest, string offsetsourcePrefix, string offsetcomment)
+        {
+            var sql = $@"
+create table {tableName}
+(
+{dest.SequenceColumn.ColumnName} int8 not null unique
+, {offsetsourcePrefix}{dest.SequenceColumn.ColumnName} int8 not null unique
+, {offsetcomment} text
+, create_date_time timestamp not null default current_timestamp
+)";
             return new SqlEventArgs(sql);
         }
 

@@ -7,19 +7,19 @@ namespace KeyMapSync
     /// </summary>
     public class SqlResultArgs : EventArgs
     {
-        public SqlResultArgs(string sql, int count, object param = null)
+        public SqlResultArgs(SqlEventArgs owner, int count)
         {
-            Sql = sql;
-            Param = param;
+            Owner = owner;
             Count = count;
+            Timestamp = DateTime.Now;
         }
 
-        public string TableName { get; set; }
+        public SqlEventArgs Owner { get; }
 
-        public string Sql { get; set; }
+        public DateTime Timestamp { get; }
 
-        public object Param { get; set; }
+        public TimeSpan LapTime => Timestamp - Owner.Timestamp;
 
-        public int Count { get; set; }
+        public int Count { get;  }
     }
 }
