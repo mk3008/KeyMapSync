@@ -13,8 +13,6 @@ public class CreateTableCommand
         SelectSql = sql;
     }
 
-    public string WithQuery { get; set; } = string.Empty;
-
     public string Table { get; init; }
 
     public bool IsTemporary { get; set; } = true;
@@ -23,15 +21,10 @@ public class CreateTableCommand
 
     public SqlCommand ToSqlCommand()
     {
-
-        var temporary = IsTemporary ? "temporary " : null;
-        var with = WithQuery == string.Empty ? WithQuery : $"{WithQuery}\r\n";
-
+        var temporary = IsTemporary ? "temporary " : null;       
         var cmd = SelectSql.ToSqlCommand();
 
-        var sql = $@"create {temporary}table {Table}
-as
-{with}{cmd.CommandText};";
+        var sql = $"create {temporary}table {Table}\r\nas\r\n{cmd.CommandText};";
 
         return new SqlCommand() { CommandText = sql, Parameters = cmd.Parameters };
     }

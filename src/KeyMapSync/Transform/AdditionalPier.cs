@@ -19,30 +19,34 @@ public class AdditionalPier : PierBase
 
     public override string CteName => "_added";
 
-    private List<string> GetColumns()
-    {
-        var dst = this.GetDestination();
-        var seq = dst.Sequence;
-
-        var cols = new List<string>();
-        if (seq != null) cols.Add($"{seq.Command} as {seq.Column}");
-        cols.Add($"{this.GetInnerAlias()}.*");
-
-        return cols;
-    }
+    public override string AliasName => "d";
 
     public override string ToSelectQuery()
     {
-        var view = this.Abutment.ViewName;
+        var selectcmd = new SelectCommand();
 
-        var cmd = new SelectCommand()
+        var root = ToSelectTable();
+        selectcmd.SelectTables.Add(root);
+        selectcmd.WhereText = Filter.ToCondition(this).ToWhereSqlText();
+
+        return selectcmd.ToSqlCommand().CommandText;
+    }
+
+    public override SelectTable ToSelectTable()
+    {
+        var seq = this.GetDestination().Sequence;
+
+        var tbl = new SelectTable()
         {
-            Tables = { $"{view} {this.GetInnerAlias()}" },
-            Columns = GetColumns(),
-            WhereText = Filter.ToCondition(this).ToWhereSqlText(),
+            TableName = Abutment.ViewName,
+            AliasName = AliasName,
+            JoinType = JoinTypes.Root,
         };
 
-        return cmd.ToSqlCommand().CommandText;
+        tbl.AddSelectColumn("*");
+        //tbl.AddSelectColumn(seq.ToSelectColumn());
+
+        return tbl;
     }
 }
 

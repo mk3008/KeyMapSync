@@ -65,9 +65,9 @@ public class Destination
     /// <param name="d"></param>
     /// <param name="sequencePrefix"></param>
     /// <returns></returns>
-    public TablePair ToTablePair(Datasource d, string? sequencePrefix = null)
+    public TransferTablePair ToTablePair(Datasource d, string? sequencePrefix = null)
     {
-        var pair = new TablePair()
+        var pair = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = TableName

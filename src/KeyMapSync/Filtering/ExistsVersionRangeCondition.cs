@@ -30,7 +30,7 @@ public class ExistsVersionRangeCondition : IFilter
 
     public string ToCondition(IPier sender)
     {
-        var datasourceAlias = sender.GetInnerAlias();
+        var datasourceAlias = sender.AliasName;
 
         var ds = sender.GetDatasource();
         var vconfig = ds.Destination.VersioningConfig;

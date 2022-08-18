@@ -1,4 +1,5 @@
-﻿using KeyMapSync.Entity;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
 using KeyMapSync.Transform;
 using System;
 using System.Collections.Generic;
@@ -13,73 +14,64 @@ public class DifferentCondition : IFilter
 
     public Dictionary<string, object>? Parameters => null;
 
-    public string? ConditionInfo => BuildWhereSql("OWNER", new string[] { "DATASOURCE_ID" }, "EXPECT", Enumerable.Empty<string>());
+    public string? ConditionInfo => BuildWhereSql("OWNER", new() { "DATASOURCE_ID" }, "EXPECT", new());
 
-    public string BuildRemarksSql(IPier sender)
-    {
-        if (string.IsNullOrEmpty(RemarksColumn)) throw new NullReferenceException(nameof(RemarksColumn));
-        if (!(sender is ChangedPier changed)) throw new NotSupportedException();
+    private string GetDeleteCondition(string transed, string datasourcekey) => $"{transed}.{datasourcekey} is null";
 
-        var ds = sender.GetDatasource();
-
-        return BuildRemarksSql(changed.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
-    }
-
-    public string BuildRemarksSql(string datasourceAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
-    {
-        var sb = new StringBuilder();
-        sb.Append($"case when {ConvertToDeleteCondition(datasourceAlias, datasourceKeys)} then");
-        sb.AppendLine().Append("    'deleted'");
-        sb.AppendLine().Append("else");
-        sb.AppendLine().Append("    ");
-        var isFirst = true;
-        foreach (var item in inspectionColumns)
-        {
-            if (!isFirst) sb.AppendLine().Append("    || ");
-            sb.Append("case when ");
-            sb.Append(ConvertToDiffCondition(datasourceAlias, expectAlias, item));
-            sb.Append($" then '{item} is changed, ' else '' end");
-            isFirst = false;
-        }
-
-        sb.AppendLine().Append($"end as {RemarksColumn}");
-
-        return sb.ToString();
-    }
-
-    public string BuildWhereSql(string ownerAlias, IEnumerable<string> datasourceKeys, string expectAlias, IEnumerable<string> inspectionColumns)
-    {
-        var sb = new StringBuilder();
-        sb.Append("(");
-        sb.AppendLine().Append("    ");
-        sb.Append(ConvertToDeleteCondition(ownerAlias, datasourceKeys));
-
-        foreach (var item in inspectionColumns)
-        {
-            sb.AppendLine().Append("or  ");
-            sb.Append(ConvertToDiffCondition(ownerAlias, expectAlias, item));
-        }
-        sb.AppendLine().Append(")");
-
-        return sb.ToString();
-    }
-
-    private string ConvertToDeleteCondition(string datasourceAlias, IEnumerable<string> keys)
-    {
-        return $"{datasourceAlias}.{keys.First()} is null";
-    }
-
-    private string ConvertToDiffCondition(string datasourceAlias, string expectAlias, string column)
-    {
-        return $"not coalesce(({expectAlias}.{column} = {datasourceAlias}.{column}) or ({expectAlias}.{column} is null and {datasourceAlias}.{column} is null), false)";
-    }
+    private string GetDiffCondition(string transed, string current, string column) => $"coalesce(({transed}.{column} = {current}.{column}) or ({transed}.{column} is null and {current}.{column} is null), false)";
 
     public string ToCondition(IPier sender)
     {
-        if (!(sender is ChangedPier changed)) throw new NotSupportedException();
-
+        if (!(sender is ChangedPier changed)) throw new InvalidProgramException();
         var ds = sender.GetDatasource();
 
-        return BuildWhereSql(sender.GetInnerAlias(), ds.KeyColumns, changed.InnerExpectAlias, ds.InspectionColumns);
+        return BuildWhereSql(changed.TransformedAlias, ds.KeyColumns, changed.CurrentAlias, ds.InspectionColumns.ToList());
+    }
+
+    public SelectColumn ToRemarksColumn(IPier sender)
+    {
+        if (!(sender is ChangedPier changed)) throw new InvalidProgramException();
+        var ds = sender.GetDatasource();
+
+        return ToRemarksColumn(changed.TransformedAlias, ds.KeyColumns, changed.CurrentAlias, ds.InspectionColumns.ToList());
+    }
+
+    public SelectColumn ToRemarksColumn(string transed, List<string> datasourcekeys, string current, List<string> inspectionColumns)
+    {
+        var sb = new StringBuilder();
+        sb.Append($"case when {GetDeleteCondition(transed, datasourcekeys.First())} then 'deleted' else ");
+
+        var isFirst = true;
+        foreach (var item in inspectionColumns)
+        {
+            if (!isFirst) sb.Append(" || ");
+            sb.Append($"case when {GetDiffCondition(transed, current, item)} then '{item} is changed.' else '' end");
+            isFirst = false;
+        }
+        sb.Append("end");
+
+        var col = new SelectColumn()
+        {
+            ColumnName = RemarksColumn,
+            ColumnCommand = sb.ToString(),
+        };
+
+        return col;
+    }
+
+    private string BuildWhereSql(string transed, List<string> datasourcekeys, string current, List<string> inspectionColumns)
+    {
+        var sb = new StringBuilder();
+        sb.Append("(");
+        sb.Append(GetDeleteCondition(transed, datasourcekeys.First()));
+
+        foreach (var item in inspectionColumns)
+        {
+            sb.Append(" or ");
+            sb.Append(GetDiffCondition(transed, current, item));
+        }
+        sb.Append(")");
+
+        return sb.ToString();
     }
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Transform;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -29,4 +31,16 @@ public class VersioningConfig
     /// </summary>
     [Required]
     public VersionConfig VersionConfig { get; set; } = new();
+
+    public string ToSql() => $"select {Sequence.Command} as {Sequence.Column}";
+    
+    public CteQuery ToCteQuery()
+    {
+        var cte = new CteQuery()
+        {
+            AliasName = "_version",
+            Query = ToSql()
+        };
+        return cte;
+    }
 }

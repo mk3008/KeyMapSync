@@ -76,7 +76,7 @@ public class VersionConfig
     /// <param name="pier"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public TablePair ToTablePair(IPier pier)
+    public TransferTablePair ToTablePair(IPier pier)
     {
         var d = pier.GetDatasource();
 
@@ -85,7 +85,7 @@ public class VersionConfig
 
         var versionTable = ToDbTable(d, config);
 
-        var p = new TablePair()
+        var p = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = versionTable.Table

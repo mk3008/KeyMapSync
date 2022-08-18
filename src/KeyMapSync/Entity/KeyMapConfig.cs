@@ -66,11 +66,11 @@ public class KeyMapConfig
     /// <param name="d"></param>
     /// <param name="sequencePrefix"></param>
     /// <returns></returns>
-    public TablePair ToTablePair(Datasource d, string? sequencePrefix = null)
+    public TransferTablePair ToTablePair(Datasource d, string? sequencePrefix = null)
     {
         var keymapDbTable = ToDbTable(d);
 
-        var pair = new TablePair()
+        var pair = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = keymapDbTable.Table

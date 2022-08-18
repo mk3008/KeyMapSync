@@ -20,7 +20,7 @@ public class NotExistsKeyMapCondition : IFilter
         if (config == null) throw new NotSupportedException($"keymap is not supportes.(table:{ds.Destination.TableName})");
 
         var keymap = config.ToDbTable(ds).Table;
-        var datasourceAlias = sender.GetInnerAlias();
+        var datasourceAlias = sender.AliasName;
         var datasourceKeys = ds.KeyColumns;
         return BuildSql(keymap, datasourceAlias, datasourceKeys);
     }

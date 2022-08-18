@@ -1,5 +1,4 @@
 ﻿using KeyMapSync.DBMS;
-using KeyMapSync.DBMS;
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
@@ -11,52 +10,57 @@ namespace KeyMapSync.Transform;
 
 public static class IPierSqlExtension
 {
-    public static string GetInnerAlias(this IPier source)
+    public static List<CteQuery> GetCteQueries(this IPier source)
     {
-        return "__p";
-    }
+        var w = source.PreviousPrier?.GetCteQueries();
+        if (w == null) w = new List<CteQuery>();
 
-    public static string GetCteQuery(this IPier source)
-    {
-        var w = source.PreviousPrier?.GetCteQuery();
-        w = (w == null) ? "with\r\n" : $"{w},\r\n";
+        var cte = new CteQuery()
+        {
+            AliasName = source.CteName,
+            Query = source.ToSelectQuery()
+        };
 
-        var currentSql = source.ToSelectQuery();
-        // with sql
-        currentSql = $@"{source.CteName} as (
-{currentSql.AddIndent(4)}
-)";
+        w.Add(cte);
 
-        var sql = $@"{w}{currentSql}";
-        return sql;
+        return w;
     }
 
     public static SqlCommand ToCreateTableCommand(this IPier source)
     {
-        var columns = new List<string>();
-        var tables = new List<string>();
-        columns.Add($"{source.GetInnerAlias()}.*");
-        tables.Add($"{source.CteName} {source.GetInnerAlias()}");
+        var selectcmd = new SelectCommand()
+        {
+            CteQueries = source.GetCteQueries(),
+        };
+
+        var root = source.ToSelectTable();
+        selectcmd.SelectTables.Add(root);
 
         //header
-        var header = source.ToHeaderJoinInfo();
-        header.Columns.ForEach(x => columns.Add(x));
-        header.Tables.ForEach(x => tables.Add(x));
+        source.ToHeaderSelectTable(root).ForEach(x => selectcmd.SelectTables.Add(x));
 
         //version
         var vconfig = source.GetDestination().VersioningConfig;
         if (vconfig != null)
         {
-            columns.Add($"__version.{vconfig.Sequence.Column}");
-            tables.Add($"cross join ({source.ToSelectVersionSql()}) __version");
+            var cte = new CteQuery()
+            {
+                AliasName = "_version",
+                Query = source.ToSelectVersionSql()
+            };
+            selectcmd.CteQueries.Add(cte);
+
+            var tbl = new SelectTable()
+            {
+                TableName = cte.AliasName,
+                AliasName = "v",
+                JoinType = JoinTypes.Cross,
+            };
+            tbl.AddSelectColumn(vconfig.Sequence.Column);
+
+            selectcmd.SelectTables.Add(tbl);  
         }
 
-        var selectcmd = new SelectCommand()
-        {
-            WithQuery = source.GetCteQuery(),
-            Tables = tables,
-            Columns = columns,
-        };
         var prm = source.ToCreateTableParameter();
         if (prm != null) selectcmd.Parameters = prm;
 
@@ -85,31 +89,32 @@ public static class IPierSqlExtension
         return sql;
     }
 
-    private static (List<string> Columns, List<string> Tables) ToHeaderJoinInfo(this IPier source)
+    private static List<SelectTable> ToHeaderSelectTable(this IPier source, SelectTable root)
     {
+        var lst = new List<SelectTable>();
         var dest = source.GetDestination();
-
-        var columns = new List<string>();
-        var tables = new List<string>();
+        var cnt = 0;
 
         foreach (var item in dest.Groups)
         {
-            var alias = item.GetInnerAlias();
             var cols = item.GetColumnsWithoutKey();
-            var sql = @$"left join (
-    select
-        h.*
-        , {item.Sequence.Command} as {item.Sequence.Column}
-    from
-        (
-            select distinct {cols.ToString(", ")} from {source.ViewOrCteName}
-        ) h
-    ) {alias} on {cols.Select(x => $"{source.GetInnerAlias()}.{x} = {alias}.{x}").ToString(" and ")}";
+            var seq = item.Sequence.Column;
 
-            columns.Add($"{alias}.{item.Sequence.Column}");
-            tables.Add(sql);
+            var tbl = new SelectTable();
+
+            tbl.TableName = $"(select head.*, {item.Sequence.Command} as {item.Sequence.Column}) from (select distinct {cols.ToString(", ")} from {source.ViewOrCteName}) head)";
+            tbl.AliasName = $"g{cnt}";
+            tbl.AddSelectColumns(item.GetColumnsWithoutKey());
+
+            tbl.JoinFromTable = root;
+            tbl.JoinType = JoinTypes.Left;
+            tbl.AddJoinColumns(item.GetColumnsWithoutKey());
+
+            lst.Add(tbl);
+
+            cnt++;
         }
 
-        return (columns, tables);
+        return lst;
     }
 }

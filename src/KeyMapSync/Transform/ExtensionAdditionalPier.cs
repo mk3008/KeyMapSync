@@ -12,36 +12,35 @@ namespace KeyMapSync.Transform;
 
 public class ExtensionAdditionalPier : PierBase
 {
-    public ExtensionAdditionalPier(IBridge bridge) : base(bridge)
-    {
-    }
+    public ExtensionAdditionalPier(IBridge bridge) : base(bridge) { }
 
     public override string CteName => "_insert";
 
-    private List<string> GetColumns()
-    {
-        var dst = this.GetDestination();
-        var seq = dst.Sequence;
-
-        var cols = new List<string>();
-        if (seq != null) cols.Add($"{seq.Command} as {seq.Column}");
-        cols.Add($"{this.GetInnerAlias()}.*");
-
-        return cols;
-    }
+    public override string AliasName => "d";
 
     public override string ToSelectQuery()
     {
-        var view = this.Abutment.ViewName;
-
-        var cmd = new SelectCommand()
-        {
-            Tables = { $"{view} {this.GetInnerAlias()}" },
-            Columns = GetColumns(),
-            WhereText = Filter.ToCondition(this).ToWhereSqlText(),
-        };
+        var where = Filter.ToCondition(this).ToWhereSqlText();
+        var cmd = ToSelectTable().ToSelectCommand(where);
 
         return cmd.ToSqlCommand().CommandText;
+    }
+
+    public override SelectTable ToSelectTable()
+    {
+        var seq = this.GetDestination().Sequence;
+
+        var tbl = new SelectTable()
+        {
+            TableName = this.Abutment.ViewName,
+            AliasName = AliasName,
+            JoinType = JoinTypes.Root,
+        };
+
+        tbl.SelectColumns.Add(new SelectColumn() { ColumnName = "*" });
+        tbl.SelectColumns.Add(new SelectColumn() { ColumnName = seq.Column, ColumnCommand = seq.Command });
+
+        return tbl;
     }
 }
 

@@ -1,4 +1,5 @@
-﻿using KeyMapSync.Entity;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
@@ -29,13 +30,16 @@ public interface IAbutment : IBridge
 
 public interface IPier : IBridge
 {
+    string AliasName { get; }
 
     IPier? PreviousPrier { get; }
 
     string ToSelectQuery();
 
+    SelectTable ToSelectTable();
+
     FilterContainer Filter { get; }
 
-    public string CteName { get; }
+    string CteName { get; }
 }
 

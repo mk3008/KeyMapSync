@@ -81,11 +81,11 @@ public class OffsetConfig
     /// </summary>
     /// <param name="d"></param>
     /// <returns></returns>
-    public TablePair ToTablePair(Datasource d)
+    public TransferTablePair ToTablePair(Datasource d)
     {
         var offsetTable = ToDbTable(d);
 
-        var pair = new TablePair()
+        var pair = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = offsetTable.Table,
@@ -153,12 +153,12 @@ public class OffsetConfig
     /// </summary>
     /// <param name="d"></param>
     /// <returns></returns>
-    public TablePair ToTablePairForOffset(Datasource d)
+    public TransferTablePair ToTablePairForOffset(Datasource d)
     {
         var dest = d.Destination;
         var seq = dest.Sequence;
 
-        var pair = new TablePair()
+        var pair = new TransferTablePair()
         {
             FromTable = $"(select _new.offset_{seq.Column}, _old.* from {d.BridgeName} _new inner join {dest.TableName} _old on _new.{seq.Column} = _old.{seq.Column}) __p",
             ToTable = dest.TableName,

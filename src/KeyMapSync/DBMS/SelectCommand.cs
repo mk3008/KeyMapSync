@@ -8,11 +8,9 @@ namespace KeyMapSync.DBMS;
 
 public class SelectCommand
 {
-    public string WithQuery { get; set; } = string.Empty;
+    public List<CteQuery> CteQueries { get; set; } = new();
 
-    public List<string> Columns { get; set; } = new();
-
-    public List<string> Tables { get; set; } = new();
+    public List<SelectTable> SelectTables { get; set; } = new();
 
     public bool UseDistinct { get; set; } = false;
 
@@ -28,14 +26,32 @@ public class SelectCommand
 
     public SqlCommand ToSqlCommand()
     {
-        var with = WithQuery == string.Empty ? WithQuery : $"{WithQuery}\r\n";
+        var cte = new StringBuilder();
+        if (CteQueries.Any())
+        {
+            CteQueries.ForEach(x => cte.Append(((cte.Length == 0) ? "with\r\n" : ",\r\n") + x.ToSql()));
+            cte.AppendLine();
+        }
+
+        var table = new StringBuilder();
+        var column = new StringBuilder();
+        if (SelectTables.Any())
+        {
+            SelectTables.ForEach(x => table.Append(((table.Length == 0) ? "\r\nfrom\r\n" : "\r\n") + x.ToFromSql()));
+            table.AppendLine();
+
+            var lst = new List<string>();
+            SelectTables.ForEach(x => lst.AddRange(x.ToColumnSqls()));
+            column.AppendLine();
+            column.Append("    ");
+            column.AppendLine(lst.ToString(", "));
+            column.AppendLine();
+        }
+
         var distinct = UseDistinct ? " distinct" : "";
-        var column = Columns.ToString("\r\n, ").AddIndent(4);
-        var table = Tables.ToString("\r\n");
         var where = WhereText == string.Empty ? WhereText : $"\r\n{WhereText}";
-        var sql = $@"{with}select{distinct}
-{column}
-from {table}{where}";
+
+        var sql = $"{cte}select{distinct}{column}{table}{where}";
 
         return new SqlCommand() { CommandText = sql, Parameters = Parameters };
     }

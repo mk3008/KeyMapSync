@@ -50,9 +50,9 @@ public class GroupDestination
     /// </summary>
     /// <param name="d"></param>
     /// <returns></returns>
-    public TablePair ToTablePair(Datasource d)
+    public TransferTablePair ToTablePair(Datasource d)
     {
-        var pair = new TablePair()
+        var pair = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = TableName

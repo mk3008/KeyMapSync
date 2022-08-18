@@ -1,4 +1,5 @@
-﻿using KeyMapSync.Entity;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
 using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
@@ -20,56 +21,77 @@ public class ExpectPier : PierBase
 
     public override string CteName => "_expect";
 
+    public override string AliasName => "d";
+
     public override string ToSelectQuery()
     {
-        var ds = this.GetDatasource();
-        var dest = ds.Destination;
+        var selectcmd = new SelectCommand();
 
-        var tbl = dest.KeyMapConfig?.ToDbTable(ds);
-        if (tbl == null) throw new InvalidOperationException();
+        var root = ToSelectTable();
+        selectcmd.SelectTables.Add(root);
+        selectcmd.SelectTables.Add(GetMapTable(root));
+        selectcmd.SelectTables.AddRange(GetHeaderTables(root));
 
-        var keymap = tbl.Table;
-        var header = HeaderInfo();
-        var seq = dest.Sequence;
-
-        //columns
-        var columns = ds.KeyColumns.Select(x => $"__map.{x}").ToList();
-        header.Columns.ForEach(x => columns.Add(x));
-        columns.Add($"{this.GetInnerAlias()}.*");
-
-        //from table, join talbes
-        var tables = new List<string>();
-        tables.Add($"{dest.TableName} {this.GetInnerAlias()}");
-        header.Tables.ForEach(x => tables.Add(x));
-        if (seq != null) tables.Add($"inner join {keymap} __map on {this.GetInnerAlias()}.{seq.Column} = __map.{seq.Column}");
-
-        var column = columns.ToString("\r\n, ").AddIndent(4);
-        var table = tables.ToString("\r\n");
-
-        var sql = $@"select
-{column}
-from {table}
-{Filter.ToCondition(this).ToWhereSqlText()}";
-
-        return sql;
+        return selectcmd.ToSqlCommand().CommandText;
     }
 
-    private (List<string> Columns, List<string> Tables) HeaderInfo()
+    public override SelectTable ToSelectTable()
     {
-        var dest = this.GetDestination();
-
-        var columns = new List<string>();
-        var joins = new List<string>();
-
-        foreach (var item in dest.Groups)
+        var tbl = new SelectTable()
         {
-            var alias = item.GetInnerAlias();
-            var sql = @$"inner join {item.TableName} {alias} on {this.GetInnerAlias()}.{item.Sequence.Column} = {alias}.{ item.Sequence.Column}";
-            item.GetColumnsWithoutKey().ForEach(x => columns.Add($"{alias}.{x}"));
-            joins.Add(sql);
+            TableName = this.GetDatasource().Destination.TableName,
+            AliasName = AliasName,
+            JoinType = JoinTypes.Root,
+        };
+
+        tbl.SelectColumns.Add(new SelectColumn() { ColumnName = "*" });
+
+        return tbl;
+    }
+
+    public List<SelectTable> GetHeaderTables(SelectTable fromTable)
+    {
+        var lst = new List<SelectTable>();
+        var cnt = 0;
+
+        foreach (var item in this.GetDatasource().Destination.Groups)
+        {
+            var tbl = new SelectTable()
+            {
+                TableName = item.TableName,
+                AliasName = $"g{cnt}",
+                JoinType = JoinTypes.Inner,
+                JoinFromTable = fromTable,
+            };
+            tbl.JoinColumns.Add(item.Sequence.Column, item.Sequence.Column);
+            tbl.SelectColumns.AddRange(item.GetColumnsWithoutKey().Select(x => new SelectColumn() { ColumnName = x }));
+
+            lst.Add(tbl);
+            cnt++;
         }
 
-        return (columns, joins);
+        return lst;
+    }
+
+    public SelectTable GetMapTable(SelectTable fromTable)
+    {
+        var ds = this.GetDatasource();
+        var dest = this.GetDestination();
+        var keymap = this.GetDestination().KeyMapConfig?.ToDbTable(ds);
+        if (keymap == null) throw new InvalidOperationException();
+
+        var tbl = new SelectTable()
+        {
+            TableName = keymap.Table,
+            AliasName = "m",
+            JoinType = JoinTypes.Inner,
+            JoinFromTable = fromTable,
+        };
+
+        tbl.AddJoinColumn(dest.Sequence.Column);
+        tbl.AddSelectColumns(ds.KeyColumns);
+
+        return tbl;
     }
 }
 

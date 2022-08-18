@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KeyMapSync.DBMS;
 
-public class TablePair
+public class TransferTablePair
 {
     public string FromTable { get; set; } = string.Empty;
 
@@ -25,20 +25,19 @@ public class TablePair
         ColumnPairs.Add(new ColumnPair() { FromCloumn = column, ToColumn = column });
     }
 
-    public SelectCommand ToSelectCommand()
+    private SelectTable ToSelectTable()
     {
-        var cmd = new SelectCommand()
+        var tbl = new SelectTable()
         {
-            Tables = { FromTable },
-            Columns = ColumnPairs.Select(x => x.FromCloumn).ToList(),
-            WhereText = Where,
+            TableName = FromTable,
         };
-        return cmd;
+        tbl.SelectColumns.AddRange(ColumnPairs.Select(x => new SelectColumn() { ColumnName = x.ToColumn, ColumnCommand = x.FromCloumn }));
+        return tbl;
     }
 
     public InsertCommand ToInsertCommand()
     {
-        var s = ToSelectCommand();
+        var s = ToSelectTable().ToSelectCommand(Where);
         var cmd = new InsertCommand(ToTable, ColumnPairs.Select(x => x.ToColumn).ToList(), s);
         return cmd;
     }

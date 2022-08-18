@@ -18,7 +18,7 @@ public class CustomFilter : IFilter
 
     public string? ConditionInfo => string.Format(Condition, "DATASOURCE");
 
-    public string ToCondition(IPier sender) => string.Format(Condition, sender.GetInnerAlias());
+    public string ToCondition(IPier sender) => string.Format(Condition, sender.AliasName);
 
     public Dictionary<string, object> ToParameters() => Parameters;
 }

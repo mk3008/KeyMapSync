@@ -1,4 +1,5 @@
-﻿using System;
+﻿using KeyMapSync.DBMS;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -27,4 +28,6 @@ public class Sequence
     /// </example>
     [Required]
     public string Command { get; set; } = String.Empty;
+
+    public SelectColumn ToSelectColumn() => new SelectColumn() { ColumnName = Column, ColumnCommand = Command };
 }

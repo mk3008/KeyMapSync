@@ -55,13 +55,13 @@ public class SyncConfig
     /// <param name="sequencePrefix"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    public TablePair ToTablePair(Datasource d, string? sequencePrefix = null)
+    public TransferTablePair ToTablePair(Datasource d, string? sequencePrefix = null)
     {
         if (d.Destination.VersioningConfig == null) throw new InvalidOperationException();
 
         var syncTable = ToDbTable(d, d.Destination.VersioningConfig);
 
-        var p = new TablePair()
+        var p = new TransferTablePair()
         {
             FromTable = d.BridgeName,
             ToTable = syncTable.Table

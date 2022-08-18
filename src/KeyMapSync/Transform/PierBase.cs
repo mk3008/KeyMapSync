@@ -1,4 +1,5 @@
-﻿using KeyMapSync.Filtering;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Filtering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,5 +30,9 @@ public abstract class PierBase : IPier
 
     public IPier? CurrentPier => this;
 
+    public abstract string AliasName { get; }
+
     public abstract string ToSelectQuery();
+
+    public abstract SelectTable ToSelectTable();
 }

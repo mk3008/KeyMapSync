@@ -21,59 +21,112 @@ public class ChangedPier : PierBase
 
     public override string CteName => "_changed";
 
-    public string InnerExpectAlias { get; } = "__e";
+    public string TransformedAlias => "transed";
+
+    public string CurrentAlias => "current";
 
     private DifferentCondition DiffCondition { get; set; } = new DifferentCondition();
 
+    public override string AliasName => TransformedAlias;
+
     public override string ToSelectQuery()
     {
-        var config = this.GetDestination().KeyMapConfig;
-        if (config == null) throw new NotSupportedException($"keymap config is null.(destination:{this.GetDestination().TableName})");
+        var cmd = new SelectCommand();
 
-        var ds = this.GetDatasource();
-        var dest = this.GetDestination();
-        var view = Abutment.ViewName;
-        var keymap = config.ToDbTable(ds).Table;
+        var root = ToSelectTable();
+        var keymap = GetMapTable(root);
+        var current = GetCurrentTable(root, keymap);
 
-        var seq = dest.Sequence;
-        var keymapJoin = $"inner join {keymap} __map on {InnerExpectAlias}.{seq.Column} = __map.{seq.Column}";
-        var viewjoin = $"left join {view} {this.GetInnerAlias()} on {ds.KeyColumns.Select(x => $"__map.{x} = {this.GetInnerAlias()}.{x}").ToString(" and ")}";
-
-        var cmd = new SelectCommand()
-        {
-            Tables = { $"{PreviousBridge.ViewOrCteName} {InnerExpectAlias}", keymapJoin, viewjoin },
-            Columns = GetColumns(),
-            WhereText = Filter.ToCondition(this).ToWhereSqlText()
-        };
+        cmd.SelectTables.Add(root);
+        cmd.SelectTables.Add(keymap);
+        cmd.SelectTables.Add(current);
+        cmd.WhereText = Filter.ToCondition(this).ToWhereSqlText();
 
         return cmd.ToSqlCommand().CommandText;
     }
 
-    private List<string> GetColumns()
+    public override SelectTable ToSelectTable()
+    {
+        var dest = this.GetDestination();
+
+        //transformed destination data.
+        var tbl = new SelectTable()
+        {
+            TableName = PreviousBridge.ViewOrCteName,
+            AliasName = TransformedAlias,
+            JoinType = JoinTypes.Root,
+        };
+
+        //origin key
+        tbl.AddSelectColumn(dest.Sequence.Column);
+        //origin header key
+        tbl.AddSelectColumns(dest.Groups.Select(x => x.Sequence.Column).ToList());
+
+        return tbl;
+    }
+
+    private SelectTable GetMapTable(SelectTable fromTable)
     {
         var ds = this.GetDatasource();
-        var dest = ds.Destination;
+        var dest = this.GetDestination();
+        var keymap = this.GetDestination().KeyMapConfig?.ToDbTable(ds);
+        if (keymap == null) throw new InvalidOperationException();
 
-        var config = dest.KeyMapConfig;
-        if (config == null) throw new NotSupportedException();
-        var offsetconfig = config.OffsetConfig;
-        if (offsetconfig == null) throw new NotSupportedException();
+        var tbl = new SelectTable()
+        {
+            TableName = keymap.Table,
+            AliasName = "m",
+            JoinType = JoinTypes.Inner,
+            JoinFromTable = fromTable,
+        };
 
-        var cols = new List<string>();
-        //origin key
-        cols.Add($"{InnerExpectAlias}.{dest.Sequence.Column}");
-        //origin header key
-        dest.Groups.ForEach(x => cols.Add($"{InnerExpectAlias}.{x.Sequence.Column}"));
+        tbl.AddJoinColumn(dest.Sequence.Column);
+        tbl.AddSelectColumns(ds.KeyColumns);
+
+        return tbl;
+    }
+
+    private SelectTable GetCurrentTable(SelectTable transed, SelectTable keymapTable)
+    {
+        //current datasource data.
+        var ds = this.GetDatasource();
+        var dest = this.GetDestination();
+        var config = dest.KeyMapConfig?.OffsetConfig;
+        if (config == null) throw new InvalidProgramException();
+
+        var current = new SelectTable()
+        {
+            TableName = Abutment.ViewName,
+            AliasName = CurrentAlias,
+            JoinType = JoinTypes.Left,
+            JoinFromTable = keymapTable,
+        };
+
+        current.AddJoinColumns(ds.KeyColumns);
+
+        var offsetkey = new SelectColumn()
+        {
+            ColumnName = $"{config.OffsetColumnPrefix}{dest.Sequence.Column}",
+            ColumnCommand = $"{dest.Sequence.Command}"
+        };
+
+        var renewkey = new SelectColumn()
+        {
+            ColumnName = $"{config.RenewalColumnPrefix}{dest.Sequence.Column}",
+            ColumnCommand = $"case when {current.GetAliasName()}.{ds.KeyColumns.First()} is null then null else {dest.Sequence.Command} end"
+        };
+
         //offset key
-        cols.Add($"{dest.Sequence.Command} as {offsetconfig.OffsetColumnPrefix}{dest.Sequence.Column}");
+        current.SelectColumns.Add(offsetkey);
         //offset remarks
-        cols.Add(DiffCondition.BuildRemarksSql(this));
-        //renewal key
-        cols.Add($"case when {this.GetInnerAlias()}.{ds.KeyColumns.First()} is null then null else count(*) over() + {dest.Sequence.Command} end as {offsetconfig.RenewalColumnPrefix}{dest.Sequence.Column}");
-        //renewal values
-        cols.Add($"{this.GetInnerAlias()}.*");
+        current.SelectColumns.Add(DiffCondition.ToRemarksColumn(this));
 
-        return cols;
+        //renewal key
+        current.SelectColumns.Add(renewkey);
+        //renewal values
+        current.AddSelectColumn("*");
+
+        return current;
     }
 }
 

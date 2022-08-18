@@ -20,4 +20,12 @@ internal static class IDictionaryExtension
         if (additional != null) foreach (var item in additional) source[item.Key] = item.Value;
         return source;
     }
+
+    public static void ForEach(this Dictionary<string, string> source, Action<string, string> action)
+    {
+        foreach (var item in source.Keys)
+        {
+            action(item, source[item]);
+        }
+    }
 }
