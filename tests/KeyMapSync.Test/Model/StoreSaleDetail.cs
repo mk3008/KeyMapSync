@@ -14,7 +14,6 @@ namespace KeyMapSync.Test.Model
             var ds = new Datasource()
             {
                 TableName = "store_sale_detail",
-                BridgeName = "bridge_store_sale_detail",
                 Destination = IntegrationSaleDetail.GetDestination(),
                 Query = @"
 select
@@ -30,20 +29,17 @@ from
     store_sale_detail ssd
     inner join store_sale ss on ssd.store_sale_id = ss.store_sale_id
     inner join store_article sa on ssd.store_article_id = sa.store_article_id",
-
-                Columns = new() { "store_sale_detail_id", "sale_date", "store_article_id", "article_name", "unit_price", "quantity", "price", "remarks" },
-                KeyColumns = new() { "store_sale_detail_id" },
                 InspectionIgnoreColumns = new() { "store_article_id", "article_name", "remarks" },
             };
-            ds.Extensions.Add(GetExtensionDatasource(ds));
+            ds.KeyColumns.Add("store_sale_detail_id", DBMS.DbColumn.Types.Numeric);
+            ds.Extensions.Add(GetExtensionDatasource());
             return ds;
         }
 
-        private static Datasource GetExtensionDatasource(Datasource owner)
+        private static Datasource GetExtensionDatasource()
         {
             var ext = new Datasource()
             {
-                BridgeName = "bridge_store_shop_sale_detail_ex",
                 Destination = ExtSroteSaleDetaiil.GetDestination(),
                 Query = $@"
 select
@@ -51,7 +47,7 @@ select
     , store_article_id
     , remarks
 from
-    {owner.BridgeName}
+    bridge
 where
     store_article_id is not null"
             };

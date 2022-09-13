@@ -20,7 +20,7 @@ public class DbTable
 
     public List<DbColumn> DbColumns { get; set; } = new();
 
-    public List<string> GetColumnsWithoutKey() => DbColumns.Where(x => !Primarykeys.Contains(x.Column)).Select(x => x.Column).ToList();
+    public List<string> GetInsertColumns() => DbColumns.Where(x => !Primarykeys.Contains(x.Column)).Select(x => x.Column).ToList();
 
     public void AddDbColumn(string columnName, Types type = Types.Numeric, bool isNullable = false)
     {
@@ -40,6 +40,7 @@ public class DbColumn
     {
         Numeric = 0,
         Text = 1,
-        Timestamp = 2
+        Timestamp = 2, 
+        Date = 3,
     }
 }

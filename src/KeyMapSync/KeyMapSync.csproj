@@ -7,21 +7,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Filtering\**" />
     <Compile Remove="KeyMapSync\**" />
+    <Compile Remove="Transform\**" />
     <Compile Remove="_Database\**" />
     <Compile Remove="_Data\**" />
     <Compile Remove="_Load\**" />
     <Compile Remove="_mapping\**" />
     <Compile Remove="_map\**" />
     <Compile Remove="_Transform\**" />
+    <EmbeddedResource Remove="Filtering\**" />
     <EmbeddedResource Remove="KeyMapSync\**" />
+    <EmbeddedResource Remove="Transform\**" />
     <EmbeddedResource Remove="_Database\**" />
     <EmbeddedResource Remove="_Data\**" />
     <EmbeddedResource Remove="_Load\**" />
     <EmbeddedResource Remove="_mapping\**" />
     <EmbeddedResource Remove="_map\**" />
     <EmbeddedResource Remove="_Transform\**" />
+    <None Remove="Filtering\**" />
     <None Remove="KeyMapSync\**" />
+    <None Remove="Transform\**" />
     <None Remove="_Database\**" />
     <None Remove="_Data\**" />
     <None Remove="_Load\**" />
@@ -34,25 +40,19 @@
     <Compile Remove="Entity\ExtensionDatasource.cs" />
     <Compile Remove="Entity\ExtensionDestination.cs" />
     <Compile Remove="EnumerableExtension.cs" />
-    <Compile Remove="Filtering\FilterExtension.cs" />
-    <Compile Remove="Filtering\IAdditionalCondition.cs" />
-    <Compile Remove="Filtering\IExistsCondition.cs" />
     <Compile Remove="ICustomDatasource.cs" />
     <Compile Remove="IValidateOption.cs" />
-    <Compile Remove="Result.cs" />
     <Compile Remove="Synchronizer.Delete.cs" />
-    <Compile Remove="Synchronizer.Insert.cs" />
-    <Compile Remove="Synchronizer.Offset.cs" />
-    <Compile Remove="Transform\BridgeBase.cs" />
-    <Compile Remove="Transform\FilterPier.cs" />
-    <Compile Remove="Transform\InsertLoad.cs" />
-    <Compile Remove="Transform\RemoveLoad.cs" />
-    <Compile Remove="Transform\UnSynchronizedCondition.cs" />
     <Compile Remove="ValidateOption.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.78" />
+    <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Utf8Json" Version="1.3.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\SqlModel.Dapper\src\SqModel.Dapper\SqModel.Dapper.csproj" />
+    <ProjectReference Include="..\..\..\SqModel\src\SqModel\SqModel.csproj" />
   </ItemGroup>
 </Project>

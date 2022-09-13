@@ -6,27 +6,38 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="BridgeTest\**" />
     <Compile Remove="Datasouce\**" />
+    <Compile Remove="DatasourceTest\**" />
     <Compile Remove="Filter\**" />
+    <EmbeddedResource Remove="BridgeTest\**" />
     <EmbeddedResource Remove="Datasouce\**" />
+    <EmbeddedResource Remove="DatasourceTest\**" />
     <EmbeddedResource Remove="Filter\**" />
+    <None Remove="BridgeTest\**" />
     <None Remove="Datasouce\**" />
+    <None Remove="DatasourceTest\**" />
     <None Remove="Filter\**" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="BridgeRootTest.cs" />
-    <Compile Remove="BridgeTest\FilterBridgeTest.cs" />
     <Compile Remove="CascadeTest.cs" />
     <Compile Remove="CorporationDatasourceMap.cs" />
     <Compile Remove="CustomerDatasourceMap.cs" />
+    <Compile Remove="DBTest\SqliteInsertTest.cs" />
+    <Compile Remove="DBTest\SqliteOffsetTest.cs" />
+    <Compile Remove="DBTest\SqliteSyntaxTest.cs" />
+    <Compile Remove="FilterTest\DifferentConditionTest.cs" />
+    <Compile Remove="FilterTest\ExistsVersionRangeConditionTest.cs" />
+    <Compile Remove="FilterTest\NotExistsKeyMapConditionTest.cs" />
     <Compile Remove="SynchronizerDeleteTest.cs" />
     <Compile Remove="SynchronizerTest.cs" />
     <Compile Remove="SyncMapBuilderTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.78" />
+    <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
     <PackageReference Include="Npgsql" Version="5.0.1.1" />
     <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
@@ -63,5 +74,9 @@
     <None Update="database.sqlite">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="FilterTest\" />
   </ItemGroup>
 </Project>

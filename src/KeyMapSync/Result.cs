@@ -1,31 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace KeyMapSync
+namespace KeyMapSync;
+
+public interface IResult
 {
-    public class Result
-    {
-        public TimeSpan Elapsed { get; set; }
+}
 
-        public bool IsBridge { get; set; }
+public class Result : IResult
+{
+    public string? Table { get; set; } = String.Empty;
 
-        public string Destination { get; set; }
+    public int Count { get; set; } = 0;
+}
 
-        public int Count { get; set; }
+public class Results : IResult
+{
+    public string Name { get; set; } = String.Empty;
 
-        public IList<Result> InnerResults { get; } = new List<Result>();
+    public List<IResult> Collection { get; set; } = new();
 
-        public IEnumerable<Result> All()
-        {
-            yield return this;
+    internal void Add(IResult result)
+        => Collection.Add(result);
 
-            foreach (var res in InnerResults)
-            {
-                foreach (var item in res.All())
-                {
-                    yield return item;
-                } 
-            }
-        }
-    }
+    internal void AddRange(List<Result> results)
+        => results.ForEach(x => Collection.Add(x));
 }

@@ -1,12 +1,12 @@
 ﻿using KeyMapSync.Validation;
 using KeyMapSync.DBMS;
-using KeyMapSync.Transform;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static KeyMapSync.DBMS.DbColumn;
 
 namespace KeyMapSync.Entity;
 
@@ -35,17 +35,6 @@ public class Datasource
     public string TableName { get; set; } = String.Empty;
 
     /// <summary>
-    /// Temporary table name to use when transferring data.
-    /// If you use an extended data source, 
-    /// this table will be the data source.
-    /// </summary>
-    /// <example>
-    /// "ec_shop_sales_detail_bridge"
-    /// </example>
-    [Required]
-    public string BridgeName { get; set; } = String.Empty;
-
-    /// <summary>
     /// Select query string.
     /// </summary>
     /// <example>
@@ -70,18 +59,7 @@ public class Datasource
     /// {"ec_shop_sales_id", "ex_shop_sales_dtail_id"}
     /// </example>
     [ListRequired]
-    public List<string> KeyColumns { get; set; } = new();
-
-    /// <summary>
-    /// Data source column information. 
-    /// Used during transfer. 
-    /// Please define including the key column.
-    /// </summary>
-    /// <example>
-    /// "ec_shop_sales_id", "sales_date", "article_name", "unit_price", "quantity", "price"}
-    /// </example>
-    [ListRequired]
-    public List<string> Columns { get; set; } = new();
+    public Dictionary<string, Types> KeyColumns { get; set; } = new();
 
     /// <summary>
     /// A list of columns to exclude from inspection when offsetting.
@@ -90,11 +68,6 @@ public class Datasource
     /// "article_name"
     /// </example>
     public List<string> InspectionIgnoreColumns { get; set; } = new();
-
-    /// <summary>
-    /// A list to be inspected at the time of offset.
-    /// </summary>
-    public IEnumerable<string> InspectionColumns => Columns.Where(x => !InspectionIgnoreColumns.Contains(x)).Where(x => !KeyColumns.Contains(x));
 
     /// <summary>
     /// Extended data source. 
@@ -111,25 +84,45 @@ public class Datasource
     /// </summary>
     public List<Datasource> OffsetExtensions { get; set; } = new();
 
-    /// <summary>
-    /// Convert to a group of control tables.
-    /// </summary>
-    /// <returns></returns>
-    public List<DbTable> ToSystemDbTables()
+    public string? GetKeymapTableName()
     {
-        var lst = new List<DbTable>();
+        var config = Destination.KeyMapConfig;
+        if (config == null) return null;
+        return string.Format(config.TableNameFormat, Destination.TableName, TableName);
+    }
 
-        if (Destination.KeyMapConfig != null) lst.Add(Destination.KeyMapConfig.ToDbTable(this));
-        if (Destination.VersioningConfig != null)
-        {
-            var config = Destination.VersioningConfig;
-            lst.Add(config.SyncConfig.ToDbTable(this, config));
-            lst.Add(config.VersionConfig.ToDbTable(this, config));
-        }
-        if (Destination.KeyMapConfig?.OffsetConfig != null) lst.Add(Destination.KeyMapConfig.OffsetConfig.ToDbTable(this));
+    public string? GetSyncTableName()
+    {
+        var config = Destination.VersioningConfig?.SyncConfig;
+        if (config == null) return null;
+        return string.Format(config.TableNameFormat, Destination.TableName);
+    }
 
-        return lst;
+    public string? GetVersionTableName()
+    {
+        var config = Destination.VersioningConfig?.VersionConfig;
+        if (config == null) return null;
+        return string.Format(config.TableNameFormat, Destination.TableName);
+    }
+
+    public string? GetOffsetTableName()
+    {
+        var config = Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) return null;
+        return string.Format(config.TableNameFormat, Destination.TableName);
+    }
+
+    public string? GetOffsetColumnName()
+    {
+        var config = Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) return null;
+        return $"{config.OffsetColumnPrefix}{Destination.Sequence.Column}";
+    }
+
+    public string? GetRenewalColumnName()
+    {
+        var config = Destination.KeyMapConfig?.OffsetConfig;
+        if (config == null) return null;
+        return $"{config.RenewalColumnPrefix}{Destination.Sequence.Column}";
     }
 }
-
-
