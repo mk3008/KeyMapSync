@@ -2,8 +2,12 @@
 
 namespace KeyMapSync;
 
-public interface IDBMS {
-
+public interface IDBMS
+{
     string ToCreateTableSql(DbTable tbl);
+
+    string ConcatFunctionToken { get; }
+
+    string ConcatSplitToken { get; }
 }
 

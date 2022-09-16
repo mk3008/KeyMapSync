@@ -31,7 +31,7 @@ public class Synchronizer
 
     public Results Offset(IDbConnection connection, Datasource datasource, Action<SelectQuery>? act = null)
     {
-        var exe = new OffsetSynchronizer(connection, datasource, act) { Logger = Logger, Timeout = Timeout }; ;
+        var exe = new OffsetSynchronizer(connection, datasource, Dbms, act) { Logger = Logger, Timeout = Timeout }; ;
         return exe.Offset();
     }
 }

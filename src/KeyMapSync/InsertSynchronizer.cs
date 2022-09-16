@@ -13,6 +13,17 @@ namespace KeyMapSync;
 
 public class InsertSynchronizer
 {
+    internal InsertSynchronizer(OffsetSynchronizer owner, Datasource datasource, Action<SelectQuery> injector)
+    {
+        Connection = owner.Connection;
+        Datasource = datasource;
+        Timeout = owner.Timeout;
+        Injector = injector;
+
+        var tmp = BridgeNameBuilder.GetName(datasource.DatasourceName).Substring(0, 4);
+        BridgeName = $"{owner.BridgeName}_{tmp}";
+    }
+
     private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery> injector)
     {
         Connection = owner.Connection;
@@ -190,7 +201,13 @@ public class InsertSynchronizer
         if (config == null) return sq;
 
         var seq = config.Sequence;
-        sq.FromClause.CrossJoin(q => q.Select(seq.Command).As(seq.Column)).As(alias);
+
+        var v = sq.With.Add(q =>
+        {
+            q.Select(seq.Command).As(seq.Column);
+        }).As(alias);
+
+        sq.FromClause.CrossJoin(v);
         sq.Select.Add().Column(alias, seq.Column);
 
         return sq;
@@ -301,7 +318,7 @@ public class InsertSynchronizer
         var bridge = sq.FromClause;
 
         //select
-        Datasource.KeyColumns.ForEach(x => sq.Select(x.Key).As(x.Key));
+        Datasource.KeyColumns.ForEach(x => sq.Select(bridge, x.Key));
 
         var q = sq.ToInsertQuery(map);
         return ExecuteQuery(q);

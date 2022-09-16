@@ -2,36 +2,6 @@
 
 public static class EcShop
 {
-    public static string InitializeSql => @"
-drop table if exists ec_shop_article
-;
-drop table if exists ec_shop_sale
-;
-drop table if exists ec_shop_sale_detail
-;
-create table ec_shop_article (
-    ec_shop_article_id integer primary key autoincrement,
-    article_name text, 
-    unit_price integer,
-    create_timestamp timestamp
-)
-;
-create table ec_shop_sale (
-    ec_shop_sale_id integer primary key autoincrement,
-    sale_date date, 
-    create_timestamp timestamp
-)
-;
-create table ec_shop_sale_detail (
-    ec_shop_sale_detail_id integer primary key autoincrement,
-    ec_shop_sale_id integer,
-    ec_shop_article_id integer,
-    unit_price integer, 
-    quantity integer, 
-    price integer
-)
-;";
-
     public static string CreateDataSql => @"
 insert into ec_shop_article (ec_shop_article_id, article_name, unit_price, create_timestamp)
 values 

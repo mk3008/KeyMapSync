@@ -2,37 +2,6 @@
 
 public static class Store
 {
-    public static string InitializeSql => @"
-drop table if exists store_article
-;
-drop table if exists store_sale
-;
-drop table if exists store_sale_detail
-;
-create table store_article (
-    store_article_id integer primary key autoincrement,
-    article_name text, 
-    unit_price integer,
-    create_timestamp timestamp
-)
-;
-create table store_sale (
-    store_sale_id integer primary key autoincrement,
-    sale_date date, 
-    create_timestamp timestamp
-)
-;
-create table store_sale_detail (
-    store_sale_detail_id integer primary key autoincrement,
-    store_sale_id integer,
-    store_article_id integer,
-    unit_price integer, 
-    quantity integer, 
-    price integer, 
-    remarks text
-)
-;";
-
     public static string CreateDataSql => @"
 insert into store_article (store_article_id, article_name, unit_price, create_timestamp)
 values 

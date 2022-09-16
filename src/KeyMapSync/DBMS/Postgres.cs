@@ -1,22 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Data;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace KeyMapSync.DBMS;
 
-public class SQLite : IDBMS
+public class Postgres : IDBMS
 {
     private static int TableNameMaxLength => 128;
 
-    public string ConcatFunctionToken => "";
+    public string ConcatFunctionToken => "concat";
 
-    public string ConcatSplitToken => " || ";
+    public string ConcatSplitToken => ", ";
 
     public string ToCreateTableSql(DbTable tbl)
     {
         var types = new Dictionary<DbColumn.Types, string>();
-        types[DbColumn.Types.Numeric] = " integer";
+        types[DbColumn.Types.Numeric] = " int8";
         types[DbColumn.Types.Text] = " text";
         types[DbColumn.Types.Timestamp] = " timestamp";
 
@@ -25,7 +26,7 @@ public class SQLite : IDBMS
         nulls[false] = " not null";
 
         var seqs = new Dictionary<bool, string>();
-        seqs[true] = " autoincrement";
+        seqs[true] = " serial8";
         seqs[false] = "";
 
         var defs = new Dictionary<DbColumn.Types, string>();
@@ -37,11 +38,11 @@ public class SQLite : IDBMS
         {
             if (x.Column == tbl.Sequence?.Column)
             {
-                return $"{x.Column}{types[x.ColumnType]} primary key autoincrement";
+                return $"{x.Column}{seqs[true]} primary key";
             }
             else
             {
-                return $"{x.Column}{types[x.ColumnType]}{nulls[x.IsNullable]}{seqs[x.Column == tbl.Sequence?.Column]}{defs[x.ColumnType]}";
+                return $"{x.Column}{types[x.ColumnType]}{seqs[false]} {nulls[x.IsNullable]}{defs[x.ColumnType]}";
             }
         }).ToList();
 

@@ -14,30 +14,12 @@ namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    private OffsetSynchronizer(OffsetSynchronizer owner, Datasource datasource, Action<SelectQuery> injector)
-    {
-        Connection = owner.Connection;
-        Datasource = owner.Datasource;
-        Timeout = owner.Timeout;
-        Injector = injector;
-
-        if (datasource.Destination.KeyMapConfig == null) throw new InvalidOperationException();
-        if (datasource.Destination.KeyMapConfig.OffsetConfig == null) throw new InvalidOperationException();
-        if (datasource.Destination.VersioningConfig == null) throw new InvalidOperationException();
-
-        VersioningConfig = datasource.Destination.VersioningConfig;
-        VersionConfig = VersioningConfig.VersionConfig;
-        OffsetConfig = datasource.Destination.KeyMapConfig.OffsetConfig;
-
-        var tmp = BridgeNameBuilder.GetName(datasource.DatasourceName).Substring(0, 4);
-        BridgeName = $"{owner}_{tmp}";
-    }
-
-    public OffsetSynchronizer(IDbConnection connection, Datasource datasource, Action<SelectQuery>? injector = null)
+    public OffsetSynchronizer(IDbConnection connection, Datasource datasource, IDBMS dbms, Action<SelectQuery>? injector = null)
     {
         Connection = connection;
         Datasource = datasource;
         Injector = injector;
+        Dbms = dbms;
 
         if (datasource.Destination.KeyMapConfig == null) throw new InvalidOperationException();
         if (datasource.Destination.KeyMapConfig.OffsetConfig == null) throw new InvalidOperationException();
@@ -51,17 +33,19 @@ public class OffsetSynchronizer
         BridgeName = $"_{tmp}";
     }
 
+    private IDBMS Dbms { get; init; }
+
     public Action<string>? Logger { get; set; } = null;
 
     public int? Timeout { get; set; } = null;
 
-    private IDbConnection Connection { get; init; }
+    internal IDbConnection Connection { get; init; }
 
     private Action<SelectQuery>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
-    private string BridgeName { get; init; }
+    internal string BridgeName { get; init; }
 
     private Destination Destination => Datasource.Destination;
 
@@ -157,13 +141,13 @@ public class OffsetSynchronizer
         results.Add(new Result() { Table = Datasource.GetVersionTableName(), Count = 1 });
 
         //nest
-        Datasource.Extensions.ForEach(x =>
+        Datasource.OffsetExtensions.ForEach(x =>
         {
             //replace root table injector
             Action<SelectQuery> act = q => q.FromClause.TableName = BridgeName;
 
-            var s = new OffsetSynchronizer(this, x, act);
-            results.Add(s.Offset());
+            var s = new InsertSynchronizer(this, x, act) { Logger = Logger }; ;
+            results.Add(s.Insert());
         });
         return results;
     }
@@ -222,7 +206,7 @@ public class OffsetSynchronizer
         var alias = "d";
 
         var sq = new SelectQuery();
-        var d = sq.From(Datasource.TableName).As(alias);
+        var d = sq.From(Destination.TableName).As(alias);
         sq.SelectAll(d);
 
         // relation
@@ -255,7 +239,7 @@ public class OffsetSynchronizer
         var e = sq.From(expectalias);
         var d = e.LeftJoin(SqlParser.Parse(Datasource.Query)).As(alias).On(x =>
         {
-            Datasource.KeyColumns.ForEach(col => x.And().Equals(col.Key));
+            Datasource.KeyColumns.ForEach(col => x.Add().Equal(col.Key));
         });
 
         var cols = Destination.GetInsertColumns().ToList();
@@ -289,7 +273,7 @@ public class OffsetSynchronizer
                 {
                     whereDeleted(g);
                     whereChanged(g);
-                }).Then(e, Destination.Sequence.Column);
+                }).Then(Destination.Sequence.Command);
                 w.Add().ElseNull();
             }).As(OffsetIdColumn);
         };
@@ -301,14 +285,14 @@ public class OffsetSynchronizer
                 w.Add().WhenGroup(g =>
                 {
                     whereChanged(g);
-                }).Then(e, Destination.Sequence.Column);
+                }).Then(Destination.Sequence.Command);
                 w.Add().ElseNull();
             }).As(RenewalIdColumn);
         };
 
         var selectRemarks = (SelectItem item) =>
         {
-            item.Concat(lst =>
+            item.Concat(Dbms.ConcatFunctionToken, Dbms.ConcatSplitToken, lst =>
             {
                 //case when datasource_id is null then 'deleted' end
                 lst.Add().CaseWhen(w =>
@@ -330,13 +314,15 @@ public class OffsetSynchronizer
                                 g2.Add().And().Column(e, col).IsNull();
                                 g2.Add().And().Column(d, col).IsNull();
                             });
-                        }).Then($"'{col} is changed', ");
+                        }).Then($"'{col} is changed,'");
                     });
                 });
             }).As(OffsetRemarksColumn);
         };
 
         //select
+        InjectSelectVersion(sq);
+        sq.Select(e, Destination.Sequence.Column);
         selectOffsetId(sq.Select.Add());
         selectRenewalId(sq.Select.Add());
         sq.SelectAll(d);
@@ -351,6 +337,26 @@ public class OffsetSynchronizer
                 whereChanged(g);
             }).Then(true);
         });
+
+        return sq;
+    }
+
+    private SelectQuery InjectSelectVersion(SelectQuery sq)
+    {
+        var alias = "v";
+
+        var config = VersioningConfig;
+        if (config == null) return sq;
+
+        var seq = config.Sequence;
+
+        var v = sq.With.Add(q =>
+        {
+            q.Select(seq.Command).As(seq.Column);
+        }).As(alias);
+
+        sq.FromClause.CrossJoin(v);
+        sq.Select.Add().Column(alias, seq.Column);
 
         return sq;
     }
@@ -376,17 +382,17 @@ public class OffsetSynchronizer
             {
                 if (OffsetConfig.SignInversionColumns.Contains(x))
                 {
-                    sq.Select.Add().Value($"{origin}.{x} * -1").As(x);
+                    sq.Select.Add().Value($"{origin.AliasName}.{x} * -1").As(x);
                 }
                 else
                 {
-                    sq.Select.Add().Column(origin, x).As(x);
+                    sq.Select.Add().Column(origin.AliasName, x).As(x);
                 }
             });
         };
 
         //select
-        sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
+        sq.Select(bridge, OffsetIdColumn).As(Destination.Sequence.Column);
         selectOffsetColumns();
 
         var q = sq.ToInsertQuery(Destination.TableName);
@@ -459,8 +465,8 @@ public class OffsetSynchronizer
         //select
         sq.Distinct();
         sq.Select(bridge, VersioningConfig.Sequence.Column);
-        sq.Select(bridge, ":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.DatasourceName);
-        sq.Select(bridge, ":query").As(VersionConfig.BridgeCommandColumn).Parameter(":query", bridgequery.ToQuery().CommandText);
+        sq.Select(":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.DatasourceName);
+        sq.Select(":query").As(VersionConfig.BridgeCommandColumn).Parameter(":query", bridgequery.ToQuery().CommandText);
 
         var q = sq.ToInsertQuery(ver);
         return ExecuteQuery(q);
@@ -505,7 +511,7 @@ public class OffsetSynchronizer
 
         //select
         sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
-        Datasource.KeyColumns.ForEach(x => sq.Select(x.Key));
+        Datasource.KeyColumns.ForEach(x => sq.Select(bridge, x.Key));
 
         //where
         sq.Where.Add().Column(bridge, RenewalIdColumn).IsNotNull();
@@ -528,6 +534,7 @@ public class OffsetSynchronizer
         var w = new WhereClause();
         w.ConditionGroup.Add().Exists(x =>
         {
+            x.SelectAll();
             var bridge = x.From(BridgeName).As("bridge");
             var id = Destination.Sequence.Column;
             x.Where.Add().Column(bridge, id).Equal(map, id);

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KeyMapSync.Test.Model
+namespace KeyMapSync.Test.Model.Sqlite
 {
     internal class StoreSaleDetail
     {

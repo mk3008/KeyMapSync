@@ -25,8 +25,6 @@
     <Compile Remove="CascadeTest.cs" />
     <Compile Remove="CorporationDatasourceMap.cs" />
     <Compile Remove="CustomerDatasourceMap.cs" />
-    <Compile Remove="DBTest\SqliteInsertTest.cs" />
-    <Compile Remove="DBTest\SqliteOffsetTest.cs" />
     <Compile Remove="DBTest\SqliteSyntaxTest.cs" />
     <Compile Remove="FilterTest\DifferentConditionTest.cs" />
     <Compile Remove="FilterTest\ExistsVersionRangeConditionTest.cs" />
