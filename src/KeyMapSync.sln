@@ -6,21 +6,12 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PostgresSample", "..\samples\PostgresSample\PostgresSample.csproj", "{B751BBCF-1551-4D84-A94A-56A656D2E561}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyMapSync", "KeyMapSync\KeyMapSync.csproj", "{6F2896ED-B293-4C0B-81FD-2207A4168AF5}"
-	ProjectSection(ProjectDependencies) = postProject
-		{3FAC792E-B6F0-4E4A-9C87-70819BEF3908} = {3FAC792E-B6F0-4E4A-9C87-70819BEF3908}
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SQLiteSample", "..\samples\SQLiteSample\SQLiteSample.csproj", "{993D91A2-2B7B-4470-AB05-6CC8293B1319}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyMapSync.Test", "..\tests\KeyMapSync.Test\KeyMapSync.Test.csproj", "{1D98EBAF-C275-4DC2-9851-E4D21FE3FDDB}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KeyMapSync.HeaderTest", "KeyMapSync.HeaderTest\KeyMapSync.HeaderTest.csproj", "{C18AB6A7-47E8-4E82-8E34-0A91E7F886FF}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqModel", "..\..\SqModel\src\SqModel\SqModel.csproj", "{3FAC792E-B6F0-4E4A-9C87-70819BEF3908}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqModelTest", "..\..\SqModel\test\SqModelTest\SqModelTest.csproj", "{FABEDBA9-6AE1-49A5-96F8-C922C542EF0F}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqModel.Dapper", "..\..\SqlModel.Dapper\src\SqModel.Dapper\SqModel.Dapper.csproj", "{B66DE594-6F20-4443-B1DC-C6B234107629}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,18 +39,6 @@ Global
 		{C18AB6A7-47E8-4E82-8E34-0A91E7F886FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C18AB6A7-47E8-4E82-8E34-0A91E7F886FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C18AB6A7-47E8-4E82-8E34-0A91E7F886FF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3FAC792E-B6F0-4E4A-9C87-70819BEF3908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3FAC792E-B6F0-4E4A-9C87-70819BEF3908}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3FAC792E-B6F0-4E4A-9C87-70819BEF3908}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3FAC792E-B6F0-4E4A-9C87-70819BEF3908}.Release|Any CPU.Build.0 = Release|Any CPU
-		{FABEDBA9-6AE1-49A5-96F8-C922C542EF0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{FABEDBA9-6AE1-49A5-96F8-C922C542EF0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{FABEDBA9-6AE1-49A5-96F8-C922C542EF0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{FABEDBA9-6AE1-49A5-96F8-C922C542EF0F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B66DE594-6F20-4443-B1DC-C6B234107629}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B66DE594-6F20-4443-B1DC-C6B234107629}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B66DE594-6F20-4443-B1DC-C6B234107629}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B66DE594-6F20-4443-B1DC-C6B234107629}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

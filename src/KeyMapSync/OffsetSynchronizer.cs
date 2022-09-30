@@ -531,7 +531,7 @@ public class OffsetSynchronizer
         var map = Datasource.GetKeymapTableName();
         if (map == null) throw new InvalidProgramException();
 
-        var w = new WhereClause();
+        var w = new ConditionClause("where");
         w.ConditionGroup.Add().Exists(x =>
         {
             x.SelectAll();
