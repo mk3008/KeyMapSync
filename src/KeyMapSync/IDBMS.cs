@@ -1,4 +1,5 @@
 ﻿using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
 
 namespace KeyMapSync;
 
@@ -6,8 +7,16 @@ public interface IDBMS
 {
     string ToCreateTableSql(DbTable tbl);
 
-    string ConcatFunctionToken { get; }
+    string GetSequenceSql();
 
-    string ConcatSplitToken { get; }
+    string GetColumnsSql();
+
+    string GetKeyColumnsSql();
+
+    //Destination ResolveDestination(string destinationname);
+
+    //string ConcatFunctionToken { get; }
+
+    //string ConcatSplitToken { get; }
 }
 

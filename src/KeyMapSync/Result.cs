@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace KeyMapSync;
+﻿namespace KeyMapSync;
 
 public interface IResult
 {

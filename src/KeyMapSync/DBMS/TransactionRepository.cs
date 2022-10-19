@@ -1,0 +1,52 @@
+﻿using Dapper;
+using KeyMapSync.Entity;
+using SqModel.Analysis;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+
+namespace KeyMapSync.DBMS;
+
+public class TransactionRepository
+{
+    public TransactionRepository(IDbConnection connection)
+    {
+        Connection = connection;
+    }
+
+    public IDbConnection Connection { get; init; }
+
+    public void CreateTableOrDefault()
+    {
+        var sql = @$"create table if exists kms_transactions (
+    kms_transaction_id serial8 not null primary key
+    , destination_id int8 not null
+    , datasource_id int8 not null
+    , argument text not null
+    , created_at timestamp default current_timestamp
+)";
+        Connection.Execute(sql);
+    }
+
+    public int Insert(Datasource d, string argument)
+    {
+        var sql = @"insert into kms_transactions(
+    destination_id
+    , datasource_id
+    , argument
+)
+values
+(
+    :destination_id
+    , :datasource_id
+    , :argument
+)
+returning kms_transactions_id";
+
+        return Connection.Execute(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument });
+    }
+}

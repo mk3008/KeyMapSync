@@ -1,80 +1,99 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <AssemblyVersion></AssemblyVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net6.0</TargetFramework>
+		<AssemblyVersion></AssemblyVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="BridgeTest\**" />
-    <Compile Remove="Datasouce\**" />
-    <Compile Remove="DatasourceTest\**" />
-    <Compile Remove="Filter\**" />
-    <EmbeddedResource Remove="BridgeTest\**" />
-    <EmbeddedResource Remove="Datasouce\**" />
-    <EmbeddedResource Remove="DatasourceTest\**" />
-    <EmbeddedResource Remove="Filter\**" />
-    <None Remove="BridgeTest\**" />
-    <None Remove="Datasouce\**" />
-    <None Remove="DatasourceTest\**" />
-    <None Remove="Filter\**" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="BridgeTest\**" />
+		<Compile Remove="Datasouce\**" />
+		<Compile Remove="DatasourceTest\**" />
+		<Compile Remove="FilterTest\**" />
+		<Compile Remove="Filter\**" />
+		<Compile Remove="Model\Sqlite\**" />
+		<Compile Remove="Script\**" />
+		<EmbeddedResource Remove="BridgeTest\**" />
+		<EmbeddedResource Remove="Datasouce\**" />
+		<EmbeddedResource Remove="DatasourceTest\**" />
+		<EmbeddedResource Remove="FilterTest\**" />
+		<EmbeddedResource Remove="Filter\**" />
+		<EmbeddedResource Remove="Model\Sqlite\**" />
+		<EmbeddedResource Remove="Script\**" />
+		<None Remove="BridgeTest\**" />
+		<None Remove="Datasouce\**" />
+		<None Remove="DatasourceTest\**" />
+		<None Remove="FilterTest\**" />
+		<None Remove="Filter\**" />
+		<None Remove="Model\Sqlite\**" />
+		<None Remove="Script\**" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="BridgeRootTest.cs" />
-    <Compile Remove="CascadeTest.cs" />
-    <Compile Remove="CorporationDatasourceMap.cs" />
-    <Compile Remove="CustomerDatasourceMap.cs" />
-    <Compile Remove="DBTest\SqliteSyntaxTest.cs" />
-    <Compile Remove="FilterTest\DifferentConditionTest.cs" />
-    <Compile Remove="FilterTest\ExistsVersionRangeConditionTest.cs" />
-    <Compile Remove="FilterTest\NotExistsKeyMapConditionTest.cs" />
-    <Compile Remove="SynchronizerDeleteTest.cs" />
-    <Compile Remove="SynchronizerTest.cs" />
-    <Compile Remove="SyncMapBuilderTest.cs" />
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Remove="BridgeRootTest.cs" />
+		<Compile Remove="CascadeTest.cs" />
+		<Compile Remove="CorporationDatasourceMap.cs" />
+		<Compile Remove="CustomerDatasourceMap.cs" />
+		<Compile Remove="DBTest\PostgresInsertTest.cs" />
+		<Compile Remove="DBTest\PostgresOffsetTest.cs" />
+		<Compile Remove="DBTest\SqliteInsertTest.cs" />
+		<Compile Remove="DBTest\SqliteSyntaxTest.cs" />
+		<Compile Remove="Model\Postgres\DatasourceManager.cs" />
+		<Compile Remove="Model\Postgres\DestinationManager.cs" />
+		<Compile Remove="Model\Postgres\ExtEcShopArtcile.cs" />
+		<Compile Remove="Model\Postgres\ExtSroteSaleDetaiil.cs" />
+		<Compile Remove="Model\Postgres\IntegrationSaleDetail.cs" />
+		<Compile Remove="Model\Postgres\StoreSaleDetail.cs" />
+		<Compile Remove="Model\Postgres\TableManager.cs" />
+		<Compile Remove="SynchronizerDeleteTest.cs" />
+		<Compile Remove="SynchronizerTest.cs" />
+		<Compile Remove="SyncMapBuilderTest.cs" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Dapper" Version="2.0.123" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
-    <PackageReference Include="Npgsql" Version="5.0.1.1" />
-    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
-    <PackageReference Include="xunit" Version="2.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Dapper" Version="2.0.123" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
+		<PackageReference Include="Npgsql" Version="5.0.1.1" />
+		<PackageReference Include="SqModel" Version="0.7.4" />
+		<PackageReference Include="SqModel.Dapper" Version="0.1.0" />
+		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
+		<PackageReference Include="xunit" Version="2.4.1" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\KeyMapSync\KeyMapSync.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\KeyMapSync\KeyMapSync.csproj" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Update="filter_insert_test.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="offset_test.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="insert_test.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="syntax_test.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="database_cascade.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="database_delete.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="database.sqlite">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<None Update="filter_insert_test.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="offset_test.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="insert_test.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="syntax_test.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="database_cascade.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="database_delete.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="database.sqlite">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="FilterTest\" />
-  </ItemGroup>
+	<ItemGroup>
+	  <Folder Include="DBTest\" />
+	  <Folder Include="Model\Postgres\" />
+	</ItemGroup>
 </Project>

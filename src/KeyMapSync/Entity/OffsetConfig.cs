@@ -1,5 +1,4 @@
-﻿using KeyMapSync.Validation;
-using KeyMapSync.DBMS;
+﻿//using KeyMapSync.Validation;
 using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
@@ -15,8 +14,17 @@ public class OffsetConfig
     /// <example>
     /// {"quantity", "price"}
     /// </example>
-    [ListRequired]
+    //[ListRequired]
     public List<string> SignInversionColumns { get; set; } = new();
+
+    /// <summary>
+    /// A list of columns to exclude from inspection when offsetting.
+    /// </summary>
+    /// <example>
+    /// "article_name"
+    /// </example>
+    //[ListRequired]
+    public List<string> InspectionIgnoreColumns { get; set; } = new();
 
     /// <summary>
     /// Table name format.

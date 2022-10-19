@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace KeyMapSync;
@@ -40,23 +38,23 @@ internal static class StringExtensions
         return sb.ToString();
     }
 
-    public static string RemoveOrDefault(this string source, int startIndex)
-    {
-        if (source.Length < startIndex) return source;
-        return source.Remove(startIndex);
-    }
+    //    public static string RemoveOrDefault(this string source, int startIndex)
+    //    {
+    //        if (source.Length < startIndex) return source;
+    //        return source.Remove(startIndex);
+    //    }
 
-    public static string? ToWhereSqlText(this string source)
-    {
-        return string.IsNullOrEmpty(source) ? null : $@"where
-{source.AddIndent(4)}";
-    }
+    //    public static string? ToWhereSqlText(this string source)
+    //    {
+    //        return string.IsNullOrEmpty(source) ? null : $@"where
+    //{source.AddIndent(4)}";
+    //    }
 
-    public static string ToWhereSqlText(this IEnumerable<string> source)
-    {
-        var s = source.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).ToList().ToString(" and ");
-        if (!string.IsNullOrEmpty(s)) s = $@"where
-{s.AddIndent(4)}";
-        return s;
-    }
+    //    public static string ToWhereSqlText(this IEnumerable<string> source)
+    //    {
+    //        var s = source.Where(x => !string.IsNullOrEmpty(x)).Select(x => x).ToList().ToString(" and ");
+    //        if (!string.IsNullOrEmpty(s)) s = $@"where
+    //{s.AddIndent(4)}";
+    //        return s;
+    //    }
 }

@@ -1,35 +1,39 @@
 ﻿using KeyMapSync.Entity;
-using SqModel.Analysis;
 using SqModel;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SqModel.Expression;
+using SqModel.Analysis;
 using SqModel.Dapper;
+using SqModel.Expression;
+using System.Data;
 
 namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    public OffsetSynchronizer(IDbConnection connection, Datasource datasource, IDBMS dbms, Action<SelectQuery>? injector = null)
+    public OffsetSynchronizer(IDbConnection connection, Datasource datasource, IDBMS dbms, Func<string, Destination> resolver, Action<SelectQuery>? injector = null)
     {
+        if (datasource == null) throw new ArgumentNullException();
+
         Connection = connection;
         Datasource = datasource;
         Injector = injector;
         Dbms = dbms;
+        DestinationResolver = resolver;
 
-        if (datasource.Destination.KeyMapConfig == null) throw new InvalidOperationException();
-        if (datasource.Destination.KeyMapConfig.OffsetConfig == null) throw new InvalidOperationException();
-        if (datasource.Destination.VersioningConfig == null) throw new InvalidOperationException();
+        Datasource.Destination = DestinationResolver(Datasource.DestinationName);
 
-        VersioningConfig = datasource.Destination.VersioningConfig;
+        var keymap = datasource.Destination?.KeyMapConfig;
+        var versioning = datasource.Destination?.VersioningConfig;
+        var offset = datasource.Destination?.OffsetConfig;
+
+        if (keymap == null) throw new InvalidOperationException();
+        if (offset == null) throw new InvalidOperationException();
+        if (versioning == null) throw new InvalidOperationException();
+
+        VersioningConfig = versioning;
         VersionConfig = VersioningConfig.VersionConfig;
-        OffsetConfig = datasource.Destination.KeyMapConfig.OffsetConfig;
+        OffsetConfig = offset;
 
-        var tmp = BridgeNameBuilder.GetName(datasource.DatasourceName).Substring(0, 4);
+        var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
         BridgeName = $"_{tmp}";
     }
 
@@ -41,13 +45,15 @@ public class OffsetSynchronizer
 
     internal IDbConnection Connection { get; init; }
 
+    internal Func<string, Destination> DestinationResolver { get; init; }
+
     private Action<SelectQuery>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
     internal string BridgeName { get; init; }
 
-    private Destination Destination => Datasource.Destination;
+    private Destination Destination => (Datasource.Destination != null) ? Datasource.Destination : throw new InvalidProgramException();
 
     private VersioningConfig VersioningConfig { get; init; }
 
@@ -465,7 +471,7 @@ public class OffsetSynchronizer
         //select
         sq.Distinct();
         sq.Select(bridge, VersioningConfig.Sequence.Column);
-        sq.Select(":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.DatasourceName);
+        sq.Select(":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.TableName);
         sq.Select(":query").As(VersionConfig.BridgeCommandColumn).Parameter(":query", bridgequery.ToQuery().CommandText);
 
         var q = sq.ToInsertQuery(ver);
@@ -595,7 +601,7 @@ public class OffsetSynchronizer
         Datasource.KeyColumns.ForEach(x => sq.Select(m, x.Key));
 
         //where
-        sq.Where.Add().Column(v, VersionConfig.DatasourceNameColumn).Equal(":dsname").Parameter(":dsname", Datasource.DatasourceName);
+        sq.Where.Add().Column(v, VersionConfig.DatasourceNameColumn).Equal(":dsname").Parameter(":dsname", Datasource.TableName);
 
         return sq;
     }

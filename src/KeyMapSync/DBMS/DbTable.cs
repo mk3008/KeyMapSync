@@ -1,9 +1,4 @@
 ﻿using KeyMapSync.Entity;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static KeyMapSync.DBMS.DbColumn;
 
 namespace KeyMapSync.DBMS;
@@ -40,7 +35,7 @@ public class DbColumn
     {
         Numeric = 0,
         Text = 1,
-        Timestamp = 2, 
+        Timestamp = 2,
         Date = 3,
     }
 }

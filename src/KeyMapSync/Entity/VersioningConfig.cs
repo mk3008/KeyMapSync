@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
 
@@ -16,13 +11,12 @@ public class VersioningConfig
     /// Version sequence.
     /// </summary>
     [Required]
-    public Sequence Sequence { get; set; } = new();
+    public Sequence Sequence { get; set; } = new() { Column = "version_id" };
 
     /// <summary>
     /// Version settings and data association settings.
     /// </summary>
-    [Required]
-    public SyncConfig SyncConfig { get; set; } = new();
+
 
     /// <summary>
     /// Version setting.

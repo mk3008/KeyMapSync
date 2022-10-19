@@ -2,9 +2,7 @@
 using KeyMapSync.DBMS;
 using KeyMapSync.Entity;
 using KeyMapSync.Test.Model.Postgres;
-using KeyMapSync.Test.Script;
 using Npgsql;
-using SqModel;
 using System;
 using System.Collections.Generic;
 using System.Data.SQLite;
@@ -29,19 +27,19 @@ public class PostgresOffsetTest
 
         using (var cn = new NpgsqlConnection(CnString))
         {
-            cn.Open();
-            foreach (var item in PostgresScript.InitializeSql.Split(";").Where(x => x != ""))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in EcShop.CreateDataSql.Split(";").Where(x => x != ""))
-            {
-                cn.Execute(item);
-            };
-            foreach (var item in Store.CreateDataSql.Split(";").Where(x => x != ""))
-            {
-                cn.Execute(item);
-            };
+            //cn.Open();
+            //foreach (var item in PostgresScript.InitializeSql.Split(";").Where(x => x != ""))
+            //{
+            //    cn.Execute(item);
+            //};
+            //foreach (var item in EcShop.CreateDataSql.Split(";").Where(x => x != ""))
+            //{
+            //    cn.Execute(item);
+            //};
+            //foreach (var item in Store.CreateDataSql.Split(";").Where(x => x != ""))
+            //{
+            //    cn.Execute(item);
+            //};
         }
     }
 
@@ -66,14 +64,25 @@ public class PostgresOffsetTest
     [Fact]
     public void OffsetTest()
     {
-        var ds = EcShopSaleDetail.GetDatasource();
-        IDBMS db = new Postgres();
+        var dic = new Dictionary<string, Destination>();
+        using (var cn = new NpgsqlConnection(CnString))
+        {
+            cn.Open();
+            var lst = new List<Destination>();
+            lst.Add(DestinationManager.GetAccounts(cn));
+            lst.Add(DestinationManager.GetExtDebitAccounts(cn));
 
-        var sync = new Synchronizer(db);
+            lst.ForEach(x => dic[x.DestinationName] = x);
+        }
+        var resolver = (string x) => dic[x];
+
+        IDBMS db = new Postgres();
+        var sync = new Synchronizer(db, resolver);
 
         using (var cn = new NpgsqlConnection(CnString))
         {
             cn.Open();
+            var ds = DatasourceManager.GetSales(cn);
             sync.CreateTable(cn, ds);
         }
 
@@ -84,6 +93,7 @@ public class PostgresOffsetTest
         {
             cn.Open();
             using var tran = cn.BeginTransaction();
+            var ds = DatasourceManager.GetSales(cn);
             res = sync.Insert(cn, ds);
             tran.Commit();
         }
@@ -99,6 +109,7 @@ public class PostgresOffsetTest
         {
             cn.Open();
             using var tran = cn.BeginTransaction();
+            var ds = DatasourceManager.GetSales(cn);
             res = sync.Offset(cn, ds);
             tran.Commit();
         }

@@ -1,10 +1,4 @@
-﻿using KeyMapSync.DBMS;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
 
@@ -35,5 +29,5 @@ public class VersionConfig
     /// Timestamp column name.
     /// </summary>
     [Required]
-    public string TimestampColumn { get; set; } = "create_timestamp";
+    public string TimestampColumn { get; set; } = "create_at";
 }

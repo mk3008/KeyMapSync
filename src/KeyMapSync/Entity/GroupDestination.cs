@@ -1,11 +1,4 @@
-﻿using KeyMapSync.Validation;
-using KeyMapSync.DBMS;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace KeyMapSync.Entity;
 
@@ -30,6 +23,6 @@ public class GroupDestination
     /// A group of columns in the destination table. 
     /// Please define including the sequence.
     /// </summary>
-    [ListRequired]
+    //[ListRequired]
     public List<string> Columns { get; init; } = new();
 }

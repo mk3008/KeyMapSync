@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KeyMapSync.Validation;
 
@@ -20,7 +15,7 @@ public static class Validator
         foreach (var prop in obj.GetType().GetProperties())
         {
             var attributes = Validator.ReadAttributes<ValidationAttribute>(prop);
-  
+
             var val = prop.GetValue(obj);
             attributes.ForEach(x =>
             {
