@@ -10,15 +10,15 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace KeyMapSync.Test;
+namespace KeyMapSync.Test.RepositoryTest;
 
-public class TransactionRepositoryTest
+public class ProcesRepositoryTest
 {
     private readonly ITestOutputHelper Output;
 
     public static string CnString => "Server=localhost;Port=5432;Database=keymapsync;User ID=postgres;Password=postgres;Enlist=true";
 
-    public TransactionRepositoryTest(ITestOutputHelper output)
+    public ProcesRepositoryTest(ITestOutputHelper output)
     {
         Output = output;
     }
@@ -37,9 +37,9 @@ public class TransactionRepositoryTest
     {
         DbExecute(cn =>
         {
-            var rep = new TransactionRepository(cn);
+            var rep = new ProcessRepository(cn);
             rep.CreateTableOrDefault();
-            cn.Execute("select * from kms_transactions");
+            cn.Execute("select * from kms_processes");
         });
     }
 }

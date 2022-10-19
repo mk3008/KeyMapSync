@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace KeyMapSync.Test;
+namespace KeyMapSync.Test.RepositoryTest;
 
 public class DestinationRepositoryTest
 {

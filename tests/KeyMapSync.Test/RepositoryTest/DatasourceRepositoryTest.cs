@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 using Xunit;
 using Dapper;
 
-namespace KeyMapSync.Test;
+namespace KeyMapSync.Test.RepositoryTest;
 
 public class DatasourceRepositoryTest
 {
