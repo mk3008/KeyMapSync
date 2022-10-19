@@ -13,13 +13,15 @@ using Dapper;
 
 namespace KeyMapSync.DBMS;
 
-internal class SystemConfigRepository : IRepositry
+public class SystemConfigRepository : IRepositry
 {
     public SystemConfigRepository(IDBMS dbms, IDbConnection connection)
     {
         Connection = connection;
         Database = dbms;
     }
+
+    public Action<string>? Logger { get; set; } = null;
 
     public IDBMS Database { get; init; }
 
@@ -35,17 +37,18 @@ internal class SystemConfigRepository : IRepositry
 
         var sq = new SelectQuery();
         var t = sq.From(TableName).As("t");
-        columns.ForEach(x => sq.Select.Add().Column(t, x).As(x.Replace("_", "")));
+        sq.Select.Add().Column(t, "config_value").As("configvalue");
         filter?.Invoke(sq, t);
         var q = sq.ToQuery();
 
+        Logger?.Invoke(q.ToDebugString());
         var s = Connection.Query<string>(q).First();
         var c = JsonSerializer.Deserialize<T>(s);
         if (c == null) throw new Exception();
         return c;
     }
 
-    public SystemConfig FindSystemConfig()
+    public SystemConfig Load()
     {
         var c = new SystemConfig();
         c.KeyMapConfig = FindKeyMapConfig();
@@ -55,7 +58,7 @@ internal class SystemConfigRepository : IRepositry
         return c;
     }
 
-    public KeyMapConfig FindKeyMapConfig()
+    private KeyMapConfig FindKeyMapConfig()
     {
         var c = Find<KeyMapConfig>((sq, t) =>
         {
@@ -65,7 +68,7 @@ internal class SystemConfigRepository : IRepositry
         return c;
     }
 
-    public SyncConfig FindSyncConfig()
+    private SyncConfig FindSyncConfig()
     {
         var c = Find<SyncConfig>((sq, t) =>
         {
@@ -75,7 +78,7 @@ internal class SystemConfigRepository : IRepositry
         return c;
     }
 
-    public OffsetConfig FindOffsetConfig()
+    private OffsetConfig FindOffsetConfig()
     {
         var c = Find<OffsetConfig>((sq, t) =>
         {
@@ -85,7 +88,7 @@ internal class SystemConfigRepository : IRepositry
         return c;
     }
 
-    public CommandConfig FindCommandConfig()
+    private CommandConfig FindCommandConfig()
     {
         var c = Find<CommandConfig>((sq, t) =>
         {
@@ -97,7 +100,7 @@ internal class SystemConfigRepository : IRepositry
 
     public void CreateTableOrDefault()
     {
-        var sql = @$"create table if exists {TableName} (
+        var sql = @$"create table if not exists {TableName} (
     kms_config_id serial8 not null primary key
     , config_name text not null unique
     , config_value text not null

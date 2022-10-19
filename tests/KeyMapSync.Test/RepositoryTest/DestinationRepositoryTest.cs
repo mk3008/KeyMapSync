@@ -47,13 +47,12 @@ public class DestinationRepositoryTest
     public void TestScafold()
     {
         var ddl = @"create table if not exists public.accounts (
-    account_id bigserial not null,
+    account_id bigserial not null primary key,
     journal_date date not null,
     accounts_name text not null,
     price int8 not null,
     remakrs text null,
-    create_at timestamp null default current_timestamp,
-    constraint accounts_pkey primary key (account_id)
+    create_at timestamp null default current_timestamp
 )";
         DbExecute(cn =>
         {

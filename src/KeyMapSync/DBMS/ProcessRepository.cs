@@ -16,6 +16,8 @@ public class ProcessRepository
         Connection = connection;
     }
 
+    public Action<string>? Logger { get; set; } = null;
+
     public IDbConnection Connection { get; init; }
 
     public void CreateTableOrDefault()
@@ -41,7 +43,7 @@ public class ProcessRepository
     , destination_full_name
     , datasource_id
     , datasource_full_name
-    , map_full_name text
+    , map_full_name
 )
 values
 (
@@ -50,10 +52,11 @@ values
     , :destination_full_name
     , :datasource_id
     , :datasource_full_name
-    , :map_full_name text
+    , :map_full_name
 )
-returning kms_transactions_id";
+returning kms_process_id";
 
+        Logger?.Invoke(sql);
         return Connection.Execute(sql, new
         {
             tran_id = tranid,

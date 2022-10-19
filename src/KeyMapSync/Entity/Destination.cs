@@ -45,6 +45,24 @@ public class Destination
     public string[] Columns { get; set; } = Array.Empty<string>();
 
     /// <summary>
+    /// A group of columns whose signs need to be inverted when offsetting.
+    /// </summary>
+    /// <example>
+    /// {"quantity", "price"}
+    /// </example>
+    //[ListRequired]
+    public string[] SignInversionColumns { get; set; } = Array.Empty<string>();
+
+    /// <summary>
+    /// A list of columns to exclude from inspection when offsetting.
+    /// </summary>
+    /// <example>
+    /// "article_name"
+    /// </example>
+    //[ListRequired]
+    public string[] InspectionIgnoreColumns { get; set; } = Array.Empty<string>();
+
+    /// <summary>
     /// Gets the columns of the transfer destination table excluding the sequence columns.
     /// </summary>
     /// <returns></returns>

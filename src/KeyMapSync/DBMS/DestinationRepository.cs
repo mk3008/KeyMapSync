@@ -122,6 +122,8 @@ public class DestinationRepository : IRepositry
     , table_name text not null
     , sequence_config text not null
     , columns text[] not null
+    , sign_inversion_columns text[] not null
+    , inspection_ignore_columns text[] not null
     , allow_offset bool not null default true
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp

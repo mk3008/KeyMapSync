@@ -251,14 +251,14 @@ public class InsertSynchronizer
 
     private int GetNewTransactionId()
     {
-        var id = (new TransactionRepository(Connection)).Insert(Datasource, Argument);
+        var id = (new TransactionRepository(Connection) { Logger = Logger }).Insert(Datasource, Argument);
         Logger?.Invoke($"--transaction_id : {id}");
         return id;
     }
 
     private int GetNewProcessId(int tranid)
     {
-        var id = (new ProcessRepository(Connection)).Insert(tranid, Datasource, MapTableName);
+        var id = (new ProcessRepository(Connection) { Logger = Logger }).Insert(tranid, Datasource, MapTableName);
         Logger?.Invoke($"--process_id : {id}");
         return id;
     }
@@ -273,7 +273,7 @@ public class InsertSynchronizer
          * from tmp bridge
          */
         var sq = CreateSelectFromBridgeQueryAsAdditional();
-        sq.Select.Add().Value(":process_id").As("process_id").AddParameter(":process_id", procid);
+        sq.Select.Add().Value(":process_id").As("kms_process_id").AddParameter(":process_id", procid);
 
         var q = sq.ToInsertQuery(SyncTableName, new());
         return ExecuteQuery(q);

@@ -53,8 +53,10 @@ public class DatasourceRepository : IRepositry
         var lst = Connection.Query<Datasource>(q).ToList();
         SqlMapper.ResetTypeHandlers();
 
+        var rep = new DestinationRepository(Database, Connection) { Logger = Logger };
         lst.ForEach(x =>
         {
+            x.Destination = rep.FindById(x.DestinationId);
             x.Extensions = FindByParentId(x.DatasourceId);
         });
         return lst;

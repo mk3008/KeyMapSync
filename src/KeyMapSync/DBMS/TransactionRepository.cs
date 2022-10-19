@@ -18,6 +18,8 @@ public class TransactionRepository
         Connection = connection;
     }
 
+    public Action<string>? Logger { get; set; } = null;
+
     public IDbConnection Connection { get; init; }
 
     public void CreateTableOrDefault()
@@ -45,8 +47,9 @@ values
     , :datasource_id
     , :argument
 )
-returning kms_transactions_id";
+returning kms_transaction_id";
 
+        Logger?.Invoke(sql);
         return Connection.Execute(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument });
     }
 }

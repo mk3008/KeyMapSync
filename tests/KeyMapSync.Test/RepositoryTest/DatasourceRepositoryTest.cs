@@ -47,17 +47,17 @@ public class DatasourceRepositoryTest
     public void TestScafold()
     {
         var ddl = @"create table if not exists public.sales (
-    sale_id bigserial not null,
+    sale_id bigserial not null primary key,
     sale_date date not null,
     price int8 not null,
     remakrs text null,
-    create_at timestamp null default current_timestamp,
-    constraint accounts_pkey primary key (sale_id)
+    create_at timestamp null default current_timestamp
 )";
         var sql = @"select
-    s.sale_date as journal_date,
-    'sales' as accounts_name,
-    s.price int8 not null,
+    s.sale_date as journal_date
+    , 'sales' as accounts_name
+    , s.price
+    , s.sale_id
 from
     sales s";
 
