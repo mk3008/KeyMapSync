@@ -20,7 +20,7 @@ public class ProcessRepository
 
     public void CreateTableOrDefault()
     {
-        var sql = @$"create table if exists kms_processes (
+        var sql = @$"create table if not exists kms_processes (
     kms_process_id serial8 not null primary key
     , kms_transaction_id int8 not null
     , destination_id int8 not null

@@ -22,7 +22,7 @@ public class TransactionRepository
 
     public void CreateTableOrDefault()
     {
-        var sql = @$"create table if exists kms_transactions (
+        var sql = @$"create table if not exists kms_transactions (
     kms_transaction_id serial8 not null primary key
     , destination_id int8 not null
     , datasource_id int8 not null
