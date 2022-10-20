@@ -89,15 +89,16 @@ from
     [Fact]
     public void AddExtensionTest()
     {
-        var sql = @"select
+
+        DbExecute(cn =>
+        {
+            var sql = @"select
     journal_date
     , 'reverse' as accounts_name
     , s.price * -1 as price
 from
     temporary_table s";
 
-        DbExecute(cn =>
-        {
             var db = new Postgres();
             var rep = new DatasourceRepository(db, cn) { Logger = Logger };
 
@@ -109,6 +110,34 @@ from
             {
                 Logger("insert");
                 c = rep.GetScaffold("accounts <- reverse <- sales", parent.DatasourceId, sql, "public", "accounts");
+                rep.Save(c);
+            }
+
+            Logger("update");
+            c.Disable = false;
+            rep.Save(c);
+        });
+
+        DbExecute(cn =>
+        {
+            var sql = @"select
+    journal_date
+    , '10x' as accounts_name
+    , s.price * 10 as price
+from
+    temporary_table s";
+
+            var db = new Postgres();
+            var rep = new DatasourceRepository(db, cn) { Logger = Logger };
+
+            var parent = rep.FindByName("accounts <- reverse <- sales", "public", "accounts");
+            if (parent == null) throw new Exception();
+
+            var c = rep.FindByName("accounts <- 10x <- reverse <- sales", "public", "accounts", true);
+            if (c == null)
+            {
+                Logger("insert");
+                c = rep.GetScaffold("accounts <- 10x <- reverse <- sales", parent.DatasourceId, sql, "public", "accounts");
                 rep.Save(c);
             }
 

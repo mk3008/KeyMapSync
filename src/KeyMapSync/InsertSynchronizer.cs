@@ -219,7 +219,7 @@ public class InsertSynchronizer
         cols.ForEach(x => sq.Select.Add().Column(d, x));
 
         //inject from config
-        sq = InjectNotSyncCondition(sq);
+        if (IsRoot && Datasource.HasKeymap) sq = InjectNotSyncCondition(sq);
 
         return sq;
     }

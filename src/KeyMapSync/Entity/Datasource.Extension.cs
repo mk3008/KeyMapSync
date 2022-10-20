@@ -10,7 +10,10 @@ namespace KeyMapSync.Entity;
 public static class DatasourceExtension
 {
     public static string GetKeymapTableName(this Datasource source, KeyMapConfig config)
-        => string.Format(config.TableNameFormat, source.Destination.TableName, source.MapName);
+    {
+        if (source.HasKeymap == false) return String.Empty;
+        return string.Format(config.TableNameFormat, source.Destination.TableName, source.MapName);
+    }
 
     public static DbTable GetKeyMapDbTable(this Datasource source, KeyMapConfig config)
     {

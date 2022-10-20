@@ -49,6 +49,8 @@ public class DatasourceRepository : IRepositry
     , r.group_name
     , e.parent_datasource_id
     , k.map_name
+    , k.schema_name
+    , k.table_name
     , k.key_columns_config
 from
     kms_datasources d
@@ -257,6 +259,8 @@ create table if not exists kms_datasource_roots (
 create table if not exists kms_datasource_maps (
     datasource_id int8 not null primary key
     , map_name text not null
+    , schema_name text not null
+    , table_name text not null
     , key_columns_config text not null
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp
