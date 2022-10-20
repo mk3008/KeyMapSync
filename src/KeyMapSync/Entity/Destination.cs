@@ -9,7 +9,7 @@ namespace KeyMapSync.Entity;
 /// </summary>
 public class Destination
 {
-    public int DestinationId { get; set; }
+    public long DestinationId { get; set; }
 
     [Required]
     public string DestinationName { get; set; } = String.Empty;

@@ -56,7 +56,7 @@ public class DestinationRepository : IRepositry
         return lst;
     }
 
-    public Destination FindById(int id)
+    public Destination FindById(long id)
     {
         var lst = Find((sq, t) =>
         {
@@ -77,11 +77,12 @@ public class DestinationRepository : IRepositry
         return lst.FirstOrDefault();
     }
 
-    public Destination GetScaffold(string schema, string table)
+    public Destination Save(string schema, string table)
     {
         var d = new Destination() { SchemaName = schema, TableName = table, AllowOffset = true };
         d.Columns = this.GetColumns(schema, table).ToArray();
         d.SequenceConfig = this.GetSequence(schema, table);
+        Save(d);
         return d;
     }
 
@@ -95,8 +96,15 @@ public class DestinationRepository : IRepositry
 
         sq.RemoveSelectItem(dbcolumns);
 
+        var dbdata = FindByName(d.SchemaName, d.TableName);
+
+        if (dbdata != null && d.DestinationId != dbdata.DestinationId)
+        {
+            throw new InvalidOperationException($"This name is already exists.(schema : {d.SchemaName}, table : {d.TableName})");
+        }
+
         SqlMapper.AddTypeHandler(new SequenceTypeHandler());
-        if (d.DestinationId == 0)
+        if (dbdata == null)
         {
             var q = sq.ToInsertQuery(TableName, new() { IdColumn });
             q.CommandText += $"\r\nreturning {IdColumn}";

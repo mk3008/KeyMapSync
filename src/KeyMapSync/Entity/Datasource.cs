@@ -11,13 +11,11 @@ namespace KeyMapSync.Entity;
 /// </summary>
 public class Datasource
 {
-    public int DatasourceId { get; set; }
+    public long DatasourceId { get; set; }
 
     public string DatasourceName { get; set; } = string.Empty;
 
-    public int? ParentDatasourceId { get; set; }
-
-    public int DestinationId { get; set; }
+    public long DestinationId { get; set; }
 
     /// <summary>
     /// Data source forwarding destination.
@@ -81,7 +79,9 @@ public class Datasource
     [JsonIgnore]
     public List<Datasource> Extensions { get; set; } = new();
 
-    public bool IsRoot => (ParentDatasourceId == null) ? true : false;
+    public long[] ExtensionDatasourceIds { get; set; } = Array.Empty<long>();
+
+    public bool IsRoot => (string.IsNullOrEmpty(MapName)) ? false : true;
 
     public bool HasKeymap => (string.IsNullOrEmpty(MapName)) ? false : true;
 }

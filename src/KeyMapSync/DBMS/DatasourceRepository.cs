@@ -46,17 +46,15 @@ public class DatasourceRepository : IRepositry
     , d.description
     , d.query
     , d.disable
+    , d.extension_datasource_ids
     , r.group_name
-    , e.parent_datasource_id
-    , k.map_name
-    , k.schema_name
-    , k.table_name
-    , k.key_columns_config
+    , r.map_name
+    , r.schema_name
+    , r.table_name
+    , r.key_columns_config
 from
     kms_datasources d
-    left join kms_datasource_roots r on d.datasource_id = r.datasource_id and d.is_root = true
-    left join kms_datasource_extensions e on d.datasource_id = e.datasource_id and d.is_root = false
-    left join kms_datasource_maps k on d.datasource_id = k.datasource_id and d.has_keymap = true";
+    left join kms_datasource_roots r on d.datasource_id = r.datasource_id and d.is_root = true";
 
         var sq = SqlParser.Parse(sql);
         sq.GetSelectItems().ForEach(x => x.Name = x.Name.Replace("_", ""));
@@ -77,12 +75,15 @@ from
         lst.ForEach(x =>
         {
             x.Destination = rep.FindById(x.DestinationId);
-            x.Extensions = FindByParentId(x.DatasourceId);
+            x.ExtensionDatasourceIds.ToList().ForEach(y =>
+            {
+                x.Extensions.Add(FindById(y));
+            });
         });
         return lst;
     }
 
-    public Datasource FindById(int id, bool includeDisable = false)
+    public Datasource FindById(long id, bool includeDisable = false)
     {
         var lst = Find(includeDisable, (sq, t) =>
         {
@@ -111,14 +112,14 @@ from
         return lst.FirstOrDefault();
     }
 
-    public List<Datasource> FindByParentId(int parentid, bool includeDisable = false)
-    {
-        var lst = Find(includeDisable, (sq, t) =>
-        {
-            sq.Where.Add().Column("e", "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
-        });
-        return lst;
-    }
+    //public List<Datasource> FindByParentId(long parentid, bool includeDisable = false)
+    //{
+    //    var lst = Find(includeDisable, (sq, t) =>
+    //    {
+    //        sq.Where.Add().Column("e", "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
+    //    });
+    //    return lst;
+    //}
 
     public List<Datasource> FindByGroup(string group, bool includeDisable = false)
     {
@@ -129,22 +130,24 @@ from
         return lst;
     }
 
-    public Datasource GetScaffold(string name, string schema, string table, string query, string destschema, string desttable)
+    public Datasource SaveAsRoot(string group, string name, string schema, string table, string query, string destschema, string desttable)
     {
-        var d = new Datasource() { DatasourceName = name, SchemaName = schema, TableName = table, MapName = table, Query = query };
+        var d = new Datasource() { GroupName = group, DatasourceName = name, SchemaName = schema, TableName = table, MapName = table, Query = query };
         d.KeyColumnsConfig = this.GetKeyColumns(schema, table);
         var c = (new DestinationRepository(Database, Connection) { Logger = Logger }).FindByName(destschema, desttable);
-        if (c == null) throw new Exception();
+        if (c == null) throw new Exception($"Destination id not found. (schema : {destschema}, name : {desttable})");
         d.Destination = c;
+        Save(d);
         return d;
     }
 
-    public Datasource GetScaffold(string name, int parentDatasourceId, string query, string destschema, string desttable)
+    public Datasource SaveAsExtension(string name, string query, string destschema, string desttable)
     {
-        var d = new Datasource() { DatasourceName = name, ParentDatasourceId = parentDatasourceId, Query = query };
+        var d = new Datasource() { DatasourceName = name, Query = query };
         var c = (new DestinationRepository(Database, Connection) { Logger = Logger }).FindByName(destschema, desttable);
-        if (c == null) throw new Exception();
+        if (c == null) throw new Exception($"Destination id not found. (schema : {destschema}, name : {desttable})");
         d.Destination = c;
+        Save(d);
         return d;
     }
 
@@ -152,6 +155,7 @@ from
     {
         var dbcolumns = this.GetColumns("", "kms_datasources");
         d.DestinationId = d.Destination.DestinationId;
+        d.ExtensionDatasourceIds = d.Extensions.Select(x => x.DestinationId).ToArray();
 
         var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
         sq.RemoveSelectItem(dbcolumns);
@@ -177,24 +181,13 @@ from
             Connection.Execute(q);
         }
 
-        if (d.ParentDatasourceId == null)
+        if (d.IsRoot)
         {
             SaveExtension(d, "kms_datasource_roots");
-            if (string.IsNullOrEmpty(d.MapName))
-            {
-                DeleteExtension(d, "kms_datasource_maps");
-            }
-            else
-            {
-                SaveExtension(d, "kms_datasource_maps");
-            }
-            DeleteExtension(d, "kms_datasource_extensions");
         }
         else
         {
             DeleteExtension(d, "kms_datasource_roots");
-            DeleteExtension(d, "kms_datasource_maps");
-            SaveExtension(d, "kms_datasource_extensions");
         }
 
         d.Extensions.ForEach(x => Save(x));
@@ -241,34 +234,20 @@ create table if not exists kms_datasources (
     , description text not null
     , query text not null
     , is_root bool not null
-    , has_keymap bool not null
+    , extension_datasource_ids int8[] not null
     , disable bool not null default false
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp
     , unique(destination_id, datasource_name)
-    , check(case when is_root = false and has_keymap = true then false else true end)
 )
 ;
 create table if not exists kms_datasource_roots (
     datasource_id int8 not null primary key
     , group_name text not null
-    , created_at timestamp default current_timestamp
-    , updated_at timestamp default current_timestamp
-)
-;
-create table if not exists kms_datasource_maps (
-    datasource_id int8 not null primary key
     , map_name text not null
     , schema_name text not null
     , table_name text not null
     , key_columns_config text not null
-    , created_at timestamp default current_timestamp
-    , updated_at timestamp default current_timestamp
-)
-;
-create table if not exists kms_datasource_extensions (
-    datasource_id int8 not null primary key
-    , parent_datasource_id int8 not null
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp
 )
