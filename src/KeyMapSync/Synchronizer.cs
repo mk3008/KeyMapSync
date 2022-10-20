@@ -25,9 +25,9 @@ public class Synchronizer
         exe.Execute(datasource);
     }
 
-    public Results Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery>? act = null)
+    public Result Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, string>? injector = null)
     {
-        var exe = new InsertSynchronizer(SystemConfig, connection, datasource, act) { Logger = Logger, Argument = argument };
+        var exe = new InsertSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument };
         return exe.Insert();
     }
 

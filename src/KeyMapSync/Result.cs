@@ -1,25 +1,24 @@
-﻿namespace KeyMapSync;
+﻿using System.Text;
 
-public interface IResult
+namespace KeyMapSync;
+
+public class Result
 {
-}
+    public string? Table { get; set; } = null;
 
-public class Result : IResult
-{
-    public string? Table { get; set; } = String.Empty;
+    public int? Count { get; set; } = null;
 
-    public int Count { get; set; } = 0;
-}
+    public List<Result>? InnerResults { get; set; } = null;
 
-public class Results : IResult
-{
-    public string Name { get; set; } = String.Empty;
+    private List<Result> GetInnerResults()
+    {
+        InnerResults ??= new List<Result>();
+        return InnerResults;
+    }
 
-    public List<IResult> Collection { get; set; } = new();
-
-    internal void Add(IResult result)
-        => Collection.Add(result);
+    internal void Add(Result result)
+        => GetInnerResults().Add(result);
 
     internal void AddRange(List<Result> results)
-        => results.ForEach(x => Collection.Add(x));
+        => results.ForEach(x => GetInnerResults().Add(x));
 }

@@ -10,6 +10,9 @@ using Xunit.Abstractions;
 using Xunit;
 using Dapper;
 using KeyMapSync.Entity;
+using SqModel;
+using Utf8Json;
+using Utf8Json.Resolvers;
 
 namespace KeyMapSync.Test.SyncTest;
 
@@ -64,6 +67,12 @@ values
 
         var logger = (string s) => Output.WriteLine(s);
 
+        var injector = (SelectQuery q, string _) =>
+        {
+            var t = q.FromClause;
+            q.Where.Add().Column(t, "price").Comparison(">=", 0);
+        };
+
         DbExecute(cn =>
         {
             var db = new Postgres();
@@ -79,8 +88,14 @@ values
 
             logger.Invoke("sync datasource");
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
+
             sync.CreateTable(cn, d);
-            var result = sync.Insert(cn, d);
+
+            var result = sync.Insert(cn, d, injector: injector);
+
+            //result
+            var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
+            logger($"result : {text}");
         });
     }
 }

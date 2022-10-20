@@ -4,6 +4,8 @@ using SqModel;
 using SqModel.Analysis;
 using SqModel.Dapper;
 using System.Data;
+using Utf8Json;
+using Utf8Json.Resolvers;
 
 namespace KeyMapSync;
 
@@ -23,7 +25,7 @@ public class InsertSynchronizer
     //    BridgeName = $"{owner.BridgeName}_{tmp}";
     //}
 
-    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery> injector)
+    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, string> injector)
     {
         Connection = owner.Connection;
         SystemConfig = owner.SystemConfig;
@@ -32,9 +34,11 @@ public class InsertSynchronizer
 
         var tmp = BridgeNameBuilder.GetName(datasource.TableFulleName).Substring(0, 4);
         BridgeName = $"{owner.BridgeName}_{tmp}";
+
+        IsRoot = false;
     }
 
-    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery>? injector = null)
+    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -43,6 +47,8 @@ public class InsertSynchronizer
 
         var tmp = BridgeNameBuilder.GetName(datasource.TableFulleName).Substring(0, 4);
         BridgeName = $"_{tmp}";
+
+        IsRoot = true;
     }
 
     public SystemConfig SystemConfig { get; init; }
@@ -51,11 +57,11 @@ public class InsertSynchronizer
 
     public string Argument { get; set; } = String.Empty;
 
-    private bool IsRoot { get; set; } = true;
+    private bool IsRoot { get; init; }
 
     private IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery>? Injector { get; init; }
+    private Action<SelectQuery, string>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
@@ -114,28 +120,27 @@ public class InsertSynchronizer
         return val;
     }
 
-    public Results Insert()
+    public Result Insert()
     {
-        IsRoot = true;
-        var results = new Results();
+        //kms_transaction start
+        var rep = new TransactionRepository(Connection) { Logger = Logger };
+        var tranid = rep.Insert(Datasource, Argument);
+        Logger?.Invoke($"--transaction_id : {tranid}");
 
-        //transaction
-        var tranid = GetNewTransactionId();
-        results.Add(new Result() { Table = "kms_transactions", Count = 1 });
-
-
-
+        //main
         Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
-
         var sq = BuildSelectBridgeQuery();
-        results.Add(Insert(sq, tranid));
+        var result = Insert(sq, tranid);
 
-        return results;
+        //kms_transaction end
+        var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
+        rep.Update(tranid, text);
+
+        return result;
     }
 
-    public Results Insert(int tranid)
+    internal Result Insert(int tranid)
     {
-        IsRoot = false;
         Logger?.Invoke($"--extend insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
 
         var sq = BuildSelectBridgeQuery();
@@ -143,42 +148,42 @@ public class InsertSynchronizer
         return Insert(sq, tranid);
     }
 
-    private Results Insert(SelectQuery bridgequery, int tranid)
+    private Result Insert(SelectQuery bridgequery, int tranid)
     {
-        var results = new Results();
+        var result = new Result();
 
         var cnt = CreateBridgeTable(bridgequery);
-        if (cnt == 0) return results;
+        if (cnt == 0) return result;
 
         //process
         var procid = GetNewProcessId(tranid);
-        results.Add(new Result() { Table = "kms_processes", Count = cnt });
+        result.Add(new Result() { Table = "kms_processes", Count = cnt });
 
         //destination
         if (InsertDestination(bridgequery) != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Destination.TableFulleName, Count = cnt });
+        result.Add(new Result() { Table = Destination.TableFulleName, Count = cnt });
 
         //map
         if (IsRoot && !string.IsNullOrEmpty(Datasource.MapName))
         {
             if (InsertKeyMap() != cnt) throw new InvalidOperationException();
-            results.Add(new Result() { Table = MapTableName, Count = cnt });
+            result.Add(new Result() { Table = MapTableName, Count = cnt });
         }
 
         //sync
         if (InsertSync(procid) != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = SyncTableName, Count = cnt });
+        result.Add(new Result() { Table = SyncTableName, Count = cnt });
 
         //nest
         Datasource.Extensions.ForEach(nestdatasource =>
         {
             //replace root table injector
-            Action<SelectQuery> act = q => q.FromClause.TableName = BridgeName;
+            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
 
-            var s = new InsertSynchronizer(this, nestdatasource, act) { Logger = Logger };
-            results.Add(s.Insert(tranid));
+            var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
+            result.Add(s.Insert(tranid));
         });
-        return results;
+        return result;
     }
 
     private SelectQuery BuildSelectBridgeQuery()
@@ -201,7 +206,7 @@ public class InsertSynchronizer
         var cols = sq.Select.GetColumnNames();
 
         //inject from custom function
-        if (Injector != null) Injector(sq);
+        if (Injector != null) Injector(sq, Argument);
 
         sq = sq.PushToCommonTable(alias);
 
@@ -247,13 +252,6 @@ public class InsertSynchronizer
         sq.From(BridgeName);
         sq.SelectCount();
         return sq.ToQuery();
-    }
-
-    private int GetNewTransactionId()
-    {
-        var id = (new TransactionRepository(Connection) { Logger = Logger }).Insert(Datasource, Argument);
-        Logger?.Invoke($"--transaction_id : {id}");
-        return id;
     }
 
     private int GetNewProcessId(int tranid)

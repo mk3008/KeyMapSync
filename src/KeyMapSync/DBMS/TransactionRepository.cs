@@ -29,7 +29,9 @@ public class TransactionRepository
     , destination_id int8 not null
     , datasource_id int8 not null
     , argument text not null
+    , result text
     , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
 )";
         Connection.Execute(sql);
     }
@@ -50,6 +52,19 @@ values
 returning kms_transaction_id";
 
         Logger?.Invoke(sql);
-        return Connection.Execute(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument });
+        return Connection.Query<int>(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument }).First();
+    }
+
+    public int Update(int id, string result)
+    {
+        var sql = @"update kms_transactions
+set
+    result = :result
+    , updated_at = clock_timestamp()
+where
+    kms_transaction_id = :id";
+
+        Logger?.Invoke(sql);
+        return Connection.Execute(sql, new { id, result });
     }
 }
