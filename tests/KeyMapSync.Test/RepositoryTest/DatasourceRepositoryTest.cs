@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Xunit.Abstractions;
 using Xunit;
 using Dapper;
+using KeyMapSync.Entity;
 
 namespace KeyMapSync.Test.RepositoryTest;
 
@@ -22,6 +23,8 @@ public class DatasourceRepositoryTest
     {
         Output = output;
     }
+
+    private void Logger(string s) => Output.WriteLine(s);
 
     private void DbExecute(Action<IDbConnection> act)
     {
@@ -63,7 +66,7 @@ from
 
         DbExecute(cn =>
         {
-            var rep = new DatasourceRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
+            var rep = new DatasourceRepository(new Postgres(), cn) { Logger = Logger };
             cn.Execute(ddl);
 
             var c = rep.FindByName("accounts <- sales", "public", "accounts");
@@ -77,18 +80,34 @@ from
             c.Description = "test";
 
             rep.Save(c);
+        });
+    }
 
-            //Assert.Equal("public", c.SchemaName);
-            //Assert.Equal("accounts", c.TableName);
-            //Assert.Equal(sql, c.Query);
-            //Assert.Equal("account_id", c.KeyColumns);
-            //Assert.Equal("nextval('accounts_account_id_seq'::regclass)", c.Sequence.Command);
-            //Assert.True(c.AllowOffset);
+    [Fact]
+    public void AddExtensionTest()
+    {
+        var sql = @"select
+    journal_date
+    , 'reverse' as accounts_name
+    , s.price * -1 as price
+from
+    temporary_table s";
 
+        DbExecute(cn =>
+        {
+            var db = new Postgres();
+            var rep = new DatasourceRepository(db, cn) { Logger = Logger };
 
-            //c.Description = "sample";
+            var parent = rep.FindByName("accounts <- sales", "public", "accounts");
+            if (parent == null) throw new Exception();
 
-            //rep.Save(c);
+            var dsrep = new DestinationRepository(db, cn) { Logger = Logger };
+            var c = new Datasource();
+            c.ParentDatasourceId = parent.DatasourceId;
+            c.Query = sql;
+            c.Destination = dsrep.FindByName("public", "accounts");
+
+            rep.Save(c);
         });
     }
 }

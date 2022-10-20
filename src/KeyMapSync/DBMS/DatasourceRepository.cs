@@ -39,12 +39,29 @@ public class DatasourceRepository : IRepositry
 
     public List<Datasource> Find(Action<SelectQuery, TableClause>? filter = null)
     {
-        var columns = this.GetColumns("", TableName);
+        var sql = @"select
+    d.datasource_id
+    , d.datasource_name
+    , d.destination_id
+    , d.description
+    , d.query
+    , d.disable
+    , r.group_name
+    , e.parent_datasource_id
+    , k.map_name
+    , k.key_columns_config
+from
+    kms_datasources d
+    left join kms_datasource_roots r on d.datasource_id = r.datasource_id and d.is_root = true
+    left join kms_datasource_extensions e on d.datasource_id = e.datasource_id and d.is_root = false
+    left join kms_datasource_maps k on d.datasource_id = k.datasource_id and d.has_keymap = true";
 
-        var sq = new SelectQuery();
-        var t = sq.From(TableName).As("t");
-        columns.ForEach(x => sq.Select.Add().Column(t, x).As(x.Replace("_", "")));
-        filter?.Invoke(sq, t);
+        var sq = SqlParser.Parse(sql);
+        sq.GetSelectItems().ForEach(x => x.Name = x.Name.Replace("_", ""));
+
+        var d = sq.FromClause;
+
+        filter?.Invoke(sq, d);
         var q = sq.ToQuery();
 
         Logger?.Invoke(q.ToDebugString());
@@ -95,7 +112,7 @@ public class DatasourceRepository : IRepositry
     {
         var lst = Find((sq, t) =>
         {
-            sq.Where.Add().Column(t, "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
+            sq.Where.Add().Column("e", "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
         });
         return lst;
     }
@@ -104,7 +121,7 @@ public class DatasourceRepository : IRepositry
     {
         var lst = Find((sq, t) =>
         {
-            sq.Where.Add().Column(t, "group_name").Equal(":group").AddParameter(":group", group);
+            sq.Where.Add().Column("r", "group_name").Equal(":group").AddParameter(":group", group);
         });
         return lst;
     }
@@ -121,16 +138,13 @@ public class DatasourceRepository : IRepositry
 
     public void Save(Datasource d)
     {
-        var dbcolumns = this.GetColumns("", TableName);
+        var dbcolumns = this.GetColumns("", "kms_datasources");
         d.DestinationId = d.Destination.DestinationId;
 
         var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
-        //var config = JsonSerializer.Serialize(d.KeyColumns);
-        //sq.Select.Add().Value(":key_cols_config").As("key_columns_config").AddParameter(":key_cols_config", config);
-
         sq.RemoveSelectItem(dbcolumns);
 
-        SqlMapper.AddTypeHandler(new DictionaryTypeHandler());
+
         if (d.DatasourceId == 0)
         {
             var q = sq.ToInsertQuery(TableName, new() { IdColumn });
@@ -140,14 +154,64 @@ public class DatasourceRepository : IRepositry
         }
         else
         {
-            sq.Select.Add().Value("current_timestamp").As("updated_at");
+            sq.Select.Add().Value("clock_timestamp()").As("updated_at");
             var q = sq.ToUpdateQuery(TableName, new() { IdColumn });
             Logger?.Invoke(q.ToDebugString());
             Connection.Execute(q);
         }
-        SqlMapper.ResetTypeHandlers();
+
+        if (d.ParentDatasourceId == null)
+        {
+            SaveExtension(d, "kms_datasource_roots");
+            if (string.IsNullOrEmpty(d.MapName))
+            {
+                DeleteExtension(d, "kms_datasource_maps");
+            }
+            else
+            {
+                SaveExtension(d, "kms_datasource_maps");
+            }
+            DeleteExtension(d, "kms_datasource_extensions");
+        }
+        else
+        {
+            DeleteExtension(d, "kms_datasource_roots");
+            DeleteExtension(d, "kms_datasource_maps");
+            SaveExtension(d, "kms_datasource_extensions");
+        }
 
         d.Extensions.ForEach(x => Save(x));
+    }
+
+    private void SaveExtension(Datasource d, string extable)
+    {
+        var dbcolumns = this.GetColumns("", extable);
+
+        var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
+        sq.RemoveSelectItem(dbcolumns);
+
+        var cnt = Connection.ExecuteScalar<int>($"select count(*) from {extable} where datasource_id = :id", new { id = d.DatasourceId });
+
+        SqlMapper.AddTypeHandler(new DictionaryTypeHandler());
+        if (cnt == 0)
+        {
+            var q = sq.ToInsertQuery(extable, new());
+            Logger?.Invoke(q.ToDebugString());
+            Connection.Execute(q);
+        }
+        else
+        {
+            sq.Select.Add().Value("clock_timestamp()").As("updated_at");
+            var q = sq.ToUpdateQuery(extable, new() { IdColumn });
+            Logger?.Invoke(q.ToDebugString());
+            Connection.Execute(q);
+        }
+        SqlMapper.ResetTypeHandlers();
+    }
+
+    private void DeleteExtension(Datasource d, string table)
+    {
+        Connection.Execute($"delete from {table} where datasource_id = :id", new { id = d.DatasourceId });
     }
 
     public void CreateTableOrDefault()
@@ -158,18 +222,39 @@ create table if not exists kms_datasources (
     , datasource_name text not null
     , destination_id int8 not null 
     , description text not null
-    , parent_datasource_id int8
-    , group_name text not null
-    , schema_name text not null
-    , table_name text not null
-    , map_name text
     , query text not null
-    , key_columns_config text not null
+    , is_root bool not null
+    , has_keymap bool not null
+    , disable bool not null default false
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp
     , unique(destination_id, datasource_name)
-)";
-        Connection.Execute(sql);
+    , check(case when is_root = false and has_keymap = true then false else true end)
+)
+;
+create table if not exists kms_datasource_roots (
+    datasource_id int8 not null primary key
+    , group_name text not null
+    , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
+)
+;
+create table if not exists kms_datasource_maps (
+    datasource_id int8 not null primary key
+    , map_name text not null
+    , key_columns_config text not null
+    , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
+)
+;
+create table if not exists kms_datasource_extensions (
+    datasource_id int8 not null primary key
+    , parent_datasource_id int8 not null
+    , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
+)
+";
+        sql.Split(";").ToList().ForEach(x => Connection.Execute(x));
     }
 }
 

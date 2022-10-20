@@ -89,8 +89,10 @@ values
             logger.Invoke("sync datasource");
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
 
+            logger.Invoke("*create table");
             sync.CreateTable(cn, d);
 
+            logger.Invoke("*insert");
             var result = sync.Insert(cn, d, injector: injector);
 
             //result

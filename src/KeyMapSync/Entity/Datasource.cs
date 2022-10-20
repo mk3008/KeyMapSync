@@ -40,6 +40,8 @@ public class Datasource
 
     public string Description { get; set; } = string.Empty;
 
+    public bool Disable { get; set; } = false;
+
     /// <summary>
     /// The real table name of the data source.
     /// It is used to determine if it has been transferred.
@@ -78,4 +80,8 @@ public class Datasource
     /// </summary>
     [JsonIgnore]
     public List<Datasource> Extensions { get; set; } = new();
+
+    public bool IsRoot => (ParentDatasourceId == null) ? true : false;
+
+    public bool HasKeymap => (string.IsNullOrEmpty(MapName)) ? false : true;
 }

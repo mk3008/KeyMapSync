@@ -105,7 +105,7 @@ public class DestinationRepository : IRepositry
         }
         else
         {
-            sq.Select.Add().Value("current_timestamp").As("updated_at");
+            sq.Select.Add().Value("clock_timestamp()").As("updated_at");
             var q = sq.ToUpdateQuery(TableName, new() { IdColumn });
             Logger?.Invoke(q.ToDebugString());
             Connection.Execute(q);
