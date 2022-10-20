@@ -53,6 +53,11 @@ public class DestinationRepository : IRepositry
         var lst = Connection.Query<Destination>(q).ToList();
         SqlMapper.ResetTypeHandlers();
 
+        lst.ForEach(x =>
+        {
+            x.HeaderDestination = FindByBaseId(x.DestinationId);
+        });
+
         return lst;
     }
 
@@ -64,6 +69,16 @@ public class DestinationRepository : IRepositry
         });
 
         return lst.First();
+    }
+
+    public Destination? FindByBaseId(long id)
+    {
+        var lst = Find((sq, t) =>
+        {
+            sq.Where.Add().Column(t, "base_destination_id").Equal(":id").AddParameter(":id", id);
+        });
+
+        return lst.FirstOrDefault();
     }
 
     public Destination? FindByName(string schema, string table)
@@ -79,9 +94,24 @@ public class DestinationRepository : IRepositry
 
     public Destination Save(string schema, string table)
     {
-        var d = new Destination() { SchemaName = schema, TableName = table, AllowOffset = true };
+        var d = new Destination() { SchemaName = schema, TableName = table, AllowOffset = false };
         d.Columns = this.GetColumns(schema, table).ToArray();
         d.SequenceConfig = this.GetSequence(schema, table);
+
+        Save(d);
+        return d;
+    }
+
+    public Destination SaveAsHeader(string schema, string table, string[] keycolumns, string query, string baseschema, string basetable)
+    {
+        var based = FindByName(baseschema, basetable);
+        if (based == null) throw new Exception($"Base destination is not found.(schema : {baseschema}, table : {basetable})");
+
+        var d = new Destination() { SchemaName = schema, TableName = table, KeyColumns = keycolumns, AllowOffset = false, Query = query };
+        d.BaseDestinationId = based.DestinationId;
+        d.Columns = this.GetColumns(schema, table).ToArray();
+        d.SequenceConfig = this.GetSequence(schema, table);
+
         Save(d);
         return d;
     }
@@ -119,24 +149,90 @@ public class DestinationRepository : IRepositry
             Connection.Execute(q);
         }
         SqlMapper.ResetTypeHandlers();
+
+        if (d.BaseDestinationId != null && !string.IsNullOrEmpty(d.Query) && d.KeyColumns.Any())
+        {
+            var hq = SqlParser.Parse(d.Query);
+            SaveExtension(d, "kms_header_destinations");
+            DeleteExtension(d, "kms_offsettable_destinations");
+        }
+        else if (d.SignInversionColumns.Any())
+        {
+            DeleteExtension(d, "kms_header_destinations");
+            SaveExtension(d, "kms_offsettable_destinations");
+        }
+        else
+        {
+            DeleteExtension(d, "kms_header_destinations");
+            DeleteExtension(d, "kms_offsettable_destinations");
+        }
+    }
+
+    private void SaveExtension(Destination d, string extable)
+    {
+        var dbcolumns = this.GetColumns("", extable);
+
+        var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
+        sq.RemoveSelectItem(dbcolumns);
+
+        var cnt = Connection.ExecuteScalar<int>($"select count(*) from {extable} where destination_id = :id", new { id = d.DestinationId });
+
+        SqlMapper.AddTypeHandler(new DictionaryTypeHandler());
+        if (cnt == 0)
+        {
+            var q = sq.ToInsertQuery(extable, new());
+            Logger?.Invoke(q.ToDebugString());
+            Connection.Execute(q);
+        }
+        else
+        {
+            sq.Select.Add().Value("clock_timestamp()").As("updated_at");
+            var q = sq.ToUpdateQuery(extable, new() { IdColumn });
+            Logger?.Invoke(q.ToDebugString());
+            Connection.Execute(q);
+        }
+        SqlMapper.ResetTypeHandlers();
+    }
+
+    private void DeleteExtension(Destination d, string table)
+    {
+        Connection.Execute($"delete from {table} where destination_id = :id", new { id = d.DestinationId });
     }
 
     public void CreateTableOrDefault()
     {
-        var sql = @$"create table if not exists {TableName} (
+        var sql = @$"
+create table if not exists kms_destinations (
     destination_id serial8 not null primary key
+    , base_destination_id int8 unique
     , description text not null
     , schema_name text not null
     , table_name text not null
     , sequence_config text not null
     , columns text[] not null
-    , sign_inversion_columns text[] not null
-    , inspection_ignore_columns text[] not null
-    , allow_offset bool not null default true
+    , allow_offset bool not null default false
     , created_at timestamp default current_timestamp
     , updated_at timestamp default current_timestamp
     , unique(schema_name, table_name)
-)";
+    , check(case when base_destination_id is not null and allow_offset = true then false else true end)
+)
+;
+create table if not exists kms_offsettable_destinations (
+    destination_id int8 not null primary key
+    , sign_inversion_columns text[] not null
+    , inspection_ignore_columns text[] not null
+    , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
+)
+;
+create table if not exists kms_header_destinations (
+    destination_id int8 not null primary key
+    , key_columns text[] not null
+    , query text not null
+    , created_at timestamp default current_timestamp
+    , updated_at timestamp default current_timestamp
+)
+";
         Connection.Execute(sql);
     }
 }

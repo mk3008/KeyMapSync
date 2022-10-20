@@ -50,26 +50,52 @@ public class ScaffoldTest
         var ddl = @"
 create table if not exists public.accounts (
     account_id bigserial not null primary key,
+    shop_id int8 not null,
+    client_id int8 not null,
     journal_date date not null,
-    accounts_name text not null,
+    product_name text not null,
     price int8 not null,
     remakrs text null,
     create_at timestamp null default current_timestamp
-)";
-        DbExecute(cn =>
+)
+;
+create table if not exists public.shop_accounts (
+    shop_account_id bigserial not null primary key,
+    shop_id int8 not null,
+    journal_date date not null,
+    price int8 not null,
+    create_at timestamp null default current_timestamp
+)
+;
+create table if not exists public.daily_accounts (
+    daily_account_id bigserial not null primary key,
+    journal_date date not null,
+    price int8 not null,
+    create_at timestamp null default current_timestamp
+)
+";
+        var root = DbExecute(cn =>
         {
+            ddl.Split(";").ToList().ForEach(x => cn.Execute(x));
             var rep = new DestinationRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
-            cn.Execute(ddl);
+            return rep.Save("public", "accounts");
+        });
 
-            var c = rep.Save("public", "accounts");
-
-            Assert.Equal("public", c.SchemaName);
-            Assert.Equal("accounts", c.TableName);
-            Assert.Equal(6, c.Columns.ToList().Count);
-            Assert.Equal("account_id", c.SequenceConfig.Column);
-            Assert.Equal("nextval('accounts_account_id_seq'::regclass)", c.SequenceConfig.Command);
-            Assert.True(c.AllowOffset);
-            Assert.NotEqual(0, c.DestinationId);
+        var h1 = DbExecute(cn =>
+        {
+            var sql = @"
+select
+    r.shop_id
+    , r.journal_date
+    , sum(r.price) as price
+from
+    temporary r
+group by
+    r.shop_id
+    , r.journal_date";
+            var rep = new DestinationRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
+            var c = rep.SaveAsHeader("public", "shop_accounts", new[] { "shop_id", "journal_date" }, sql, "public", "accounts");
+            return c;
         });
     }
 

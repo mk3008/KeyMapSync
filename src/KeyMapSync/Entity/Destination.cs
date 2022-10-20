@@ -70,6 +70,16 @@ public class Destination
 
     public bool AllowOffset { get; set; } = true;
 
+    public Destination? HeaderDestination { get; set; } = null;
+
+    public long? BaseDestinationId { get; set; }
+
+    public bool IsHeader => (BaseDestinationId != null) ? true : false;
+
+    public string[] KeyColumns { get; set; } = Array.Empty<string>();
+
+    public string Query { get; set; } = string.Empty;
+
     ///// <summary>
     ///// Specify if you want to reverse-lookup the source data source. 
     ///// Also, specify if you want to perform differential transfer.
