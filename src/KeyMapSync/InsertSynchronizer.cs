@@ -32,7 +32,7 @@ public class InsertSynchronizer
         Datasource = datasource;
         Injector = injector;
 
-        var tmp = BridgeNameBuilder.GetName(datasource.TableFulleName).Substring(0, 4);
+        var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"{owner.BridgeName}_{tmp}";
 
         IsRoot = false;
@@ -45,7 +45,7 @@ public class InsertSynchronizer
         Datasource = datasource;
         Injector = injector;
 
-        var tmp = BridgeNameBuilder.GetName(datasource.TableFulleName).Substring(0, 4);
+        var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"_{tmp}";
 
         IsRoot = true;
