@@ -139,7 +139,7 @@ public class InsertSynchronizer
         return result;
     }
 
-    internal Result Insert(int tranid)
+    internal Result Insert(long tranid)
     {
         Logger?.Invoke($"--extend insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
 
@@ -148,7 +148,7 @@ public class InsertSynchronizer
         return Insert(sq, tranid);
     }
 
-    private Result Insert(SelectQuery bridgequery, int tranid)
+    private Result Insert(SelectQuery bridgequery, long tranid)
     {
         var result = new Result();
 
@@ -254,14 +254,14 @@ public class InsertSynchronizer
         return sq.ToQuery();
     }
 
-    private int GetNewProcessId(int tranid)
+    private long GetNewProcessId(long tranid)
     {
         var id = (new ProcessRepository(Connection) { Logger = Logger }).Insert(tranid, Datasource, MapTableName);
         Logger?.Invoke($"--process_id : {id}");
         return id;
     }
 
-    private int InsertSync(int procid)
+    private int InsertSync(long procid)
     {
         /*
          * insert into sync (destination_id, process_id)

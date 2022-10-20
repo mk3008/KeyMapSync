@@ -36,7 +36,7 @@ public class TransactionRepository
         Connection.Execute(sql);
     }
 
-    public int Insert(Datasource d, string argument)
+    public long Insert(Datasource d, string argument)
     {
         var sql = @"insert into kms_transactions(
     destination_id
@@ -52,10 +52,10 @@ values
 returning kms_transaction_id";
 
         Logger?.Invoke(sql);
-        return Connection.Query<int>(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument }).First();
+        return Connection.Query<long>(sql, new { destination_id = d.DestinationId, datasource_id = d.DatasourceId, argument }).First();
     }
 
-    public int Update(int id, string result)
+    public int Update(long id, string result)
     {
         var sql = @"update kms_transactions
 set

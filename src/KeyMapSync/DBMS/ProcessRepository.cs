@@ -35,7 +35,7 @@ public class ProcessRepository
         Connection.Execute(sql);
     }
 
-    public int Insert(int tranid, Datasource d, string mapfullname)
+    public long Insert(long tranid, Datasource d, string mapfullname)
     {
         var sql = @"insert into kms_processes(
     kms_transaction_id
