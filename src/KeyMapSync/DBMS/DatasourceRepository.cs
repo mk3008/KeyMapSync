@@ -54,7 +54,7 @@ public class DatasourceRepository : IRepositry
     , r.key_columns_config
 from
     kms_datasources d
-    left join kms_datasource_roots r on d.datasource_id = r.datasource_id and d.is_root = true";
+    left join kms_root_datasources r on d.datasource_id = r.datasource_id";
 
         var sq = SqlParser.Parse(sql);
         sq.GetSelectItems().ForEach(x => x.Name = x.Name.Replace("_", ""));
@@ -89,6 +89,8 @@ from
         {
             sq.Where.Add().Column(t, IdColumn).Equal(":id").AddParameter(":id", id);
         });
+
+        if (!lst.Any()) throw new Exception($"Datasource is not found.(id : {id}, includeDisable : {includeDisable})");
 
         return lst.First();
     }
@@ -155,7 +157,7 @@ from
     {
         var dbcolumns = this.GetColumns("", "kms_datasources");
         d.DestinationId = d.Destination.DestinationId;
-        d.ExtensionDatasourceIds = d.Extensions.Select(x => x.DestinationId).ToArray();
+        d.ExtensionDatasourceIds = d.Extensions.Select(x => x.DatasourceId).ToArray();
 
         var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
         sq.RemoveSelectItem(dbcolumns);
@@ -183,11 +185,11 @@ from
 
         if (d.IsRoot)
         {
-            SaveExtension(d, "kms_datasource_roots");
+            SaveExtension(d, "kms_root_datasources");
         }
         else
         {
-            DeleteExtension(d, "kms_datasource_roots");
+            DeleteExtension(d, "kms_root_datasources");
         }
 
         d.Extensions.ForEach(x => Save(x));
@@ -233,7 +235,6 @@ create table if not exists kms_datasources (
     , destination_id int8 not null 
     , description text not null
     , query text not null
-    , is_root bool not null
     , extension_datasource_ids int8[] not null
     , disable bool not null default false
     , created_at timestamp default current_timestamp
@@ -241,7 +242,7 @@ create table if not exists kms_datasources (
     , unique(destination_id, datasource_name)
 )
 ;
-create table if not exists kms_datasource_roots (
+create table if not exists kms_root_datasources (
     datasource_id int8 not null primary key
     , group_name text not null
     , map_name text not null
