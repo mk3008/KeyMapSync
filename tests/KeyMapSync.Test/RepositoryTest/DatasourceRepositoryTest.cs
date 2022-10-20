@@ -69,16 +69,19 @@ from
             var rep = new DatasourceRepository(new Postgres(), cn) { Logger = Logger };
             cn.Execute(ddl);
 
-            var c = rep.FindByName("accounts <- sales", "public", "accounts");
+            var c = rep.FindByName("accounts <- sales", "public", "accounts", true);
             if (c == null)
             {
+                Logger("insert");
                 c = rep.GetScaffold("accounts <- sales", "public", "sales", sql, "public", "accounts");
                 c.GroupName = "test";
                 rep.Save(c);
             }
 
+            c.Disable = false;
             c.Description = "test";
 
+            Logger("update");
             rep.Save(c);
         });
     }
@@ -101,12 +104,16 @@ from
             var parent = rep.FindByName("accounts <- sales", "public", "accounts");
             if (parent == null) throw new Exception();
 
-            var dsrep = new DestinationRepository(db, cn) { Logger = Logger };
-            var c = new Datasource();
-            c.ParentDatasourceId = parent.DatasourceId;
-            c.Query = sql;
-            c.Destination = dsrep.FindByName("public", "accounts");
+            var c = rep.FindByName("accounts <- reverse <- sales", "public", "accounts", true);
+            if (c == null)
+            {
+                Logger("insert");
+                c = rep.GetScaffold("accounts <- reverse <- sales", parent.DatasourceId, sql, "public", "accounts");
+                rep.Save(c);
+            }
 
+            Logger("update");
+            c.Disable = false;
             rep.Save(c);
         });
     }

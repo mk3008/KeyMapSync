@@ -37,7 +37,7 @@ public class DatasourceRepository : IRepositry
 
     private string DatasourceNameColumn = $"datasource_name";
 
-    public List<Datasource> Find(Action<SelectQuery, TableClause>? filter = null)
+    public List<Datasource> Find(bool includeDisable, Action<SelectQuery, TableClause>? filter = null)
     {
         var sql = @"select
     d.datasource_id
@@ -61,6 +61,7 @@ from
 
         var d = sq.FromClause;
 
+        if (includeDisable == false) sq.Where.Add().Column(d, "disable").False();
         filter?.Invoke(sq, d);
         var q = sq.ToQuery();
 
@@ -79,9 +80,9 @@ from
         return lst;
     }
 
-    public Datasource FindById(int id)
+    public Datasource FindById(int id, bool includeDisable = false)
     {
-        var lst = Find((sq, t) =>
+        var lst = Find(includeDisable, (sq, t) =>
         {
             sq.Where.Add().Column(t, IdColumn).Equal(":id").AddParameter(":id", id);
         });
@@ -89,9 +90,9 @@ from
         return lst.First();
     }
 
-    public Datasource? FindByName(string name, string destschame, string desttable)
+    public Datasource? FindByName(string name, string destschame, string desttable, bool includeDisable = false)
     {
-        var lst = Find((sq, t) =>
+        var lst = Find(includeDisable, (sq, t) =>
         {
             sq.Where.Add().Column(t, DatasourceNameColumn).Equal(":name").AddParameter(":name", name);
             sq.Where.Add().Exists(xq =>
@@ -108,18 +109,18 @@ from
         return lst.FirstOrDefault();
     }
 
-    public List<Datasource> FindByParentId(int parentid)
+    public List<Datasource> FindByParentId(int parentid, bool includeDisable = false)
     {
-        var lst = Find((sq, t) =>
+        var lst = Find(includeDisable, (sq, t) =>
         {
             sq.Where.Add().Column("e", "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
         });
         return lst;
     }
 
-    public List<Datasource> FindByGroup(string group)
+    public List<Datasource> FindByGroup(string group, bool includeDisable = false)
     {
-        var lst = Find((sq, t) =>
+        var lst = Find(includeDisable, (sq, t) =>
         {
             sq.Where.Add().Column("r", "group_name").Equal(":group").AddParameter(":group", group);
         });
@@ -136,6 +137,15 @@ from
         return d;
     }
 
+    public Datasource GetScaffold(string name, int parentDatasourceId, string query, string destschema, string desttable)
+    {
+        var d = new Datasource() { DatasourceName = name, ParentDatasourceId = parentDatasourceId, Query = query };
+        var c = (new DestinationRepository(Database, Connection) { Logger = Logger }).FindByName(destschema, desttable);
+        if (c == null) throw new Exception();
+        d.Destination = c;
+        return d;
+    }
+
     public void Save(Datasource d)
     {
         var dbcolumns = this.GetColumns("", "kms_datasources");
@@ -144,8 +154,13 @@ from
         var sq = SqlParser.Parse(d, nameconverter: x => x.ToSnakeCase().ToLower());
         sq.RemoveSelectItem(dbcolumns);
 
+        var dbdata = FindByName(d.DatasourceName, d.Destination.SchemaName, d.Destination.TableName, false);
 
-        if (d.DatasourceId == 0)
+        if (dbdata != null && d.DatasourceId != dbdata.DatasourceId)
+        {
+            throw new InvalidOperationException($"This name is already exists.(name : {d.DatasourceName}, destination : {d.Destination.TableFulleName})");
+        }
+        else if (dbdata == null)
         {
             var q = sq.ToInsertQuery(TableName, new() { IdColumn });
             q.CommandText += $"\r\nreturning {IdColumn}";
