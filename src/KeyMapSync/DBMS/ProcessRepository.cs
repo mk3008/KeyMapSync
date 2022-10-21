@@ -57,7 +57,7 @@ values
 returning kms_process_id";
 
         Logger?.Invoke(sql);
-        return Connection.Execute(sql, new
+        return Connection.Query<long>(sql, new
         {
             tran_id = tranid,
             destination_id = d.DestinationId,
@@ -65,6 +65,6 @@ returning kms_process_id";
             datasource_id = d.DatasourceId,
             datasource_full_name = d.TableFulleName,
             map_full_name = mapfullname,
-        });
+        }).First();
     }
 }
