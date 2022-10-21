@@ -36,6 +36,8 @@ public class InsertSynchronizer
         BridgeName = $"{owner.BridgeName}_{tmp}";
 
         IsRoot = false;
+
+        BridgeQuery = BuildSelectBridgeQuery();
     }
 
     public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
@@ -49,6 +51,8 @@ public class InsertSynchronizer
         BridgeName = $"_{tmp}";
 
         IsRoot = true;
+
+        BridgeQuery = BuildSelectBridgeQuery();
     }
 
     public SystemConfig SystemConfig { get; init; }
@@ -66,6 +70,8 @@ public class InsertSynchronizer
     private Datasource Datasource { get; init; }
 
     private string BridgeName { get; set; }
+
+    private SelectQuery BridgeQuery { get; set; }
 
     private Destination Destination => Datasource.Destination;
 
@@ -128,10 +134,7 @@ public class InsertSynchronizer
         Logger?.Invoke($"--transaction_id : {tranid}");
 
         //main
-        Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
-        var sq = BuildSelectBridgeQuery();
-
-        var result = Insert(sq, tranid);
+        var result = Insert(tranid);
 
         //kms_transaction end
         var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
@@ -142,44 +145,24 @@ public class InsertSynchronizer
 
     internal Result Insert(long tranid)
     {
-        Logger?.Invoke($"--extend insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
+        Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.DatasourceName}");
 
-        var sq = BuildSelectBridgeQuery();
-
-        return Insert(sq, tranid);
-    }
-
-    private Result Insert(SelectQuery bridgequery, long tranid)
-    {
         var result = new Result();
 
-        var cnt = CreateBridgeTable(bridgequery);
+        var cnt = CreateBridgeTable();
         if (cnt == 0) return result;
 
         //inject header insert
-        if (Destination.HeaderDestination != null)
+        var hs = BuildHeaderSyncronizer();
+        if (hs != null)
         {
-            var h = Destination.HeaderDestination;
-            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
-            var virtualDatasource
-                = new Datasource()
-                {
-                    DatasourceId = Datasource.DatasourceId,
-                    DatasourceName = Datasource.DatasourceName,
-                    Destination = h,
-                    DestinationId = h.DestinationId,
-                    Query = h.Query
-                };
-            var s = new InsertSynchronizer(this, virtualDatasource, replaceRootTable) { Logger = Logger };
-            result.Add(s.Insert(tranid));
+            result.Add(hs.Insert(tranid));
 
-            //override bridge table
-            var hsq = BuildSelectBridgeQuery(bridgequery, s.BridgeName, h);
-            var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', Datasource.DatasourceName)).Substring(0, 4);
-            BridgeName = $"{BridgeName}_{tmp}";
-            bridgequery = hsq;
-            var hcnt = CreateBridgeTable(bridgequery);
+            var oldname = BridgeName;
+            OverideBridgeNameAndQueryByHeader(hs.BridgeName);
+            Logger?.Invoke($"*override bridge (old : {oldname}, new : {BridgeName})");
 
+            var hcnt = CreateBridgeTable();
             if (cnt != hcnt) throw new Exception();
         }
 
@@ -188,7 +171,7 @@ public class InsertSynchronizer
         result.Add(new Result() { Table = "kms_processes", Count = cnt });
 
         //destination
-        if (InsertDestination(bridgequery) != cnt) throw new InvalidOperationException();
+        if (InsertDestination() != cnt) throw new InvalidOperationException();
         result.Add(new Result() { Table = Destination.TableFulleName, Count = cnt });
 
         //map
@@ -212,6 +195,25 @@ public class InsertSynchronizer
             result.Add(s.Insert(tranid));
         });
         return result;
+    }
+
+    private InsertSynchronizer? BuildHeaderSyncronizer()
+    {
+        var h = Destination.HeaderDestination;
+        if (h == null) return null;
+
+        //sync header
+        Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+        var ds
+            = new Datasource()
+            {
+                DatasourceId = Datasource.DatasourceId,
+                DatasourceName = Datasource.DatasourceName,
+                Destination = h,
+                DestinationId = h.DestinationId,
+                Query = h.Query
+            };
+        return new InsertSynchronizer(this, ds, replaceRootTable) { Logger = Logger };
     }
 
     private SelectQuery BuildSelectBridgeQuery()
@@ -252,7 +254,7 @@ public class InsertSynchronizer
         return sq;
     }
 
-    private SelectQuery BuildSelectBridgeQuery(SelectQuery origin, string headerbridge, Destination header)
+    private void OverideBridgeNameAndQueryByHeader(string headerbridge)
     {
         /*
          * select 
@@ -261,6 +263,9 @@ public class InsertSynchronizer
          * from current_bridge d
          * inner join header_bridge h m on header_key_colums
          */
+        var header = Destination.HeaderDestination;
+        if (header == null) throw new Exception();
+
         var sq = new SelectQuery();
         var d = sq.From(BridgeName).As("d");
         var h = d.InnerJoin(headerbridge).As("h").On(x =>
@@ -273,12 +278,15 @@ public class InsertSynchronizer
 
         sq.Select.Add().Column(h, header.SequenceConfig.Column);
 
-        origin.GetSelectItems().Select(x => (!string.IsNullOrEmpty(x.Name)) ? x.Name : x.ColumnName).ToList().ForEach(x =>
+        BridgeQuery.GetSelectItems().Select(x => (!string.IsNullOrEmpty(x.Name)) ? x.Name : x.ColumnName).ToList().ForEach(x =>
         {
             sq.Select.Add().Column(d, x);
         });
 
-        return sq;
+        //override bridge table
+        var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', Datasource.DatasourceName)).Substring(0, 4);
+        BridgeName = $"{BridgeName}_{tmp}";
+        BridgeQuery = sq;
     }
 
     private SelectQuery InjectNotSyncCondition(SelectQuery sq)
@@ -294,9 +302,9 @@ public class InsertSynchronizer
         return sq;
     }
 
-    private int CreateBridgeTable(SelectQuery sq)
+    private int CreateBridgeTable()
     {
-        var q = sq.ToCreateTableQuery(BridgeName, true);
+        var q = BridgeQuery.ToCreateTableQuery(BridgeName, true);
         ExecuteQuery(q);
 
         q = BuildBridgeCountQuery();
@@ -353,7 +361,7 @@ public class InsertSynchronizer
         return ExecuteQuery(q);
     }
 
-    private int InsertDestination(SelectQuery bridgequery)
+    private int InsertDestination()
     {
         /*
          * insert into destination (destination_id, value)
@@ -366,7 +374,7 @@ public class InsertSynchronizer
         var bridge = sq.FromClause;
 
         //select
-        var cols = bridgequery.GetSelectItems().Select(x => x.ColumnName).ToList();
+        var cols = BridgeQuery.GetSelectItems().Select(x => x.ColumnName).ToList();
         Destination.GetInsertColumns().Where(x => cols.Contains(x)).ToList().ForEach(x => sq.Select(bridge, x));
 
         var q = sq.ToInsertQuery(Destination.TableName, new());
