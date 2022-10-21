@@ -85,7 +85,7 @@ public class InsertSynchronizer
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
-    private SelectQuery BuildSelectQueryFromBridgeSelectSequence()
+    private SelectQuery BuildSelectSequenceFromBridge()
     {
         var alias = "bridge";
 
@@ -120,7 +120,7 @@ public class InsertSynchronizer
         return val;
     }
 
-    public Result Insert()
+    public Result Execute()
     {
         //kms_transaction start
         var rep = new TransactionRepository(Connection) { Logger = Logger };
@@ -128,7 +128,7 @@ public class InsertSynchronizer
         Logger?.Invoke($"--transaction_id : {tranid}");
 
         //main
-        var result = Insert(tranid);
+        var result = Execute(tranid);
 
         //kms_transaction end
         var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
@@ -137,7 +137,7 @@ public class InsertSynchronizer
         return result;
     }
 
-    internal Result Insert(long tranid)
+    internal Result Execute(long tranid)
     {
         Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.DatasourceName}");
 
@@ -150,7 +150,7 @@ public class InsertSynchronizer
         var hs = BuildHeaderSyncronizer();
         if (hs != null)
         {
-            result.Add(hs.Insert(tranid));
+            result.Add(hs.Execute(tranid));
 
             var oldname = BridgeName;
             OverideBridgeNameAndQueryByHeader(hs.BridgeName);
@@ -186,7 +186,7 @@ public class InsertSynchronizer
             Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
 
             var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
-            result.Add(s.Insert(tranid));
+            result.Add(s.Execute(tranid));
         });
         return result;
     }
@@ -329,7 +329,7 @@ public class InsertSynchronizer
          *     , :process_id as process_id
          * from tmp bridge
          */
-        var sq = BuildSelectQueryFromBridgeSelectSequence();
+        var sq = BuildSelectSequenceFromBridge();
         sq.Select.Add().Value(":process_id").As("kms_process_id").AddParameter(":process_id", procid);
 
         var q = sq.ToInsertQuery(SyncTableName, new());
@@ -345,7 +345,7 @@ public class InsertSynchronizer
          *     , datasource_id
          * from tmp bridge
          */
-        var sq = BuildSelectQueryFromBridgeSelectSequence();
+        var sq = BuildSelectSequenceFromBridge();
         var t = sq.FromClause;
 
         //select
@@ -364,7 +364,7 @@ public class InsertSynchronizer
          *     , value
          * from tmp bridge
          */
-        var sq = BuildSelectQueryFromBridgeSelectSequence();
+        var sq = BuildSelectSequenceFromBridge();
         var bridge = sq.FromClause;
 
         //select

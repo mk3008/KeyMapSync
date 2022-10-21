@@ -28,12 +28,12 @@ public class Synchronizer
     public Result Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, string>? injector = null)
     {
         var exe = new InsertSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument };
-        return exe.Insert();
+        return exe.Execute();
     }
 
-    //public Results Offset(IDbConnection connection, Datasource datasource, Action<SelectQuery>? act = null)
+    //public Result Offset(IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
     //{
-    //    var exe = new OffsetSynchronizer(connection, datasource, Dbms, DestinationResolver, act) { Logger = Logger, Timeout = Timeout }; ;
+    //    var exe = new OffsetSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument }; ;
     //    return exe.Offset();
     //}
 }
