@@ -64,10 +64,15 @@ values
     }
 
     [Fact]
-    public void TestAdd()
+    public void TestAddWithInsertTestData()
     {
         SetTestData();
+        TestAdd();
+    }
 
+    [Fact]
+    public void TestAdd()
+    {
         var logger = (string s) => Output.WriteLine(s);
 
         var injector = (SelectQuery q, string _) =>
@@ -91,45 +96,6 @@ values
 
             //debug
             d.Extensions.Clear();
-
-            logger.Invoke("sync datasource");
-            var sync = new Synchronizer(sysconfig, db) { Logger = logger };
-
-            logger.Invoke("*create table");
-            sync.CreateTable(cn, d);
-
-            logger.Invoke("*insert");
-            var result = sync.Insert(cn, d, injector: injector);
-
-            //result
-            var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
-            logger($"result : {text}");
-        });
-    }
-
-    [Fact]
-    public void TestNoAdd()
-    {
-        var logger = (string s) => Output.WriteLine(s);
-
-        var injector = (SelectQuery q, string _) =>
-        {
-            var t = q.FromClause;
-            q.Where.Add().Column(t, "price").Comparison(">=", 0);
-        };
-
-        DbExecute(cn =>
-        {
-            var db = new Postgres();
-
-            logger.Invoke("load sysconfig");
-            var sysconfig = (new SystemConfigRepository(db, cn) { Logger = logger }).Load();
-
-            logger.Invoke("load datasource");
-            var rep = (new DatasourceRepository(new Postgres(), cn) { Logger = logger });
-            var d = rep.FindByName("accounts <- sales", "public", "accounts");
-
-            if (d == null) throw new NullReferenceException();
 
             logger.Invoke("sync datasource");
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
