@@ -85,19 +85,13 @@ public class InsertSynchronizer
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
-    private SelectQuery CreateSelectFromBridgeQuery()
+    private SelectQuery BuildSelectQueryFromBridgeSelectSequence()
     {
         var alias = "bridge";
 
         var sq = new SelectQuery();
         sq.From(BridgeName).As(alias);
 
-        return sq;
-    }
-
-    private SelectQuery CreateSelectFromBridgeQueryAsAdditional()
-    {
-        var sq = CreateSelectFromBridgeQuery();
         var bridge = sq.FromClause;
 
         //select
@@ -167,7 +161,7 @@ public class InsertSynchronizer
         }
 
         //process
-        var procid = GetNewProcessId(tranid);
+        var procid = InsertProcessAndGetId(tranid);
         result.Add(new Result() { Table = "kms_processes", Count = cnt });
 
         //destination
@@ -319,7 +313,7 @@ public class InsertSynchronizer
         return sq.ToQuery();
     }
 
-    private long GetNewProcessId(long tranid)
+    private long InsertProcessAndGetId(long tranid)
     {
         var id = (new ProcessRepository(Connection) { Logger = Logger }).Insert(tranid, Datasource, MapTableName);
         Logger?.Invoke($"--process_id : {id}");
@@ -335,7 +329,7 @@ public class InsertSynchronizer
          *     , :process_id as process_id
          * from tmp bridge
          */
-        var sq = CreateSelectFromBridgeQueryAsAdditional();
+        var sq = BuildSelectQueryFromBridgeSelectSequence();
         sq.Select.Add().Value(":process_id").As("kms_process_id").AddParameter(":process_id", procid);
 
         var q = sq.ToInsertQuery(SyncTableName, new());
@@ -351,7 +345,7 @@ public class InsertSynchronizer
          *     , datasource_id
          * from tmp bridge
          */
-        var sq = CreateSelectFromBridgeQueryAsAdditional();
+        var sq = BuildSelectQueryFromBridgeSelectSequence();
         var t = sq.FromClause;
 
         //select
@@ -370,7 +364,7 @@ public class InsertSynchronizer
          *     , value
          * from tmp bridge
          */
-        var sq = CreateSelectFromBridgeQueryAsAdditional();
+        var sq = BuildSelectQueryFromBridgeSelectSequence();
         var bridge = sq.FromClause;
 
         //select
