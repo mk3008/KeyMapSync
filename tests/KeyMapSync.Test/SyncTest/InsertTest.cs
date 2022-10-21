@@ -45,13 +45,19 @@ public class InsertTest
             cn.Execute("truncate table sales");
 
             var sql = @"insert into sales (
-    sale_date,
-    price,
-    remakrs
+    sale_date
+    , shop_id
+    , client_id
+    , product_name
+    , price
+    , remakrs
 )
 values
-('2000-01-01', 100, 'test1'),
-('2000-01-02', 200, 'test2')";
+      ('2000-01-01', 1, 100, 'apple'  , 100, '')
+    , ('2000-01-01', 1, 100, 'orange' , 300, '')
+    , ('2000-01-01', 1, 200, 'tea'    , 500, '')
+    , ('2000-01-01', 1, 200, 'apple'  , 600, '')
+    , ('2000-01-01', 2, 100, 'coffee' , 200, '')";
             cn.Execute(sql);
         });
 
@@ -75,13 +81,16 @@ values
             var db = new Postgres();
 
             logger.Invoke("load sysconfig");
-            var sysconfig = (new SystemConfigRepository(db, cn) { Logger = logger }).Load();
+            var sysconfig = (new SystemConfigRepository(db, cn)).Load();//{ Logger = logger }
 
             logger.Invoke("load datasource");
-            var rep = (new DatasourceRepository(new Postgres(), cn) { Logger = logger });
-            var d = rep.FindByName("accounts <- sales", "public", "accounts");
+            var rep = (new DatasourceRepository(new Postgres(), cn)); // { Logger = logger }
+            var d = rep.FindByName("sale_slip_details <- sales", "public", "sale_slip_details");
 
-            if (d == null) throw new NullReferenceException();
+            if (d == null) throw new Exception($"Datasource is not found.");
+
+            //debug
+            d.Extensions.Clear();
 
             logger.Invoke("sync datasource");
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };

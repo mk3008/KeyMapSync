@@ -48,28 +48,20 @@ public class ScaffoldTest
     public void SaveDestination()
     {
         var ddl = @"
-create table if not exists public.accounts (
-    account_id bigserial not null primary key,
+create table if not exists public.sale_slips (
+    sale_slip_id bigserial not null primary key,
+    base_sale_slip_id int8,
+    sale_date date not null,
     shop_id int8 not null,
     client_id int8 not null,
-    journal_date date not null,
+    price int8 not null,
+    create_at timestamp null default current_timestamp
+)
+;
+create table if not exists public.sale_slip_details (
+    sale_slip_detail_id bigserial not null primary key,
+    sale_slip_id int8 not null,
     product_name text not null,
-    price int8 not null,
-    remakrs text null,
-    create_at timestamp null default current_timestamp
-)
-;
-create table if not exists public.shop_accounts (
-    shop_account_id bigserial not null primary key,
-    shop_id int8 not null,
-    journal_date date not null,
-    price int8 not null,
-    create_at timestamp null default current_timestamp
-)
-;
-create table if not exists public.daily_accounts (
-    daily_account_id bigserial not null primary key,
-    journal_date date not null,
     price int8 not null,
     create_at timestamp null default current_timestamp
 )
@@ -77,24 +69,27 @@ create table if not exists public.daily_accounts (
         var root = DbExecute(cn =>
         {
             ddl.Split(";").ToList().ForEach(x => cn.Execute(x));
+
             var rep = new DestinationRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
-            return rep.Save("public", "accounts");
+            return rep.Save("public", "sale_slip_details");
         });
 
         var h1 = DbExecute(cn =>
         {
             var sql = @"
 select
-    r.shop_id
-    , r.journal_date
-    , sum(r.price) as price
+    sale_date
+    , shop_id
+    , client_id
+    , sum(price) as price
 from
-    temporary r
+    _bridge t
 group by
-    r.shop_id
-    , r.journal_date";
+    sale_date
+    , shop_id
+    , client_id";
             var rep = new DestinationRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
-            var c = rep.SaveAsHeader("public", "shop_accounts", new[] { "shop_id", "journal_date" }, sql, "public", "accounts");
+            var c = rep.SaveAsHeader("public", "sale_slips", new[] { "sale_date", "shop_id", "client_id" }, sql, "public", "sale_slip_details");
             return c;
         });
     }
@@ -106,6 +101,9 @@ group by
 create table if not exists public.sales (
     sale_id bigserial not null primary key,
     sale_date date not null,
+    shop_id int8 not null,
+    client_id int8 not null,
+    product_name text not null,
     price int8 not null,
     remakrs text null,
     create_at timestamp null default current_timestamp
@@ -118,14 +116,16 @@ create table if not exists public.sales (
 
             var sql = @"
 select
-    s.sale_date as journal_date
-    , 'sales' as accounts_name
+    s.sale_date
+    , s.shop_id
+    , s.client_id
+    , s.product_name
     , s.price
     , s.sale_id
 from
     sales s";
 
-            var c = rep.SaveAsRoot("test", "accounts <- sales", "public", "sales", sql, "public", "accounts");
+            var c = rep.SaveAsRoot("test", "sale_slip_details <- sales", "public", "sales", sql, "public", "sale_slip_details");
             rep.Save(c);
             return c;
         });
@@ -135,12 +135,15 @@ from
             var rep = new DatasourceRepository(db, cn) { Logger = Logger };
             var sql = @"
 select
-    journal_date
-    , 'reverse' as accounts_name
-    , s.price * -1 as price
+    t.sale_date
+    , t.shop_id
+    , t.client_id
+    , t.product_name
+    , t.price * -1 as price
+    , t.sale_slip_id as base_sale_slip_id
 from
-    temporary_table s";
-            var c = rep.SaveAsExtension("accounts[reverse] <- x", sql, "public", "accounts");
+    _bridge t";
+            var c = rep.SaveAsExtension("sale_slip_details[reverse] <- x", sql, "public", "sale_slip_details");
 
             root.Extensions.Add(c);
             rep.Save(root);
@@ -152,12 +155,15 @@ from
             var rep = new DatasourceRepository(db, cn) { Logger = Logger };
             var sql = @"
 select
-    journal_date
-    , '10x' as accounts_name
-    , s.price * 10 as price
+    t.sale_date
+    , t.shop_id
+    , t.client_id
+    , t.product_name
+    , t.price * 10 as price
+    , t.sale_slip_id as base_sale_slip_id
 from
-    temporary_table s";
-            var c = rep.SaveAsExtension("accounts[10x] <- x", sql, "public", "accounts");
+    _bridge t";
+            var c = rep.SaveAsExtension("sale_slip_details[10x] <- x", sql, "public", "sale_slip_details");
 
             root.Extensions.Add(c);
             ext.Extensions.Add(c);

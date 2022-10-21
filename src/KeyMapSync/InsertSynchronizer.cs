@@ -65,7 +65,7 @@ public class InsertSynchronizer
 
     private Datasource Datasource { get; init; }
 
-    private string BridgeName { get; init; }
+    private string BridgeName { get; set; }
 
     private Destination Destination => Datasource.Destination;
 
@@ -130,6 +130,7 @@ public class InsertSynchronizer
         //main
         Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.TableFulleName}");
         var sq = BuildSelectBridgeQuery();
+
         var result = Insert(sq, tranid);
 
         //kms_transaction end
@@ -154,6 +155,33 @@ public class InsertSynchronizer
 
         var cnt = CreateBridgeTable(bridgequery);
         if (cnt == 0) return result;
+
+        //inject header insert
+        if (Destination.HeaderDestination != null)
+        {
+            var h = Destination.HeaderDestination;
+            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+            var virtualDatasource
+                = new Datasource()
+                {
+                    DatasourceId = Datasource.DatasourceId,
+                    DatasourceName = Datasource.DatasourceName,
+                    Destination = h,
+                    DestinationId = h.DestinationId,
+                    Query = h.Query
+                };
+            var s = new InsertSynchronizer(this, virtualDatasource, replaceRootTable) { Logger = Logger };
+            result.Add(s.Insert(tranid));
+
+            //override bridge table
+            var hsq = BuildSelectBridgeQuery(bridgequery, s.BridgeName, h);
+            var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', Datasource.DatasourceName)).Substring(0, 4);
+            BridgeName = $"{BridgeName}_{tmp}";
+            bridgequery = hsq;
+            var hcnt = CreateBridgeTable(bridgequery);
+
+            if (cnt != hcnt) throw new Exception();
+        }
 
         //process
         var procid = GetNewProcessId(tranid);
@@ -220,6 +248,35 @@ public class InsertSynchronizer
 
         //inject from config
         if (IsRoot && Datasource.HasKeymap) sq = InjectNotSyncCondition(sq);
+
+        return sq;
+    }
+
+    private SelectQuery BuildSelectBridgeQuery(SelectQuery origin, string headerbridge, Destination header)
+    {
+        /*
+         * select 
+         *     h.sequence_column
+         *     , d.*
+         * from current_bridge d
+         * inner join header_bridge h m on header_key_colums
+         */
+        var sq = new SelectQuery();
+        var d = sq.From(BridgeName).As("d");
+        var h = d.InnerJoin(headerbridge).As("h").On(x =>
+        {
+            header.KeyColumns.ToList().ForEach(key =>
+            {
+                x.Add().Column(x.LeftTable, key).Equal(x.RightTable, key);
+            });
+        });
+
+        sq.Select.Add().Column(h, header.SequenceConfig.Column);
+
+        origin.GetSelectItems().Select(x => (!string.IsNullOrEmpty(x.Name)) ? x.Name : x.ColumnName).ToList().ForEach(x =>
+        {
+            sq.Select.Add().Column(d, x);
+        });
 
         return sq;
     }
@@ -309,7 +366,7 @@ public class InsertSynchronizer
         var bridge = sq.FromClause;
 
         //select
-        var cols = bridgequery.Select.GetColumnNames().ToList();
+        var cols = bridgequery.GetSelectItems().Select(x => x.ColumnName).ToList();
         Destination.GetInsertColumns().Where(x => cols.Contains(x)).ToList().ForEach(x => sq.Select(bridge, x));
 
         var q = sq.ToInsertQuery(Destination.TableName, new());

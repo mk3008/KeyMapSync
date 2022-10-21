@@ -26,6 +26,11 @@ public class SystemTableCreator
         var destination = datasource.Destination;
         Execute(destination.GetSyncDbTable(SystemConfig.SyncConfig));
 
+        if (destination.HeaderDestination != null)
+        {
+            Execute(destination.HeaderDestination.GetSyncDbTable(SystemConfig.SyncConfig));
+        }
+
         if (isroot && !string.IsNullOrEmpty(datasource.MapName))
         {
             Execute(datasource.GetKeyMapDbTable(SystemConfig.KeyMapConfig));

@@ -41,9 +41,25 @@ public class DestinationRepository : IRepositry
     {
         var columns = this.GetColumns("", TableName);
 
-        var sq = new SelectQuery();
-        var t = sq.From(TableName).As("t");
-        columns.ForEach(x => sq.Select.Add().Column(t, x).As(x.Replace("_", "")));
+        var sql = @"select
+    d.destination_id
+    , d.base_destination_id
+    , d.description
+    , d.schema_name
+    , d.table_name
+    , d.sequence_config
+    , d.columns
+    , d.allow_offset
+    , h.key_columns
+    , h.query
+from
+    kms_destinations d
+    left join kms_header_destinations h on d.destination_id = h.destination_id";
+
+        var sq = SqlParser.Parse(sql);
+
+        var t = sq.FromClause;
+        sq.GetSelectItems().ForEach(x => x.Name = x.Name.Replace("_", ""));
         filter?.Invoke(sq, t);
         var q = sq.ToQuery();
 
