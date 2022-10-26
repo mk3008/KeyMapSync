@@ -37,6 +37,11 @@ public class SystemTableCreator
             if (destination.AllowOffset) Execute(destination.GetOffsetDbTable(SystemConfig.OffsetConfig));
         }
 
+        if (datasource.Extensions.Any())
+        {
+            Execute(datasource.Destination.GetExtendDbTable(SystemConfig.ExtendConfig));
+        }
+
         datasource.Extensions.ForEach(x => Execute(x, false));
     }
 

@@ -44,7 +44,7 @@ public partial class Postgres : IDBMS
         }).ToList();
 
         if (tbl.Sequence == null) cols.Add($"primary key({tbl.Primarykeys.ToString(", ")})");
-        tbl.UniqueKeyGroups.ForEach(keys => cols.Add($"unique({keys.ToString(", ")})"));
+        if (tbl.UniqueKeyGroups.Any()) cols.Add($"unique({tbl.UniqueKeyGroups.ToString(", ")})");
 
         var sql = $@"create table if not exists {tbl.Table}
 (

@@ -1,6 +1,7 @@
 ﻿using KeyMapSync.DBMS;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -49,7 +50,7 @@ public static class DestinationExtension
             Table = tableName,
             Sequence = null,
             Primarykeys = new() { source.SequenceConfig.Column },
-            UniqueKeyGroups = new() { new() { offsetColumn }, new() { renewColumn } }
+            UniqueKeyGroups = new() { offsetColumn, renewColumn }
         };
 
         tbl.AddDbColumn(source.SequenceConfig.Column);
@@ -58,5 +59,31 @@ public static class DestinationExtension
         tbl.AddDbColumn(config.OffsetRemarksColumn, DbColumn.Types.Text);
 
         return tbl;
+    }
+    public static string GetExtendTableName(this Destination source, ExtendConfig config)
+    {
+        return string.Format(config.TableNameFormat, source.TableName);
+    }
+
+    public static DbTable GetExtendDbTable(this Destination source, ExtendConfig config)
+    {
+        var name = source.GetExtendTableName(config);
+        var seq = source.SequenceConfig;
+
+        var lst = new Dictionary<string, DbColumn.Types>();
+        lst.Add(seq.Column, DbColumn.Types.Numeric);
+        lst.Add("extension_table_name", DbColumn.Types.Text);
+        lst.Add("id", DbColumn.Types.Numeric);
+
+        var t = new DbTable
+        {
+            Table = name,
+            Sequence = null,
+            Primarykeys = lst.Select(x => x.Key).ToList(),
+        };
+
+        lst.ForEach(x => t.AddDbColumn(x.Key, x.Value));
+
+        return t;
     }
 }

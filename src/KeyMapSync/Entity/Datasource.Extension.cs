@@ -26,7 +26,7 @@ public static class DatasourceExtension
             Table = name,
             Sequence = null,
             Primarykeys = new() { source.Destination.SequenceConfig.Column },
-            UniqueKeyGroups = new() { source.KeyColumnsConfig.Select(x => x.Key).ToList() }
+            UniqueKeyGroups = source.KeyColumnsConfig.Select(x => x.Key).ToList()
         };
 
         t.AddDbColumn(source.Destination.SequenceConfig.Column);
@@ -34,4 +34,6 @@ public static class DatasourceExtension
 
         return t;
     }
+
+
 }

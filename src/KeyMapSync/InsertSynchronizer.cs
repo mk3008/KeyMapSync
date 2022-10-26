@@ -28,6 +28,7 @@ public class InsertSynchronizer
 
     private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, Datasource, string> injector)
     {
+        BaseDatasource = owner.Datasource;
         Connection = owner.Connection;
         SystemConfig = owner.SystemConfig;
         Datasource = datasource;
@@ -68,6 +69,8 @@ public class InsertSynchronizer
 
     private Action<SelectQuery, Datasource, string>? Injector { get; init; }
 
+    private Datasource? BaseDatasource { get; init; } = null;
+
     private Datasource Datasource { get; init; }
 
     private string BridgeName { get; set; }
@@ -83,6 +86,10 @@ public class InsertSynchronizer
     private SyncConfig SyncConfig => SystemConfig.SyncConfig;
 
     private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
+
+    private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
+
+    private string? ExtTableName => BaseDatasource?.Destination.GetExtendTableName(ExtendConfig);
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
@@ -185,6 +192,13 @@ public class InsertSynchronizer
         if (InsertSync(procid) != cnt) throw new InvalidOperationException();
         result.Add(new Result() { Table = SyncTableName, Count = cnt });
 
+        //ext
+        if (Destination.IsHeader == false && BaseDatasource != null)
+        {
+            if (InsertExt(procid) != cnt) throw new InvalidOperationException();
+            result.Add(new Result() { Table = SyncTableName, Count = cnt });
+        }
+
         //nest
         Datasource.Extensions.ForEach(nestdatasource =>
         {
@@ -233,6 +247,22 @@ public class InsertSynchronizer
         var alias = "d";
 
         var sq = SqlParser.Parse(Datasource.Query);
+
+        //auto fix columns
+        if (Datasource.KeyColumnsConfig.Any())
+        {
+            var f = sq.FromClause;
+            var c = sq.GetSelectItems().Select(x => x.Name).ToList();
+            var keys = Datasource.KeyColumnsConfig.Select(x => x.Key).ToList();
+            keys.Where(x => !c.Contains(x)).ToList().ForEach(x => sq.Select.Add().Column(f, x));
+        }
+        if (Destination.IsHeader == false && BaseDatasource != null)
+        {
+            var f = sq.FromClause;
+            var baseseq = BaseDatasource.Destination.SequenceConfig;
+            sq.Select.Add().Column(f, baseseq.Column).As($"base_{baseseq.Column}");
+        }
+
         var cols = sq.Select.GetColumnNames();
 
         //inject from custom function
@@ -343,6 +373,36 @@ public class InsertSynchronizer
         sq.Select.Add().Value(":process_id").As("kms_process_id").AddParameter(":process_id", procid);
 
         var q = sq.ToInsertQuery(SyncTableName, new());
+        return ExecuteQuery(q);
+    }
+
+    private int InsertExt(long procid)
+    {
+        if (BaseDatasource == null) throw new InvalidProgramException();
+        var tbl = ExtTableName;
+        if (tbl == null) return 0;
+
+        /*
+         * insert into ext (base_id, table_name, id)
+         * select 
+         *     base_id
+         *     , table_name
+         *     , id
+         * from tmp bridge
+         */
+        var alias = "bridge";
+
+        var sq = new SelectQuery();
+        sq.From(BridgeName).As(alias);
+
+        var seq = BaseDatasource.Destination.SequenceConfig;
+        var bridge = sq.FromClause;
+        //select
+        sq.Select.Add().Column(bridge, $"base_{seq.Column}").As(seq.Column);
+        sq.Select.Add().Value(":table_name").As("extension_table_name").AddParameter(":table_name", Destination.TableFulleName);
+        sq.Select.Add().Column(bridge, Destination.SequenceConfig.Column).As("id");
+
+        var q = sq.ToInsertQuery(tbl, new());
         return ExecuteQuery(q);
     }
 

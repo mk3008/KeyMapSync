@@ -15,6 +15,8 @@ public class SystemConfig
     public OffsetConfig OffsetConfig { get; set; } = new();
 
     public CommandConfig CommandConfig { get; set; } = new();
+
+    public ExtendConfig ExtendConfig { get; set; } = new();
 }
 
 //public class ConfigTable

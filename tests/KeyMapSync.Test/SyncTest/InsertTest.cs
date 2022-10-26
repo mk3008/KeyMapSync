@@ -79,14 +79,14 @@ delete from sales where product_name = 'coffee'
     }
 
     [Fact]
-    public void TestAddWithInsertTestData()
+    public void TestInsertWithTestData()
     {
         SetTestData();
-        TestAdd();
+        TestInsert();
     }
 
     [Fact]
-    public void TestAdd()
+    public void TestInsert()
     {
         var logger = (string s) => Output.WriteLine(s);
 

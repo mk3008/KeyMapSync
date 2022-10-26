@@ -11,7 +11,7 @@ public class DbTable
 
     public List<string> Primarykeys { get; set; } = new();
 
-    public List<List<string>> UniqueKeyGroups { get; set; } = new();
+    public List<string> UniqueKeyGroups { get; set; } = new();
 
     public List<DbColumn> DbColumns { get; set; } = new();
 

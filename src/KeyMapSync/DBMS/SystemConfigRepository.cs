@@ -55,6 +55,7 @@ public class SystemConfigRepository : IRepositry
         c.SyncConfig = FindSyncConfig();
         c.OffsetConfig = FindOffsetConfig();
         c.CommandConfig = FindCommandConfig();
+        c.ExtendConfig = FindExtendConfig();
         return c;
     }
 
@@ -83,6 +84,16 @@ public class SystemConfigRepository : IRepositry
         var c = Find<OffsetConfig>((sq, t) =>
         {
             sq.Where.Add().Column(t, IdName).Equal(":name").AddParameter(":name", "OffsetConfig");
+        });
+
+        return c;
+    }
+
+    private ExtendConfig FindExtendConfig()
+    {
+        var c = Find<ExtendConfig>((sq, t) =>
+        {
+            sq.Where.Add().Column(t, IdName).Equal(":name").AddParameter(":name", "ExtendConfig");
         });
 
         return c;
@@ -129,5 +140,8 @@ where
 
         val = JsonSerializer.Serialize(new CommandConfig());
         Connection.Execute(sql, new { name = "CommandConfig", value = val });
+
+        val = JsonSerializer.Serialize(new ExtendConfig());
+        Connection.Execute(sql, new { name = "ExtendConfig", value = val });
     }
 }
