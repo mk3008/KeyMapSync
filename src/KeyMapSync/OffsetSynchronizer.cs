@@ -1,193 +1,110 @@
-﻿using KeyMapSync.Entity;
+﻿using KeyMapSync.DBMS;
+using KeyMapSync.Entity;
 using SqModel;
 using SqModel.Analysis;
 using SqModel.Dapper;
 using SqModel.Expression;
 using System.Data;
+using Utf8Json;
+using Utf8Json.Resolvers;
 
 namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    public OffsetSynchronizer(IDbConnection connection, Datasource datasource, IDBMS dbms, Func<string, Destination> resolver, Action<SelectQuery>? injector = null)
+    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
     {
-        if (datasource == null) throw new ArgumentNullException();
-
+        SystemConfig = config;
         Connection = connection;
         Datasource = datasource;
         Injector = injector;
-        Dbms = dbms;
-        DestinationResolver = resolver;
 
-        Datasource.Destination = DestinationResolver(Datasource.DestinationName);
-
-        var keymap = datasource.Destination?.KeyMapConfig;
-        var versioning = datasource.Destination?.VersioningConfig;
-        var offset = datasource.Destination?.OffsetConfig;
-
-        if (keymap == null) throw new InvalidOperationException();
-        if (offset == null) throw new InvalidOperationException();
-        if (versioning == null) throw new InvalidOperationException();
-
-        VersioningConfig = versioning;
-        VersionConfig = VersioningConfig.VersionConfig;
-        OffsetConfig = offset;
-
-        var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
+        var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"_{tmp}";
+
+        IsRoot = true;
+
+        BridgeQuery = BuildSelectBridgeQuery();
     }
 
-    private IDBMS Dbms { get; init; }
+    public SystemConfig SystemConfig { get; init; }
 
     public Action<string>? Logger { get; set; } = null;
 
-    public int? Timeout { get; set; } = null;
+    public string Argument { get; set; } = String.Empty;
 
-    internal IDbConnection Connection { get; init; }
+    private bool IsRoot { get; init; }
 
-    internal Func<string, Destination> DestinationResolver { get; init; }
+    private IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery>? Injector { get; init; }
+    private Action<SelectQuery, string>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
-    internal string BridgeName { get; init; }
+    private string BridgeName { get; set; }
 
-    private Destination Destination => (Datasource.Destination != null) ? Datasource.Destination : throw new InvalidProgramException();
+    private SelectQuery BridgeQuery { get; set; }
 
-    private VersioningConfig VersioningConfig { get; init; }
+    private Destination Destination => Datasource.Destination;
 
-    private VersionConfig VersionConfig { get; init; }
+    private KeyMapConfig KeyMapConfig => SystemConfig.KeyMapConfig;
 
-    private OffsetConfig OffsetConfig { get; init; }
+    private string MapTableName => Datasource.GetKeymapTableName(KeyMapConfig);
 
-    private string RenewalIdColumn => $"{OffsetConfig.RenewalColumnPrefix}{Destination.Sequence.Column}";
+    private SyncConfig SyncConfig => SystemConfig.SyncConfig;
 
-    private string OffsetIdColumn => $"{OffsetConfig.OffsetColumnPrefix}{Destination.Sequence.Column}";
+    private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
 
-    private string OffsetRemarksColumn => $"{OffsetConfig.OffsetRemarksColumn}";
+    private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
-    private SelectQuery CreateSelectFromBridgeQuery()
+    private OffsetConfig OffsetConfig => SystemConfig.OffsetConfig;
+
+    public Result Execute()
     {
-        var alias = "bridge";
+        //kms_transaction start
+        var rep = new TransactionRepository(Connection) { Logger = Logger };
+        var tranid = rep.Insert(Datasource, Argument);
+        Logger?.Invoke($"--transaction_id : {tranid}");
 
-        var sq = new SelectQuery();
-        sq.From(BridgeName).As(alias);
-        return sq;
+        //main
+        var result = Execute(tranid);
+
+        //kms_transaction end
+        var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
+        rep.Update(tranid, text);
+
+        return result;
     }
 
-    private SelectQuery CreateSelectFromBridgeQueryAsOffset()
+    internal Result Execute(long tranid)
     {
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
+        Logger?.Invoke($"--offset {Destination.TableFulleName} <- {Datasource.DatasourceName}");
 
-        //select
-        sq.Select(bridge, OffsetIdColumn).As(Destination.Sequence.Column);
+        var result = new Result();
 
-        return sq;
-    }
+        var cnt = CreateBridgeTable();
+        if (cnt == 0) return result;
 
-    private SelectQuery CreateSelectFromBridgeQueryAsRenewal()
-    {
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
-
-        //select
-        sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
-
-        //where
-        sq.Where.Add().Column(bridge, RenewalIdColumn).IsNotNull();
-        return sq;
-    }
-
-    private int ExecuteQuery(Query q)
-    {
-        Logger?.Invoke(q.ToDebugString());
-
-        var cnt = Connection.Execute(q, commandTimeout: Timeout);
-        Logger?.Invoke($"count : {cnt}");
-
-        return cnt;
-    }
-
-    private T ExecuteScalar<T>(Query q)
-    {
-        Logger?.Invoke(q.ToDebugString());
-
-        var val = Connection.ExecuteScalar<T>(q, commandTimeout: Timeout);
-        Logger?.Invoke($"results : {val?.ToString()}");
-
-        return val;
-    }
-
-    public Results Offset()
-    {
-        var sq = BuildSelectBridgeQuery();
-        return Offset(sq);
-    }
-
-    private Results Offset(SelectQuery bridgequery)
-    {
-        var results = new Results();
-
-        var cnt = CreateBridgeTable(bridgequery);
-        if (cnt == 0) return results;
-
-        //offset
-        results.Add(OffsetMain(cnt));
-
-        //renewal
-        results.Add(RenewalMain());
-
-        //common
-        if (InsertOffsetMap() != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetOffsetTableName(), Count = cnt });
-
-        if (InsertVersion(bridgequery) != 1) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetVersionTableName(), Count = 1 });
+        //mapping
+        InsertOffsetMap();
+        DeleteKeyMap();
 
         //nest
-        Datasource.OffsetExtensions.ForEach(x =>
+        //offset
+
+
+
+        //renew
+        Datasource.Extensions.ForEach(nestdatasource =>
         {
             //replace root table injector
-            Action<SelectQuery> act = q => q.FromClause.TableName = BridgeName;
+            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
 
-            var s = new InsertSynchronizer(this, x, act) { Logger = Logger }; ;
-            results.Add(s.Insert());
+            var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
+            result.Add(s.Execute(tranid));
         });
-        return results;
-    }
 
-    private Results OffsetMain(int cnt)
-    {
-        var results = new Results() { Name = "offset" };
-
-        if (InsertDestinationAsOffset() != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Destination.TableName, Count = cnt });
-
-        if (DeleteKeyMap() != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetKeymapTableName(), Count = cnt });
-
-        if (InsertSync(CreateSelectFromBridgeQueryAsOffset()) != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetSyncTableName(), Count = cnt });
-
-        return results;
-    }
-
-    private Results RenewalMain()
-    {
-        var results = new Results() { Name = "renewal" };
-
-        var cnt = InsertDestinationAsRenewal();
-        results.Add(new Result() { Table = Destination.TableName, Count = cnt });
-
-        if (InsertKeyMap() != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetKeymapTableName(), Count = cnt });
-
-        if (InsertSync(CreateSelectFromBridgeQueryAsRenewal()) != cnt) throw new InvalidOperationException();
-        results.Add(new Result() { Table = Datasource.GetSyncTableName(), Count = cnt });
-
-        return results;
+        return result;
     }
 
     private SelectQuery BuildSelectBridgeQuery()
@@ -200,14 +117,11 @@ public class OffsetSynchronizer
     private SelectQuery BuildSelectExpectQuery()
     {
         /*
-         * select d.*, m.datasource_id
+         * select d.*, datasource_ids
          * from destination d
-         * inner join keymap m on d.desitination_id = m.desitination_id
-         * inner join sync s on m.desitination_id = s.destination_id
-         * inner join version v on s.version_id = v.version_id
+         * inner join systemtable
          * where 
-         *     v.datasource_name = :dsname
-         *     and injection
+         *     injection
          */
         var alias = "d";
 
@@ -215,11 +129,41 @@ public class OffsetSynchronizer
         var d = sq.From(Destination.TableName).As(alias);
         sq.SelectAll(d);
 
-        // relation
-        sq = InjectKeymap(sq);
+        sq = InjectSelectDatasourceId(sq);
 
         //inject from custom function
-        if (Injector != null) Injector(sq);
+        if (Injector != null) Injector(sq, Argument);
+
+        return sq;
+    }
+
+    private SelectQuery InjectSelectDatasourceId(SelectQuery sq)
+    {
+        /*
+         * select m.datasource_ids
+         * from destination dinner join keymap _m on d.desitination_id = _m.desitination_id
+         * inner join sync _s on d.desitination_id = _s.destination_id
+         * inner join kms_processes _p on _s.kms_process_id = _p.kms_process_id
+         * inner join kms_transactions _t on _p.kms_transaction_id = _t.kms_transaction_id
+         * where 
+         *     _t.destinatiom_id = :destinatiom_id
+         *     and _t.datasource_id = :datasource_id
+         */
+        var seq = Destination.SequenceConfig.Column;
+
+        var d = sq.FromClause;
+        var m = d.InnerJoin(MapTableName).As("_m").On(x =>
+        {
+            Datasource.KeyColumnsConfig.ForEach(y => x.Add().Equal(y.Key));
+        });
+        var s = d.InnerJoin(SyncTableName).As("_s").On(seq);
+        var p = s.InnerJoin("kms_processes").As("_p").On("kms_process_id");
+        var t = p.InnerJoin("kms_transactions").As("_t").On("kms_transaction_id");
+
+        Datasource.KeyColumnsConfig.ForEach(x => sq.Select.Add().Column(m, x.Key));
+
+        sq.Where.Add().Column(t, "destination_id").Equal(":destination_id").AddParameter(":destination_id", Destination.DestinationId);
+        sq.Where.Add().Column(t, "datasource_ud").Equal(":datasource_ud").AddParameter(":datasource_ud", Datasource.DatasourceId);
 
         return sq;
     }
@@ -231,28 +175,27 @@ public class OffsetSynchronizer
         /*
          * with
          * e as (
-         *     --expectquery
+         *     expect query
          * ), 
-         * select offset_id, renewal_id, d.*, remarks
+         * select e.destination_id, offset_id, renewal_id, d.*, remarks
          * from e
-         * left join datasource d on e.datasource_id = d.datasource_id
-         * where --deleted or changed
+         * left join datasource d on e.datasource_ids = d.datasource_ids
+         * where deleted or changed
          */
-        var expectalias = "e";
-        var alias = "d";
+        var sq = expectquery.PushToCommonTable("e");
+        var e = sq.From("e");
+        var seq = Destination.SequenceConfig;
 
-        var sq = expectquery.PushToCommonTable(expectalias);
-        var e = sq.From(expectalias);
-        var d = e.LeftJoin(SqlParser.Parse(Datasource.Query)).As(alias).On(x =>
+        var d = e.LeftJoin(SqlParser.Parse(Datasource.Query)).As("d").On(x =>
         {
-            Datasource.KeyColumns.ForEach(col => x.Add().Equal(col.Key));
+            Datasource.KeyColumnsConfig.ForEach(col => x.Add().Equal(col.Key));
         });
 
         var cols = Destination.GetInsertColumns().ToList();
 
         var whereDeleted = (ConditionGroup g) =>
         {
-            g.Add().Or().Column(d, Datasource.KeyColumns.First().Key).IsNull();
+            g.Add().Or().Column(d, Datasource.KeyColumnsConfig.First().Key).IsNull();
         };
 
         var whereChanged = (ConditionGroup g) =>
@@ -279,9 +222,9 @@ public class OffsetSynchronizer
                 {
                     whereDeleted(g);
                     whereChanged(g);
-                }).Then(Destination.Sequence.Command);
+                }).Then(seq.Command);
                 w.Add().ElseNull();
-            }).As(OffsetIdColumn);
+            }).As(Destination.GetOffsetIdColumnName(OffsetConfig));
         };
 
         var selectRenewalId = (SelectItem item) =>
@@ -291,19 +234,19 @@ public class OffsetSynchronizer
                 w.Add().WhenGroup(g =>
                 {
                     whereChanged(g);
-                }).Then(Destination.Sequence.Command);
+                }).Then(seq.Command);
                 w.Add().ElseNull();
-            }).As(RenewalIdColumn);
+            }).As(Destination.GetRenewalIdColumnName(OffsetConfig));
         };
 
         var selectRemarks = (SelectItem item) =>
         {
-            item.Concat(Dbms.ConcatFunctionToken, Dbms.ConcatSplitToken, lst =>
+            item.Concat("concat", ",", lst =>
             {
                 //case when datasource_id is null then 'deleted' end
                 lst.Add().CaseWhen(w =>
                 {
-                    w.Add().When(x => x.Column(e, Datasource.KeyColumns.First().Key).IsNull()).Then("'deleted'");
+                    w.Add().When(x => x.Column(e, Datasource.KeyColumnsConfig.First().Key).IsNull()).Then("'deleted'");
                 });
 
                 //case when a.val <> b.val or not(a.val is null and b.val is null) then 'val is changed' end
@@ -323,18 +266,17 @@ public class OffsetSynchronizer
                         }).Then($"'{col} is changed,'");
                     });
                 });
-            }).As(OffsetRemarksColumn);
+            }).As(OffsetConfig.OffsetRemarksColumn);
         };
 
-        //select
-        InjectSelectVersion(sq);
-        sq.Select(e, Destination.Sequence.Column);
+        //select expect.destination_id, offset_id, renewal_id, actual.*, remarks
+        sq.Select(e, seq.Column);
         selectOffsetId(sq.Select.Add());
         selectRenewalId(sq.Select.Add());
         sq.SelectAll(d);
         selectRemarks(sq.Select.Add());
 
-        //where
+        //where deleted or changed
         sq.Where.Add().CaseWhen(w =>
         {
             w.Add().WhenGroup(g =>
@@ -347,218 +289,23 @@ public class OffsetSynchronizer
         return sq;
     }
 
-    private SelectQuery InjectSelectVersion(SelectQuery sq)
+    private int CreateBridgeTable()
     {
-        var alias = "v";
-
-        var config = VersioningConfig;
-        if (config == null) return sq;
-
-        var seq = config.Sequence;
-
-        var v = sq.With.Add(q =>
-        {
-            q.Select(seq.Command).As(seq.Column);
-        }).As(alias);
-
-        sq.FromClause.CrossJoin(v);
-        sq.Select.Add().Column(alias, seq.Column);
-
-        return sq;
-    }
-
-    private int InsertDestinationAsOffset()
-    {
-        /*
-         * select bridge.offset_id as id, d.value1, d.value2 * -1 as value2
-         * from tmp bridge
-         * inner join destination on bridge.destination_id = d.destination_id
-         */
-        var alias = "d";
-
-        //from
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
-        var origin = bridge.InnerJoin(Destination.TableName).As(alias).On(Destination.Sequence.Column);
-
-        var selectOffsetColumns = () =>
-        {
-            var cols = Destination.GetInsertColumns().ToList();
-            cols.ForEach(x =>
-            {
-                if (OffsetConfig.SignInversionColumns.Contains(x))
-                {
-                    sq.Select.Add().Value($"{origin.AliasName}.{x} * -1").As(x);
-                }
-                else
-                {
-                    sq.Select.Add().Column(origin.AliasName, x).As(x);
-                }
-            });
-        };
-
-        //select
-        sq.Select(bridge, OffsetIdColumn).As(Destination.Sequence.Column);
-        selectOffsetColumns();
-
-        var q = sq.ToInsertQuery(Destination.TableName);
-        return ExecuteQuery(q);
-    }
-
-    private int InsertDestinationAsRenewal()
-    {
-        /*
-         * select renewal_id as id, value1, value2
-         * from tmp bridge
-         * where
-         *     renewal_id is not null
-         */
-        //from
-        var sq = CreateSelectFromBridgeQueryAsRenewal();
-        var bridge = sq.FromClause;
-
-        //select
-        var cols = Destination.GetInsertColumns().ToList();
-        cols.ForEach(x =>
-        {
-            sq.Select.Add().Column(bridge, x).As(x);
-        });
-
-        var q = sq.ToInsertQuery(Destination.TableName);
-        return ExecuteQuery(q);
-    }
-
-    private int InsertOffsetMap()
-    {
-        /*
-          * select destination_id, offset_id, renewal_id, remarks
-          * from bridge
-          */
-
-        var offset = Datasource.GetOffsetTableName();
-        if (offset == null) throw new InvalidProgramException();
-
-        //from
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
-
-        //select
-        sq.Select(bridge, Destination.Sequence.Column);
-        sq.Select(bridge, OffsetIdColumn);
-        sq.Select(bridge, RenewalIdColumn);
-        sq.Select(bridge, OffsetRemarksColumn);
-
-        var q = sq.ToInsertQuery(offset);
-        return ExecuteQuery(q);
-    }
-
-    private int InsertVersion(SelectQuery bridgequery)
-    {
-        /*
-         * insert into version (version_id, datasource_name, bridge_command)
-         * select distinct 
-         *     version_id
-         *     , :name as datasource_name
-         *     , :query as bridge_command
-         * from tmp bridge
-         */
-        var ver = Datasource.GetVersionTableName();
-        if (ver == null) throw new InvalidProgramException();
-
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
-
-        //select
-        sq.Distinct();
-        sq.Select(bridge, VersioningConfig.Sequence.Column);
-        sq.Select(":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.TableName);
-        sq.Select(":query").As(VersionConfig.BridgeCommandColumn).Parameter(":query", bridgequery.ToQuery().CommandText);
-
-        var q = sq.ToInsertQuery(ver);
-        return ExecuteQuery(q);
-    }
-
-    private int InsertSync(SelectQuery selectQuery)
-    {
-        /*
-         * insert into sync (destination_id, version_id)
-         * select 
-         *     X as destination_id
-         *     , version_id
-         * from tmp bridge
-         */
-        var sync = Datasource.GetSyncTableName();
-        if (sync == null) throw new InvalidProgramException();
-
-        var bridge = selectQuery.FromClause;
-
-        //select
-        selectQuery.Select(bridge, VersioningConfig.Sequence.Column);
-
-        var q = selectQuery.ToInsertQuery(sync);
-        return ExecuteQuery(q);
-    }
-
-    private int InsertKeyMap()
-    {
-        /*
-         * insert into map (destination_id, datasource_id)
-         * select 
-         *     renewal_id as destination_id
-         *     , datasource_id
-         * from tmp bridge
-         */
-
-        var map = Datasource.GetKeymapTableName();
-        if (map == null) throw new InvalidProgramException();
-
-        var sq = CreateSelectFromBridgeQuery();
-        var bridge = sq.FromClause;
-
-        //select
-        sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
-        Datasource.KeyColumns.ForEach(x => sq.Select(bridge, x.Key));
-
-        //where
-        sq.Where.Add().Column(bridge, RenewalIdColumn).IsNotNull();
-
-        var q = sq.ToInsertQuery(map);
-        return ExecuteQuery(q);
-    }
-
-    private int DeleteKeyMap()
-    {
-        /*
-         * delete from map
-         * where 
-         *   exists (select * from tmp bridge where bridge.destination_id = map.destination_id)
-         */
-
-        var map = Datasource.GetKeymapTableName();
-        if (map == null) throw new InvalidProgramException();
-
-        var w = new ConditionClause("where");
-        w.ConditionGroup.Add().Exists(x =>
-        {
-            x.SelectAll();
-            var bridge = x.From(BridgeName).As("bridge");
-            var id = Destination.Sequence.Column;
-            x.Where.Add().Column(bridge, id).Equal(map, id);
-        });
-
-        var q = w.ToQuery();
-        q.CommandText = $"delete from {map} {q.CommandText}";
-
-        return ExecuteQuery(q);
-    }
-
-    private int CreateBridgeTable(SelectQuery sq)
-    {
-        var q = sq.ToCreateTableQuery(BridgeName, true);
+        var q = BridgeQuery.ToCreateTableQuery(BridgeName, true);
         ExecuteQuery(q);
 
         q = BuildBridgeCountQuery();
         return ExecuteScalar<int>(q);
+    }
+
+    private int ExecuteQuery(Query q)
+    {
+        Logger?.Invoke(q.ToDebugString());
+
+        var cnt = Connection.Execute(q, commandTimeout: CommandConfig.Timeout);
+        Logger?.Invoke($"count : {cnt}");
+
+        return cnt;
     }
 
     private Query BuildBridgeCountQuery()
@@ -569,40 +316,413 @@ public class OffsetSynchronizer
         return sq.ToQuery();
     }
 
-    private SelectQuery InjectKeymap(SelectQuery sq)
+    private T ExecuteScalar<T>(Query q)
     {
-        /* 
-         * select d.*, m.datasource_id
-         * from destination d
-         * inner join keymap m on d.desitination_id = _m.desitination_id
-         * inner join sync s on _m.desitination_id = _s.destination_id
-         * inner join version v on _s.version_id = _v.version_id
-         * where
-         * v.datasource_name = :dsname
+        Logger?.Invoke(q.ToDebugString());
+
+        var val = Connection.ExecuteScalar<T>(q, commandTimeout: CommandConfig.Timeout);
+        Logger?.Invoke($"results : {val?.ToString()}");
+
+        return val;
+    }
+
+    private int InsertOffsetMap()
+    {
+        /*
+          * select destination_id, offset_id, renewal_id, remarks
+          * from bridge
+          */
+
+        var offset = Destination.GetOffsetTableName(OffsetConfig);
+
+        //from bridge
+        var sq = new SelectQuery();
+        var bridge = sq.From(BridgeName).As("bridge");
+
+        //select destination_id, offset_id, renewal_id, remarks
+        sq.Select(bridge, Destination.SequenceConfig.Column);
+        sq.Select(bridge, Destination.GetOffsetIdColumnName(OffsetConfig));
+        sq.Select(bridge, Destination.GetRenewalIdColumnName(OffsetConfig));
+        sq.Select(bridge, OffsetConfig.OffsetRemarksColumn);
+
+        var q = sq.ToInsertQuery(offset, new());
+        return ExecuteQuery(q);
+    }
+
+    private int DeleteKeyMap()
+    {
+        /*
+         * delete from keymap
+         * where 
+         *   exists (select * from bridge where bridge.destination_id = map.destination_id)
          */
-        var keymapalias = "m";
-        var syncalias = "s";
-        var veralias = "v";
 
-        //relation
-        var keymap = Datasource.GetKeymapTableName();
-        if (keymap == null) throw new InvalidProgramException();
-        var m = sq.FromClause.InnerJoin(keymap).As(keymapalias).On(Destination.Sequence.Column);
+        var map = Datasource.GetKeymapTableName(KeyMapConfig);
+        if (map == null) throw new InvalidProgramException("keymaptable is not found.");
 
-        var sync = Datasource.GetSyncTableName();
-        if (sync == null) throw new InvalidProgramException();
-        var s = m.InnerJoin(sync).As(syncalias).On(Destination.Sequence.Column);
+        var w = new ConditionClause("where");
+        w.ConditionGroup.Add().Exists(x =>
+        {
+            x.SelectAll();
+            var bridge = x.From(BridgeName).As("bridge");
+            var id = Destination.SequenceConfig.Column;
+            x.Where.Add().Column(bridge, id).Equal(map, id);
+        });
 
-        var ver = Datasource.GetVersionTableName();
-        if (ver == null) throw new InvalidProgramException();
-        var v = s.InnerJoin(ver).As(veralias).On(VersioningConfig.Sequence.Column);
+        var q = w.ToQuery();
+        q.CommandText = $"delete from {map} {q.CommandText}";
+
+        return ExecuteQuery(q);
+    }
+
+    private Result InsertOffset(long tranid)
+    {
+        //virtual datasource
+        var ds = new Datasource()
+        {
+            DatasourceId = Datasource.DatasourceId,
+            DatasourceName = Datasource.DatasourceName,
+            Destination = Datasource.Destination,
+            DestinationId = Datasource.Destination.DestinationId,
+            Query = GetSelectOffsetDatasourceQuery()
+        };
+        var s = new InsertSynchronizer(SystemConfig, Connection, ds) { Logger = Logger };
+        return s.Execute(tranid);
+    }
+
+    private string GetSelectOffsetDatasourceQuery()
+    {
+        /*
+         * select bridge.offset_id as destination_id, e.value1, e.value2 * -1 as value2
+         * from bridge
+         * inner join destination expect on bridge.destination_id = expect.destination_id
+         * inner join extension1 expect_ext1 on expect.? = expect_ext1.?
+         */
+
+        //from
+        var sq = new SelectQuery();
+        var bridge = sq.From(BridgeName).As("bridge");
+        var e = bridge.InnerJoin(Destination.TableName).As("e").On(Destination.SequenceConfig.Column);
+
+        var addSelectColumn = () =>
+        {
+            var cols = Destination.GetInsertColumns().ToList();
+            cols.ForEach(x =>
+            {
+                if (Destination.SignInversionColumns.Contains(x))
+                {
+                    sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
+                }
+                else
+                {
+                    sq.Select.Add().Column(e.AliasName, x).As(x);
+                }
+            });
+        };
+
+        //restore extension datasource
+
 
         //select
-        Datasource.KeyColumns.ForEach(x => sq.Select(m, x.Key));
+        sq.Select(bridge, Destination.GetOffsetIdColumnName(OffsetConfig)).As(Destination.SequenceConfig.Column);
+        addSelectColumn();
+        var q = sq.ToQuery();
+        return q.CommandText;
+    }
+
+    private string GetSelectRenewalDatasourceQuery()
+    {
+        /*
+         * select bridge.renewal_id as destination_id, b.*
+         * from bridge
+         * where renewal_id is not null
+         */
+
+        //from
+        var sq = new SelectQuery();
+        var bridge = sq.From(BridgeName).As("bridge");
+
+        //select
+        sq.SelectAll(bridge);
 
         //where
-        sq.Where.Add().Column(v, VersionConfig.DatasourceNameColumn).Equal(":dsname").Parameter(":dsname", Datasource.TableName);
+        sq.Where.Add().Column(bridge, Destination.GetRenewalIdColumnName(OffsetConfig)).IsNotNull();
 
-        return sq;
+        var q = sq.ToQuery();
+        return q.CommandText;
     }
+
+    //private SelectQuery CreateSelectFromBridgeQueryAsOffset()
+    //{
+    //    var sq = CreateSelectFromBridgeQuery();
+    //    var bridge = sq.FromClause;
+
+    //    //select
+    //    sq.Select(bridge, OffsetIdColumn).As(Destination.Sequence.Column);
+
+    //    return sq;
+    //}
+
+    //private SelectQuery CreateSelectFromBridgeQueryAsRenewal()
+    //{
+    //    var sq = CreateSelectFromBridgeQuery();
+    //    var bridge = sq.FromClause;
+
+    //    //select
+    //    sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
+
+    //    //where
+    //    sq.Where.Add().Column(bridge, RenewalIdColumn).IsNotNull();
+    //    return sq;
+    //}
+
+
+
+
+
+    //public Results Offset()
+    //{
+    //    var sq = BuildSelectBridgeQuery();
+    //    return Offset(sq);
+    //}
+
+    //private Results Offset(SelectQuery bridgequery)
+    //{
+    //    var results = new Results();
+
+    //    var cnt = CreateBridgeTable(bridgequery);
+    //    if (cnt == 0) return results;
+
+    //    //offset
+    //    results.Add(OffsetMain(cnt));
+
+    //    //renewal
+    //    results.Add(RenewalMain());
+
+    //    //common
+    //    if (InsertOffsetMap() != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetOffsetTableName(), Count = cnt });
+
+    //    if (InsertVersion(bridgequery) != 1) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetVersionTableName(), Count = 1 });
+
+    //    //nest
+    //    Datasource.OffsetExtensions.ForEach(x =>
+    //    {
+    //        //replace root table injector
+    //        Action<SelectQuery> act = q => q.FromClause.TableName = BridgeName;
+
+    //        var s = new InsertSynchronizer(this, x, act) { Logger = Logger }; ;
+    //        results.Add(s.Insert());
+    //    });
+    //    return results;
+    //}
+
+    //private Results OffsetMain(int cnt)
+    //{
+    //    var results = new Results() { Name = "offset" };
+
+    //    if (InsertDestinationAsOffset() != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Destination.TableName, Count = cnt });
+
+    //    if (DeleteKeyMap() != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetKeymapTableName(), Count = cnt });
+
+    //    if (InsertSync(CreateSelectFromBridgeQueryAsOffset()) != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetSyncTableName(), Count = cnt });
+
+    //    return results;
+    //}
+
+    //private Results RenewalMain()
+    //{
+    //    var results = new Results() { Name = "renewal" };
+
+    //    var cnt = InsertDestinationAsRenewal();
+    //    results.Add(new Result() { Table = Destination.TableName, Count = cnt });
+
+    //    if (InsertKeyMap() != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetKeymapTableName(), Count = cnt });
+
+    //    if (InsertSync(CreateSelectFromBridgeQueryAsRenewal()) != cnt) throw new InvalidOperationException();
+    //    results.Add(new Result() { Table = Datasource.GetSyncTableName(), Count = cnt });
+
+    //    return results;
+    //}
+
+
+
+
+
+
+
+    //private SelectQuery InjectSelectVersion(SelectQuery sq)
+    //{
+    //    var alias = "v";
+
+    //    var config = VersioningConfig;
+    //    if (config == null) return sq;
+
+    //    var seq = config.Sequence;
+
+    //    var v = sq.With.Add(q =>
+    //    {
+    //        q.Select(seq.Command).As(seq.Column);
+    //    }).As(alias);
+
+    //    sq.FromClause.CrossJoin(v);
+    //    sq.Select.Add().Column(alias, seq.Column);
+
+    //    return sq;
+    //}
+
+    //private int InsertDestinationAsOffset()
+    //{
+    //    /*
+    //     * select bridge.offset_id as id, d.value1, d.value2 * -1 as value2
+    //     * from tmp bridge
+    //     * inner join destination on bridge.destination_id = d.destination_id
+    //     */
+    //    var alias = "d";
+
+    //    //from
+    //    var sq = CreateSelectFromBridgeQuery();
+    //    var bridge = sq.FromClause;
+    //    var origin = bridge.InnerJoin(Destination.TableName).As(alias).On(Destination.Sequence.Column);
+
+    //    var selectOffsetColumns = () =>
+    //    {
+    //        var cols = Destination.GetInsertColumns().ToList();
+    //        cols.ForEach(x =>
+    //        {
+    //            if (OffsetConfig.SignInversionColumns.Contains(x))
+    //            {
+    //                sq.Select.Add().Value($"{origin.AliasName}.{x} * -1").As(x);
+    //            }
+    //            else
+    //            {
+    //                sq.Select.Add().Column(origin.AliasName, x).As(x);
+    //            }
+    //        });
+    //    };
+
+    //    //select
+    //    sq.Select(bridge, OffsetIdColumn).As(Destination.Sequence.Column);
+    //    selectOffsetColumns();
+
+    //    var q = sq.ToInsertQuery(Destination.TableName);
+    //    return ExecuteQuery(q);
+    //}
+
+    //private int InsertDestinationAsRenewal()
+    //{
+    //    /*
+    //     * select renewal_id as id, value1, value2
+    //     * from tmp bridge
+    //     * where
+    //     *     renewal_id is not null
+    //     */
+    //    //from
+    //    var sq = CreateSelectFromBridgeQueryAsRenewal();
+    //    var bridge = sq.FromClause;
+
+    //    //select
+    //    var cols = Destination.GetInsertColumns().ToList();
+    //    cols.ForEach(x =>
+    //    {
+    //        sq.Select.Add().Column(bridge, x).As(x);
+    //    });
+
+    //    var q = sq.ToInsertQuery(Destination.TableName);
+    //    return ExecuteQuery(q);
+    //}
+
+
+
+    //private int InsertVersion(SelectQuery bridgequery)
+    //{
+    //    /*
+    //     * insert into version (version_id, datasource_name, bridge_command)
+    //     * select distinct 
+    //     *     version_id
+    //     *     , :name as datasource_name
+    //     *     , :query as bridge_command
+    //     * from tmp bridge
+    //     */
+    //    var ver = Datasource.GetVersionTableName();
+    //    if (ver == null) throw new InvalidProgramException();
+
+    //    var sq = CreateSelectFromBridgeQuery();
+    //    var bridge = sq.FromClause;
+
+    //    //select
+    //    sq.Distinct();
+    //    sq.Select(bridge, VersioningConfig.Sequence.Column);
+    //    sq.Select(":name").As(VersionConfig.DatasourceNameColumn).Parameter(":name", Datasource.TableName);
+    //    sq.Select(":query").As(VersionConfig.BridgeCommandColumn).Parameter(":query", bridgequery.ToQuery().CommandText);
+
+    //    var q = sq.ToInsertQuery(ver);
+    //    return ExecuteQuery(q);
+    //}
+
+    //private int InsertSync(SelectQuery selectQuery)
+    //{
+    //    /*
+    //     * insert into sync (destination_id, version_id)
+    //     * select 
+    //     *     X as destination_id
+    //     *     , version_id
+    //     * from tmp bridge
+    //     */
+    //    var sync = Datasource.GetSyncTableName();
+    //    if (sync == null) throw new InvalidProgramException();
+
+    //    var bridge = selectQuery.FromClause;
+
+    //    //select
+    //    selectQuery.Select(bridge, VersioningConfig.Sequence.Column);
+
+    //    var q = selectQuery.ToInsertQuery(sync);
+    //    return ExecuteQuery(q);
+    //}
+
+    //private int InsertKeyMap()
+    //{
+    //    /*
+    //     * insert into map (destination_id, datasource_id)
+    //     * select 
+    //     *     renewal_id as destination_id
+    //     *     , datasource_id
+    //     * from tmp bridge
+    //     */
+
+    //    var map = Datasource.GetKeymapTableName();
+    //    if (map == null) throw new InvalidProgramException();
+
+    //    var sq = CreateSelectFromBridgeQuery();
+    //    var bridge = sq.FromClause;
+
+    //    //select
+    //    sq.Select(bridge, RenewalIdColumn).As(Destination.Sequence.Column);
+    //    Datasource.KeyColumns.ForEach(x => sq.Select(bridge, x.Key));
+
+    //    //where
+    //    sq.Where.Add().Column(bridge, RenewalIdColumn).IsNotNull();
+
+    //    var q = sq.ToInsertQuery(map);
+    //    return ExecuteQuery(q);
+    //}
+
+
+
+
+    //private Query BuildBridgeCountQuery()
+    //{
+    //    var sq = new SelectQuery();
+    //    sq.From(BridgeName);
+    //    sq.SelectCount();
+    //    return sq.ToQuery();
+    //}
+
+
 }

@@ -15,10 +15,10 @@ public static class DestinationExtension
     public static string GetOffsetTableName(this Destination source, OffsetConfig config)
         => string.Format(config.TableNameFormat, source.TableName);
 
-    public static string GetOffsetColumnName(this Destination source, OffsetConfig config)
+    public static string GetOffsetIdColumnName(this Destination source, OffsetConfig config)
         => $"{config.OffsetColumnPrefix}{source.SequenceConfig.Column}";
 
-    public static string GetRenewalColumnName(this Destination source, OffsetConfig config)
+    public static string GetRenewalIdColumnName(this Destination source, OffsetConfig config)
         => $"{config.RenewalColumnPrefix}{source.SequenceConfig.Column}";
 
     public static DbTable GetSyncDbTable(this Destination source, SyncConfig config)
@@ -41,8 +41,8 @@ public static class DestinationExtension
     public static DbTable GetOffsetDbTable(this Destination source, OffsetConfig config)
     {
         var tableName = source.GetOffsetTableName(config);
-        var offsetColumn = source.GetOffsetColumnName(config);
-        var renewColumn = source.GetRenewalColumnName(config);
+        var offsetColumn = source.GetOffsetIdColumnName(config);
+        var renewColumn = source.GetRenewalIdColumnName(config);
 
         var tbl = new DbTable
         {

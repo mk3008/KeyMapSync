@@ -31,9 +31,9 @@ public class Synchronizer
         return exe.Execute();
     }
 
-    //public Result Offset(IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
-    //{
-    //    var exe = new OffsetSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument }; ;
-    //    return exe.Offset();
-    //}
+    public Result Offset(IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
+    {
+        var exe = new OffsetSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument }; ;
+        return exe.Offset();
+    }
 }

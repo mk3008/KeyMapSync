@@ -62,7 +62,7 @@
 		<Compile Remove="IDbConnectionExtension.cs" />
 		<Compile Remove="IDictionaryExtension.cs" />
 		<Compile Remove="IValidateOption.cs" />
-		<Compile Remove="OffsetSynchronizer.cs" />
+		<Compile Remove="OffsetQueryBuilder.cs" />
 		<Compile Remove="Synchronizer.Delete.cs" />
 		<Compile Remove="ValidateOption.cs" />
 	</ItemGroup>

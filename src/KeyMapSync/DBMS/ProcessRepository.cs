@@ -30,6 +30,7 @@ public class ProcessRepository
     , datasource_id int8 not null
     , datasource_name text not null
     , is_root bool not null
+    , is_header bool not null
     , map_full_name text
     , created_at timestamp default current_timestamp
 )";
@@ -45,6 +46,7 @@ public class ProcessRepository
     , datasource_id
     , datasource_name
     , is_root
+    , is_header
     , map_full_name
 )
 values
@@ -55,6 +57,7 @@ values
     , :datasource_id
     , :datasource_name
     , :is_root
+    , :is_header
     , :map_full_name
 )
 returning kms_process_id";
@@ -68,6 +71,7 @@ returning kms_process_id";
             datasource_id = d.DatasourceId,
             datasource_name = d.DatasourceName,
             is_root = d.IsRoot,
+            is_header = d.Destination.BaseDestinationId.HasValue,
             map_full_name = mapfullname,
         }).First();
     }
