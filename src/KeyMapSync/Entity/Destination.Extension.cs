@@ -72,6 +72,7 @@ public static class DestinationExtension
 
         var lst = new Dictionary<string, DbColumn.Types>();
         lst.Add(seq.Column, DbColumn.Types.Numeric);
+        lst.Add("destination_id", DbColumn.Types.Numeric);
         lst.Add("extension_table_name", DbColumn.Types.Text);
         lst.Add("id", DbColumn.Types.Numeric);
 

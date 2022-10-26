@@ -33,7 +33,7 @@ public class Synchronizer
 
     public Result Offset(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource, string>? injector = null)
     {
-        var exe = new OffsetSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument }; ;
+        var exe = new OffsetSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
         return exe.Execute();
     }
 }

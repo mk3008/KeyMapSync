@@ -147,7 +147,7 @@ public class InsertSynchronizer
         return result;
     }
 
-    internal Result Execute(long tranid, bool cascadeExtension = true)
+    internal Result Execute(long tranid)
     {
         Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.DatasourceName}");
 
@@ -193,10 +193,10 @@ public class InsertSynchronizer
         result.Add(new Result() { Table = SyncTableName, Count = cnt });
 
         //ext
-        if (Destination.IsHeader == false && BaseDatasource != null)
+        if (Destination.IsHeader == false && BaseDatasource != null && ExtTableName != null)
         {
             if (InsertExt(procid) != cnt) throw new InvalidOperationException();
-            result.Add(new Result() { Table = SyncTableName, Count = cnt });
+            result.Add(new Result() { Table = ExtTableName, Count = cnt });
         }
 
         //nest
@@ -399,6 +399,7 @@ public class InsertSynchronizer
         var bridge = sq.FromClause;
         //select
         sq.Select.Add().Column(bridge, $"base_{seq.Column}").As(seq.Column);
+        sq.Select.Add().Value(":dest_id").As("destination_id").AddParameter(":dest_id", Destination.DestinationId);
         sq.Select.Add().Value(":table_name").As("extension_table_name").AddParameter(":table_name", Destination.TableFulleName);
         sq.Select.Add().Column(bridge, Destination.SequenceConfig.Column).As("id");
 

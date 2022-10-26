@@ -13,12 +13,13 @@ namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
+    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, IDBMS dbms, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
         Datasource = datasource;
         Injector = injector;
+        Dbms = dbms;
 
         var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"_{tmp}";
@@ -33,6 +34,8 @@ public class OffsetSynchronizer
     public Action<string>? Logger { get; set; } = null;
 
     public string Argument { get; set; } = String.Empty;
+
+    private IDBMS Dbms { get; init; }
 
     private bool IsRoot { get; init; }
 
@@ -59,6 +62,10 @@ public class OffsetSynchronizer
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
     private OffsetConfig OffsetConfig => SystemConfig.OffsetConfig;
+
+    private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
+
+    private string ExtTableName => Destination.GetExtendTableName(ExtendConfig);
 
     public Result Execute()
     {
@@ -403,7 +410,86 @@ public class OffsetSynchronizer
         var s = new InsertSynchronizer(this, ds) { Logger = Logger };
         var r = s.Execute(tranid);
         r.Caption = "insert offset";
+
+
+        var extids = GetOffsetExtentDestinations();
+        var rep = new DestinationRepository(Dbms, Connection);
+        var cnt = 0;
+        extids.ForEach(x =>
+        {
+            var ext = rep.FindById(x);
+            var d = new Datasource()
+            {
+                DatasourceId = Datasource.DatasourceId,
+                DatasourceName = Datasource.DatasourceName,
+                Destination = Datasource.Destination,
+                DestinationId = Datasource.Destination.DestinationId,
+                Query = GetOffsetExtensionQuery(ext)
+            };
+            var s = new InsertSynchronizer(this, d, $"E{cnt}") { Logger = Logger };
+            r.Add(s.Execute(tranid));
+            cnt++;
+        });
         return r;
+    }
+
+    private List<long> GetOffsetExtentDestinations()
+    {
+        //extend
+        var sq = new SelectQuery();
+        var e = sq.From(ExtTableName).As("e");
+        var b = e.InnerJoin(BridgeName).As("b").On(Destination.SequenceConfig.Column);
+        sq.Distinct();
+        sq.Select.Add().Column(e, "destination_id");
+        var q = sq.ToQuery();
+
+        return Connection.Query<long>(q).ToList();
+    }
+
+    private string GetOffsetExtensionQuery(Destination extension)
+    {
+        //extend
+        var sq = new SelectQuery();
+        var e = sq.From(extension.TableFulleName).As("e");
+        var ext = e.InnerJoin(ExtTableName).As("ext").On(extension.SequenceConfig.Column, "id");
+        ext.InnerJoin(BridgeName).As("bridge").On(Destination.SequenceConfig.Column);
+
+        var addSelectColumn = () =>
+        {
+            var hseq = extension.HeaderDestination?.SequenceConfig.Column;
+
+            var cols = extension.GetInsertColumns().Where(x => x != hseq).ToList();
+            cols.ForEach(x =>
+            {
+                if (extension.SignInversionColumns.Contains(x))
+                {
+                    sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
+                }
+                else
+                {
+                    sq.Select.Add().Column(e.AliasName, x).As(x);
+                }
+            });
+        };
+
+        var addSelectHeaderColumn = () =>
+        {
+            //header
+            var header = extension.HeaderDestination;
+            if (header == null) return;
+            var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
+            var dscols = sq.GetSelectItems().Select(x => x.Name);
+            header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
+                .ForEach(x => sq.Select.Add().Column(h, x));
+        };
+
+        //select
+        addSelectColumn();
+        addSelectHeaderColumn();
+
+        var q = sq.ToQuery();
+
+        return q.CommandText;
     }
 
     private string GetSelectOffsetDatasourceQuery()
@@ -465,7 +551,8 @@ public class OffsetSynchronizer
             DatasourceName = Datasource.DatasourceName,
             Destination = Datasource.Destination,
             DestinationId = Datasource.Destination.DestinationId,
-            Query = GetSelectRenewalDatasourceQuery()
+            Query = GetSelectRenewalDatasourceQuery(),
+            Extensions = Datasource.Extensions
         };
         var s = new InsertSynchronizer(this, ds, "r") { Logger = Logger };
         var r = s.Execute(tranid);
