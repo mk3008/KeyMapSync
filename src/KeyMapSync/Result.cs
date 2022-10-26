@@ -4,9 +4,15 @@ namespace KeyMapSync;
 
 public class Result
 {
+    public string? Command { get; set; } = null;
+
     public string? Table { get; set; } = null;
 
     public int? Count { get; set; } = null;
+
+    public long? TransactionId { get; set; } = null;
+
+    public string? Caption { get; set; } = null;
 
     public List<Result>? InnerResults { get; set; } = null;
 

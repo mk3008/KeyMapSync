@@ -52,9 +52,12 @@ public class DestinationRepository : IRepositry
     , d.allow_offset
     , h.key_columns
     , h.query
+    , od.sign_inversion_columns
+    , od.inspection_ignore_columns
 from
     kms_destinations d
-    left join kms_header_destinations h on d.destination_id = h.destination_id";
+    left join kms_header_destinations h on d.destination_id = h.destination_id
+    left join kms_offsettable_destinations od on d.destination_id = od.destination_id and h.destination_id is null";
 
         var sq = SqlParser.Parse(sql);
 

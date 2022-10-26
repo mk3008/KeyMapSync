@@ -74,6 +74,16 @@ create table if not exists public.sale_slip_details (
             return rep.Save("public", "sale_slip_details");
         });
 
+        DbExecute(cn =>
+        {
+            root.AllowOffset = true;
+            root.InspectionIgnoreColumns = new[] { "sale_date", "product_name" };
+            root.SignInversionColumns = new[] { "price" };
+
+            var rep = new DestinationRepository(new Postgres(), cn) { Logger = x => Output.WriteLine(x) };
+            rep.Save(root);
+        });
+
         var h1 = DbExecute(cn =>
         {
             var sql = @"

@@ -5,6 +5,7 @@ using SqModel.Analysis;
 using SqModel.Dapper;
 using SqModel.Expression;
 using System.Data;
+using System.Reflection.PortableExecutable;
 using Utf8Json;
 using Utf8Json.Resolvers;
 
@@ -12,7 +13,7 @@ namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
+    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -35,13 +36,13 @@ public class OffsetSynchronizer
 
     private bool IsRoot { get; init; }
 
-    private IDbConnection Connection { get; init; }
+    internal IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery, string>? Injector { get; init; }
+    private Action<SelectQuery, Datasource, string>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
-    private string BridgeName { get; set; }
+    internal string BridgeName { get; set; }
 
     private SelectQuery BridgeQuery { get; set; }
 
@@ -68,6 +69,8 @@ public class OffsetSynchronizer
 
         //main
         var result = Execute(tranid);
+        result.Caption = $"offset";
+        result.TransactionId = tranid;
 
         //kms_transaction end
         var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
@@ -86,23 +89,23 @@ public class OffsetSynchronizer
         if (cnt == 0) return result;
 
         //mapping
-        InsertOffsetMap();
-        DeleteKeyMap();
+        result.Add(RefreshKeyMap());
 
         //nest
         //offset
-
-
+        result.Add(InsertOffset(tranid));
 
         //renew
-        Datasource.Extensions.ForEach(nestdatasource =>
-        {
-            //replace root table injector
-            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+        result.Add(InsertRenew(tranid));
 
-            var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
-            result.Add(s.Execute(tranid));
-        });
+        //Datasource.Extensions.ForEach(nestdatasource =>
+        //{
+        //    //replace root table injector
+        //    Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+
+        //    var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
+        //    result.Add(s.Execute(tranid));
+        //});
 
         return result;
     }
@@ -132,7 +135,7 @@ public class OffsetSynchronizer
         sq = InjectSelectDatasourceId(sq);
 
         //inject from custom function
-        if (Injector != null) Injector(sq, Argument);
+        if (Injector != null) Injector(sq, Datasource, Argument);
 
         return sq;
     }
@@ -152,10 +155,7 @@ public class OffsetSynchronizer
         var seq = Destination.SequenceConfig.Column;
 
         var d = sq.FromClause;
-        var m = d.InnerJoin(MapTableName).As("_m").On(x =>
-        {
-            Datasource.KeyColumnsConfig.ForEach(y => x.Add().Equal(y.Key));
-        });
+        var m = d.InnerJoin(MapTableName).As("_m").On(seq);
         var s = d.InnerJoin(SyncTableName).As("_s").On(seq);
         var p = s.InnerJoin("kms_processes").As("_p").On("kms_process_id");
         var t = p.InnerJoin("kms_transactions").As("_t").On("kms_transaction_id");
@@ -163,7 +163,7 @@ public class OffsetSynchronizer
         Datasource.KeyColumnsConfig.ForEach(x => sq.Select.Add().Column(m, x.Key));
 
         sq.Where.Add().Column(t, "destination_id").Equal(":destination_id").AddParameter(":destination_id", Destination.DestinationId);
-        sq.Where.Add().Column(t, "datasource_ud").Equal(":datasource_ud").AddParameter(":datasource_ud", Datasource.DatasourceId);
+        sq.Where.Add().Column(t, "datasource_id").Equal(":datasource_id").AddParameter(":datasource_id", Datasource.DatasourceId);
 
         return sq;
     }
@@ -182,8 +182,8 @@ public class OffsetSynchronizer
          * left join datasource d on e.datasource_ids = d.datasource_ids
          * where deleted or changed
          */
-        var sq = expectquery.PushToCommonTable("e");
-        var e = sq.From("e");
+        var sq = expectquery.PushToCommonTable("expect");
+        var e = sq.From("expect").As("e");
         var seq = Destination.SequenceConfig;
 
         var d = e.LeftJoin(SqlParser.Parse(Datasource.Query)).As("d").On(x =>
@@ -191,7 +191,11 @@ public class OffsetSynchronizer
             Datasource.KeyColumnsConfig.ForEach(col => x.Add().Equal(col.Key));
         });
 
-        var cols = Destination.GetInsertColumns().ToList();
+        var dscols = SqlParser.Parse(Datasource.Query).Select.GetColumnNames();
+        var ignores = Destination.InspectionIgnoreColumns;
+        var cols = Destination.GetInsertColumns().ToList()
+            .Where(x => dscols.Contains(x))
+            .Where(x => !ignores.Contains(x)).ToList();
 
         var whereDeleted = (ConditionGroup g) =>
         {
@@ -246,7 +250,7 @@ public class OffsetSynchronizer
                 //case when datasource_id is null then 'deleted' end
                 lst.Add().CaseWhen(w =>
                 {
-                    w.Add().When(x => x.Column(e, Datasource.KeyColumnsConfig.First().Key).IsNull()).Then("'deleted'");
+                    w.Add().When(x => x.Column(d, Datasource.KeyColumnsConfig.First().Key).IsNull()).Then("'deleted'");
                 });
 
                 //case when a.val <> b.val or not(a.val is null and b.val is null) then 'val is changed' end
@@ -326,7 +330,15 @@ public class OffsetSynchronizer
         return val;
     }
 
-    private int InsertOffsetMap()
+    private Result RefreshKeyMap()
+    {
+        var result = new Result() { Caption = "refresh keymap" };
+        result.Add(InsertOffsetMap());
+        result.Add(DeleteKeyMap());
+        return result;
+    }
+
+    private Result InsertOffsetMap()
     {
         /*
           * select destination_id, offset_id, renewal_id, remarks
@@ -346,10 +358,11 @@ public class OffsetSynchronizer
         sq.Select(bridge, OffsetConfig.OffsetRemarksColumn);
 
         var q = sq.ToInsertQuery(offset, new());
-        return ExecuteQuery(q);
+        var cnt = ExecuteQuery(q);
+        return new Result() { Table = offset, Count = cnt };
     }
 
-    private int DeleteKeyMap()
+    private Result DeleteKeyMap()
     {
         /*
          * delete from keymap
@@ -372,7 +385,8 @@ public class OffsetSynchronizer
         var q = w.ToQuery();
         q.CommandText = $"delete from {map} {q.CommandText}";
 
-        return ExecuteQuery(q);
+        var cnt = ExecuteQuery(q);
+        return new Result() { Table = map, Count = cnt, Command = "delete" };
     }
 
     private Result InsertOffset(long tranid)
@@ -386,8 +400,10 @@ public class OffsetSynchronizer
             DestinationId = Datasource.Destination.DestinationId,
             Query = GetSelectOffsetDatasourceQuery()
         };
-        var s = new InsertSynchronizer(SystemConfig, Connection, ds) { Logger = Logger };
-        return s.Execute(tranid);
+        var s = new InsertSynchronizer(this, ds) { Logger = Logger };
+        var r = s.Execute(tranid);
+        r.Caption = "insert offset";
+        return r;
     }
 
     private string GetSelectOffsetDatasourceQuery()
@@ -406,7 +422,8 @@ public class OffsetSynchronizer
 
         var addSelectColumn = () =>
         {
-            var cols = Destination.GetInsertColumns().ToList();
+            var dscols = SqlParser.Parse(Datasource.Query).Select.GetColumnNames();
+            var cols = Destination.GetInsertColumns().Where(x => dscols.Contains(x)).ToList();
             cols.ForEach(x =>
             {
                 if (Destination.SignInversionColumns.Contains(x))
@@ -420,14 +437,40 @@ public class OffsetSynchronizer
             });
         };
 
-        //restore extension datasource
-
+        var addSelectHeaderColumn = () =>
+        {
+            //header
+            var header = Destination.HeaderDestination;
+            if (header == null) return;
+            var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
+            var dscols = sq.GetSelectItems().Select(x => x.Name);
+            header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
+                .ForEach(x => sq.Select.Add().Column(h, x));
+        };
 
         //select
         sq.Select(bridge, Destination.GetOffsetIdColumnName(OffsetConfig)).As(Destination.SequenceConfig.Column);
         addSelectColumn();
+        addSelectHeaderColumn();
         var q = sq.ToQuery();
         return q.CommandText;
+    }
+
+    private Result InsertRenew(long tranid)
+    {
+        //virtual datasource
+        var ds = new Datasource()
+        {
+            DatasourceId = Datasource.DatasourceId,
+            DatasourceName = Datasource.DatasourceName,
+            Destination = Datasource.Destination,
+            DestinationId = Datasource.Destination.DestinationId,
+            Query = GetSelectRenewalDatasourceQuery()
+        };
+        var s = new InsertSynchronizer(this, ds, "r") { Logger = Logger };
+        var r = s.Execute(tranid);
+        r.Caption = "insert renew";
+        return r;
     }
 
     private string GetSelectRenewalDatasourceQuery()
@@ -442,11 +485,25 @@ public class OffsetSynchronizer
         var sq = new SelectQuery();
         var bridge = sq.From(BridgeName).As("bridge");
 
+        var addSelectColumn = () =>
+        {
+            var dscols = SqlParser.Parse(Datasource.Query).Select.GetColumnNames();
+            dscols.ForEach(x =>
+            {
+                sq.Select.Add().Column(bridge, x);
+            });
+        };
+
         //select
-        sq.SelectAll(bridge);
+        var renewIdName = Destination.GetRenewalIdColumnName(OffsetConfig);
+        sq.Select(bridge, renewIdName).As(Destination.SequenceConfig.Column);
+        addSelectColumn();
+
+        //select
+        //sq.SelectAll(bridge);
 
         //where
-        sq.Where.Add().Column(bridge, Destination.GetRenewalIdColumnName(OffsetConfig)).IsNotNull();
+        sq.Where.Add().Column(bridge, renewIdName).IsNotNull();
 
         var q = sq.ToQuery();
         return q.CommandText;

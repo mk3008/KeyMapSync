@@ -11,21 +11,22 @@ namespace KeyMapSync;
 
 public class InsertSynchronizer
 {
-    //internal InsertSynchronizer(OffsetSynchronizer owner, Datasource datasource, Action<SelectQuery> injector)
-    //{
-    //    Connection = owner.Connection;
-    //    Datasource = datasource;
-    //    Timeout = owner.Timeout;
-    //    DestinationResolver = owner.DestinationResolver;
-    //    Injector = injector;
+    internal InsertSynchronizer(OffsetSynchronizer owner, Datasource datasource, string temporarySufix = "")
+    {
+        Connection = owner.Connection;
+        SystemConfig = owner.SystemConfig;
+        Datasource = datasource;
+        Injector = null;
 
-    //    Datasource.Destination = DestinationResolver(Datasource.DestinationName);
+        var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
+        BridgeName = $"{owner.BridgeName}_{tmp}{temporarySufix}";
 
-    //    var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
-    //    BridgeName = $"{owner.BridgeName}_{tmp}";
-    //}
+        IsRoot = false;
 
-    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, string> injector)
+        BridgeQuery = BuildSelectBridgeQuery();
+    }
+
+    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, Datasource, string> injector)
     {
         Connection = owner.Connection;
         SystemConfig = owner.SystemConfig;
@@ -40,7 +41,7 @@ public class InsertSynchronizer
         BridgeQuery = BuildSelectBridgeQuery();
     }
 
-    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, string>? injector = null)
+    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -65,7 +66,7 @@ public class InsertSynchronizer
 
     private IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery, string>? Injector { get; init; }
+    private Action<SelectQuery, Datasource, string>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
@@ -129,6 +130,8 @@ public class InsertSynchronizer
 
         //main
         var result = Execute(tranid);
+        result.Caption = $"insert";
+        result.TransactionId = tranid;
 
         //kms_transaction end
         var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
@@ -137,11 +140,12 @@ public class InsertSynchronizer
         return result;
     }
 
-    internal Result Execute(long tranid)
+    internal Result Execute(long tranid, bool cascadeExtension = true)
     {
         Logger?.Invoke($"--insert {Destination.TableFulleName} <- {Datasource.DatasourceName}");
 
         var result = new Result();
+        result.Caption = $"cascade insert";
 
         var cnt = CreateBridgeTable();
         if (cnt == 0) return result;
@@ -150,7 +154,9 @@ public class InsertSynchronizer
         var hs = BuildHeaderSyncronizer();
         if (hs != null)
         {
-            result.Add(hs.Execute(tranid));
+            var r = hs.Execute(tranid);
+            r.Caption = "header inesrt";
+            result.Add(r);
 
             var oldname = BridgeName;
             OverideBridgeNameAndQueryByHeader(hs.BridgeName);
@@ -183,7 +189,7 @@ public class InsertSynchronizer
         Datasource.Extensions.ForEach(nestdatasource =>
         {
             //replace root table injector
-            Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+            Action<SelectQuery, Datasource, string> replaceRootTable = (q, _, _) => q.FromClause.TableName = BridgeName;
 
             var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
             result.Add(s.Execute(tranid));
@@ -197,7 +203,7 @@ public class InsertSynchronizer
         if (h == null) return null;
 
         //sync header
-        Action<SelectQuery, string> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
+        Action<SelectQuery, Datasource, string> replaceRootTable = (q, _, _) => q.FromClause.TableName = BridgeName;
         var ds
             = new Datasource()
             {
@@ -230,7 +236,7 @@ public class InsertSynchronizer
         var cols = sq.Select.GetColumnNames();
 
         //inject from custom function
-        if (Injector != null) Injector(sq, Argument);
+        if (Injector != null) Injector(sq, Datasource, Argument);
 
         sq = sq.PushToCommonTable(alias);
 
@@ -239,7 +245,11 @@ public class InsertSynchronizer
 
         //select
         var seq = Destination.SequenceConfig;
-        sq.Select(seq.Command).As(seq.Column);
+        if (!cols.Contains(seq.Column))
+        {
+            sq.Select(seq.Command).As(seq.Column);
+        }
+
         cols.ForEach(x => sq.Select.Add().Column(d, x));
 
         //inject from config

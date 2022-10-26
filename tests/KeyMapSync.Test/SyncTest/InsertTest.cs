@@ -42,7 +42,6 @@ public class InsertTest
         {
             var rep = new TransactionRepository(cn);
             rep.CreateTableOrDefault();
-            cn.Execute("truncate table sales");
 
             var sql = @"insert into sales (
     sale_date
@@ -63,6 +62,22 @@ values
 
     }
 
+    private void SetOffsetData()
+    {
+        DbExecute(cn =>
+        {
+            var sql = @"
+update sales set price = 110 where product_name = 'orange'
+;
+update sales set product_name = 'apple2' where product_name = 'apple'
+;
+delete from sales where product_name = 'coffee'
+";
+            cn.Execute(sql);
+        });
+
+    }
+
     [Fact]
     public void TestAddWithInsertTestData()
     {
@@ -75,10 +90,10 @@ values
     {
         var logger = (string s) => Output.WriteLine(s);
 
-        var injector = (SelectQuery q, string _) =>
+        var injector = (SelectQuery q, Datasource _, string _) =>
         {
             var t = q.FromClause;
-            q.Where.Add().Column(t, "price").Comparison(">=", 0);
+            q.Where.Add().Column(t, "price").Comparison("<>", 0);
         };
 
         DbExecute(cn =>
@@ -95,7 +110,7 @@ values
             if (d == null) throw new Exception($"Datasource is not found.");
 
             //debug
-            d.Extensions.Clear();
+            //d.Extensions.Clear();
 
             logger.Invoke("sync datasource");
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
@@ -105,6 +120,52 @@ values
 
             logger.Invoke("*insert");
             var result = sync.Insert(cn, d, injector: injector);
+
+            //result
+            var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
+            logger($"result : {text}");
+        });
+    }
+
+    [Fact]
+    public void TestOffsetWithUpdateDat()
+    {
+        SetOffsetData();
+        TestOffset();
+    }
+
+    [Fact]
+    public void TestOffset()
+    {
+        var logger = (string s) => Output.WriteLine(s);
+
+        var injector = (SelectQuery q, Datasource _, string _) =>
+        {
+            var t = q.FromClause;
+            q.Where.Add().Column(t, "price").Comparison("<>", 0);
+        };
+
+        DbExecute(cn =>
+        {
+            var db = new Postgres();
+
+            logger.Invoke("load sysconfig");
+            var sysconfig = (new SystemConfigRepository(db, cn)).Load();//{ Logger = logger }
+
+            logger.Invoke("load datasource");
+            var rep = (new DatasourceRepository(new Postgres(), cn)); // { Logger = logger }
+            var d = rep.FindByName("sale_slip_details <- sales", "public", "sale_slip_details");
+
+            if (d == null) throw new Exception($"Datasource is not found.");
+
+            logger.Invoke("sync datasource");
+            var sync = new Synchronizer(sysconfig, db) { Logger = logger };
+
+            logger.Invoke("*create table");
+            sync.CreateTable(cn, d);
+
+            logger.Invoke("*offset");
+            var result = sync.Offset(cn, d, injector: injector);
 
             //result
             var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
