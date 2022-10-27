@@ -67,7 +67,7 @@ values
         DbExecute(cn =>
         {
             var sql = @"
-update sales set price = 110 where product_name = 'orange'
+update sales set price = 120 where product_name = 'orange'
 ;
 update sales set product_name = 'apple2' where product_name = 'apple'
 ;

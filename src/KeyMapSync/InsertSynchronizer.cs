@@ -11,7 +11,7 @@ namespace KeyMapSync;
 
 public class InsertSynchronizer
 {
-    internal InsertSynchronizer(OffsetSynchronizer owner, Datasource datasource, string temporarySufix = "")
+    internal InsertSynchronizer(OffsetSynchronizer owner, Datasource datasource, string temporarySufix = "", bool isRoot = false)
     {
         Connection = owner.Connection;
         SystemConfig = owner.SystemConfig;
@@ -21,7 +21,7 @@ public class InsertSynchronizer
         var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
         BridgeName = $"{owner.BridgeName}_{tmp}{temporarySufix}";
 
-        IsRoot = false;
+        IsRoot = isRoot;
 
         BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, null);
     }

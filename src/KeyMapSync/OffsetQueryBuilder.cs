@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SqModel.Expression;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace KeyMapSync;
 
@@ -392,5 +393,56 @@ internal class OffsetQueryBuilder
         });
 
         return sq;
+    }
+
+    internal static Datasource BuildRenewDatasource(Datasource ds, string bridgeName, SystemConfig config)
+    {
+        //virtual datasource
+        var q = BuildSelectRenewalDatasourceFromBridge(ds, bridgeName, config);
+
+        var datasource = new Datasource()
+        {
+            DatasourceId = ds.DatasourceId,
+            DatasourceName = ds.DatasourceName,
+            Destination = ds.Destination,
+            DestinationId = ds.Destination.DestinationId,
+            Query = q.CommandText,
+            Extensions = ds.Extensions,
+            KeyColumnsConfig = ds.KeyColumnsConfig,
+            MapName = ds.MapName,
+        };
+        return datasource;
+    }
+
+    internal static Datasource BuildOffsetDatasrouce(Datasource ds, string bridgeName, SystemConfig config)
+    {
+        //virtual datasource
+        var q = BuildSelectOffsetDatasourceFromBridge(ds, bridgeName, config);
+
+        var datasource = new Datasource()
+        {
+            DatasourceId = ds.DatasourceId,
+            DatasourceName = ds.DatasourceName,
+            Destination = ds.Destination,
+            DestinationId = ds.Destination.DestinationId,
+            Query = q.CommandText
+        };
+        return datasource;
+    }
+
+    internal static Datasource BuildOffsetExtensionDatasrouce(Datasource ds, Destination extension, string bridgeName, SystemConfig config)
+    {
+        //virtual datasource
+        var q = BuildSelectOffsetExtensionFromBridge(ds, bridgeName, extension, config);
+
+        var datasource = new Datasource()
+        {
+            DatasourceId = ds.DatasourceId,
+            DatasourceName = ds.DatasourceName,
+            Destination = ds.Destination,
+            DestinationId = ds.Destination.DestinationId,
+            Query = q.CommandText
+        };
+        return datasource;
     }
 }

@@ -167,14 +167,7 @@ public class OffsetSynchronizer
     private Result InsertOffset(long tranid)
     {
         //virtual datasource
-        var ds = new Datasource()
-        {
-            DatasourceId = Datasource.DatasourceId,
-            DatasourceName = Datasource.DatasourceName,
-            Destination = Datasource.Destination,
-            DestinationId = Datasource.Destination.DestinationId,
-            Query = GetSelectOffsetDatasourceQuery()
-        };
+        var ds = OffsetQueryBuilder.BuildOffsetDatasrouce(Datasource, BridgeName, SystemConfig);
         var s = new InsertSynchronizer(this, ds) { Logger = Logger };
         var r = s.Execute(tranid);
         r.Caption = "insert offset";
@@ -185,14 +178,7 @@ public class OffsetSynchronizer
         extids.ForEach(x =>
         {
             var ext = rep.FindById(x);
-            var d = new Datasource()
-            {
-                DatasourceId = Datasource.DatasourceId,
-                DatasourceName = Datasource.DatasourceName,
-                Destination = Datasource.Destination,
-                DestinationId = Datasource.Destination.DestinationId,
-                Query = GetOffsetExtensionQuery(ext)
-            };
+            var d = OffsetQueryBuilder.BuildOffsetExtensionDatasrouce(Datasource, ext, BridgeName, SystemConfig);
             var s = new InsertSynchronizer(this, d, $"E{cnt}") { Logger = Logger };
             r.Add(s.Execute(tranid));
             cnt++;
@@ -221,24 +207,10 @@ public class OffsetSynchronizer
     private Result InsertRenew(long tranid)
     {
         //virtual datasource
-        var ds = new Datasource()
-        {
-            DatasourceId = Datasource.DatasourceId,
-            DatasourceName = Datasource.DatasourceName,
-            Destination = Datasource.Destination,
-            DestinationId = Datasource.Destination.DestinationId,
-            Query = GetSelectRenewalDatasourceQuery(),
-            Extensions = Datasource.Extensions
-        };
-        var s = new InsertSynchronizer(this, ds, "r") { Logger = Logger };
+        var ds = OffsetQueryBuilder.BuildRenewDatasource(Datasource, BridgeName, SystemConfig);
+        var s = new InsertSynchronizer(this, ds, "r", true) { Logger = Logger };
         var r = s.Execute(tranid);
         r.Caption = "insert renew";
         return r;
-    }
-
-    private string GetSelectRenewalDatasourceQuery()
-    {
-        var q = OffsetQueryBuilder.BuildSelectRenewalDatasourceFromBridge(Datasource, BridgeName, SystemConfig);
-        return q.CommandText;
     }
 }
