@@ -25,13 +25,13 @@ public class Synchronizer
         exe.Execute(datasource);
     }
 
-    public Result Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource, string>? injector = null)
+    public Result Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
         var exe = new InsertSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument };
         return exe.Execute();
     }
 
-    public Result Offset(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource, string>? injector = null)
+    public Result Offset(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
         var exe = new OffsetSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
         return exe.Execute();

@@ -149,11 +149,11 @@ select
     , t.shop_id
     , t.client_id
     , t.product_name
-    , t.price * -1 as price
+    , t.price * 2 as price
     , t.sale_slip_id as base_sale_slip_id
 from
     _bridge t";
-            var c = rep.SaveAsExtension("sale_slip_details[reverse] <- x", sql, "public", "sale_slip_details");
+            var c = rep.SaveAsExtension("sale_slip_details[2x] <- x", sql, "public", "sale_slip_details");
 
             root.Extensions.Add(c);
             rep.Save(root);

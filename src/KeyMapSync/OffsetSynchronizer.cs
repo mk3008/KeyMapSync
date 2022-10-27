@@ -13,7 +13,7 @@ namespace KeyMapSync;
 
 public class OffsetSynchronizer
 {
-    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, IDBMS dbms, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
+    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, IDBMS dbms, Datasource datasource, Action<SelectQuery, Datasource>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -41,7 +41,7 @@ public class OffsetSynchronizer
 
     internal IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery, Datasource, string>? Injector { get; init; }
+    private Action<SelectQuery, Datasource>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
@@ -142,7 +142,7 @@ public class OffsetSynchronizer
         sq = InjectSelectDatasourceId(sq);
 
         //inject from custom function
-        if (Injector != null) Injector(sq, Datasource, Argument);
+        if (Injector != null) Injector(sq, Datasource);
 
         return sq;
     }

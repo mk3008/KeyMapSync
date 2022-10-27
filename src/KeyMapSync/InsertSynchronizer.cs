@@ -23,12 +23,11 @@ public class InsertSynchronizer
 
         IsRoot = false;
 
-        BridgeQuery = BuildSelectBridgeQuery();
+        BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, null);
     }
 
-    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, Datasource, string> injector)
+    private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, Datasource> injector)
     {
-        BaseDatasource = owner.Datasource;
         Connection = owner.Connection;
         SystemConfig = owner.SystemConfig;
         Datasource = datasource;
@@ -39,10 +38,10 @@ public class InsertSynchronizer
 
         IsRoot = false;
 
-        BridgeQuery = BuildSelectBridgeQuery();
+        BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, injector);
     }
 
-    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, Datasource, string>? injector = null)
+    public InsertSynchronizer(SystemConfig config, IDbConnection connection, Datasource datasource, Action<SelectQuery, Datasource>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -54,7 +53,7 @@ public class InsertSynchronizer
 
         IsRoot = true;
 
-        BridgeQuery = BuildSelectBridgeQuery();
+        BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, injector);
     }
 
     public SystemConfig SystemConfig { get; init; }
@@ -67,9 +66,7 @@ public class InsertSynchronizer
 
     private IDbConnection Connection { get; init; }
 
-    private Action<SelectQuery, Datasource, string>? Injector { get; init; }
-
-    private Datasource? BaseDatasource { get; init; } = null;
+    private Action<SelectQuery, Datasource>? Injector { get; init; }
 
     private Datasource Datasource { get; init; }
 
@@ -89,24 +86,9 @@ public class InsertSynchronizer
 
     private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
 
-    private string? ExtTableName => BaseDatasource?.Destination.GetExtendTableName(ExtendConfig);
+    private string ExtTableName => Datasource.GetRootDatasource().Destination.GetExtendTableName(ExtendConfig);
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
-
-    private SelectQuery BuildSelectSequenceFromBridge()
-    {
-        var alias = "bridge";
-
-        var sq = new SelectQuery();
-        sq.From(BridgeName).As(alias);
-
-        var bridge = sq.FromClause;
-
-        //select
-        sq.Select(bridge, Destination.SequenceConfig.Column);
-
-        return sq;
-    }
 
     private int ExecuteQuery(Query q)
     {
@@ -193,19 +175,21 @@ public class InsertSynchronizer
         result.Add(new Result() { Table = SyncTableName, Count = cnt });
 
         //ext
-        if (Destination.IsHeader == false && BaseDatasource != null && ExtTableName != null)
+        if (Destination.IsHeader == false && !Datasource.IsRoot && ExtTableName != null)
         {
             if (InsertExt(procid) != cnt) throw new InvalidOperationException();
             result.Add(new Result() { Table = ExtTableName, Count = cnt });
         }
 
         //nest
-        Datasource.Extensions.ForEach(nestdatasource =>
+        Datasource.Extensions.ForEach(ds =>
         {
             //replace root table injector
-            Action<SelectQuery, Datasource, string> replaceRootTable = (q, _, _) => q.FromClause.TableName = BridgeName;
+            Action<SelectQuery, Datasource> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
 
-            var s = new InsertSynchronizer(this, nestdatasource, replaceRootTable) { Logger = Logger };
+            ds.BaseDatasource = Datasource;
+
+            var s = new InsertSynchronizer(this, ds, replaceRootTable) { Logger = Logger };
             result.Add(s.Execute(tranid));
         });
         return result;
@@ -217,7 +201,7 @@ public class InsertSynchronizer
         if (h == null) return null;
 
         //sync header
-        Action<SelectQuery, Datasource, string> replaceRootTable = (q, _, _) => q.FromClause.TableName = BridgeName;
+        Action<SelectQuery, Datasource> replaceRootTable = (q, _) => q.FromClause.TableName = BridgeName;
         var ds
             = new Datasource()
             {
@@ -228,64 +212,6 @@ public class InsertSynchronizer
                 Query = h.Query
             };
         return new InsertSynchronizer(this, ds, replaceRootTable) { Logger = Logger };
-    }
-
-    private SelectQuery BuildSelectBridgeQuery()
-    {
-        /*
-         * with
-         * d as (
-         *     --datasource
-         * )
-         * select 
-         *     generate_sequence as destination_id
-         *     , d.*
-         * from d
-         * left join map m on d.destination_id = m.destination_id
-         * where m.destination_id is null
-         */
-        var alias = "d";
-
-        var sq = SqlParser.Parse(Datasource.Query);
-
-        //auto fix columns
-        if (Datasource.KeyColumnsConfig.Any())
-        {
-            var f = sq.FromClause;
-            var c = sq.GetSelectItems().Select(x => x.Name).ToList();
-            var keys = Datasource.KeyColumnsConfig.Select(x => x.Key).ToList();
-            keys.Where(x => !c.Contains(x)).ToList().ForEach(x => sq.Select.Add().Column(f, x));
-        }
-        if (Destination.IsHeader == false && BaseDatasource != null)
-        {
-            var f = sq.FromClause;
-            var baseseq = BaseDatasource.Destination.SequenceConfig;
-            sq.Select.Add().Column(f, baseseq.Column).As($"base_{baseseq.Column}");
-        }
-
-        var cols = sq.Select.GetColumnNames();
-
-        //inject from custom function
-        if (Injector != null) Injector(sq, Datasource, Argument);
-
-        sq = sq.PushToCommonTable(alias);
-
-        //from
-        var d = sq.From(alias);
-
-        //select
-        var seq = Destination.SequenceConfig;
-        if (!cols.Contains(seq.Column))
-        {
-            sq.Select(seq.Command).As(seq.Column);
-        }
-
-        cols.ForEach(x => sq.Select.Add().Column(d, x));
-
-        //inject from config
-        if (IsRoot && Datasource.HasKeymap) sq = InjectNotSyncCondition(sq);
-
-        return sq;
     }
 
     private void OverideBridgeNameAndQueryByHeader(string headerbridge)
@@ -323,34 +249,13 @@ public class InsertSynchronizer
         BridgeQuery = sq;
     }
 
-    private SelectQuery InjectNotSyncCondition(SelectQuery sq)
-    {
-        var alias = "m";
-
-        var d = sq.FromClause;
-        sq.FromClause.LeftJoin(MapTableName).As(alias).On(x =>
-        {
-            Datasource.KeyColumnsConfig.ForEach(y => x.Add().Equal(y.Key));
-        });
-        sq.Where.Add().Column(alias, Datasource.KeyColumnsConfig.First().Key).IsNull();
-        return sq;
-    }
-
     private int CreateBridgeTable()
     {
         var q = BridgeQuery.ToCreateTableQuery(BridgeName, true);
         ExecuteQuery(q);
 
-        q = BuildBridgeCountQuery();
+        q = InsertQueryBuilder.BuildCountQuery(BridgeName);
         return ExecuteScalar<int>(q);
-    }
-
-    private Query BuildBridgeCountQuery()
-    {
-        var sq = new SelectQuery();
-        sq.From(BridgeName);
-        sq.SelectCount();
-        return sq.ToQuery();
     }
 
     private long InsertProcessAndGetId(long tranid)
@@ -362,87 +267,26 @@ public class InsertSynchronizer
 
     private int InsertSync(long procid)
     {
-        /*
-         * insert into sync (destination_id, process_id)
-         * select 
-         *     destination_id
-         *     , :process_id as process_id
-         * from tmp bridge
-         */
-        var sq = BuildSelectSequenceFromBridge();
-        sq.Select.Add().Value(":process_id").As("kms_process_id").AddParameter(":process_id", procid);
-
-        var q = sq.ToInsertQuery(SyncTableName, new());
+        var q = InsertQueryBuilder.BuildeInsertSyncFromBridge(procid, Datasource, BridgeName, SystemConfig);
         return ExecuteQuery(q);
     }
 
     private int InsertExt(long procid)
     {
-        if (BaseDatasource == null) throw new InvalidProgramException();
-        var tbl = ExtTableName;
-        if (tbl == null) return 0;
-
-        /*
-         * insert into ext (base_id, table_name, id)
-         * select 
-         *     base_id
-         *     , table_name
-         *     , id
-         * from tmp bridge
-         */
-        var alias = "bridge";
-
-        var sq = new SelectQuery();
-        sq.From(BridgeName).As(alias);
-
-        var seq = BaseDatasource.Destination.SequenceConfig;
-        var bridge = sq.FromClause;
-        //select
-        sq.Select.Add().Column(bridge, $"base_{seq.Column}").As(seq.Column);
-        sq.Select.Add().Value(":dest_id").As("destination_id").AddParameter(":dest_id", Destination.DestinationId);
-        sq.Select.Add().Value(":table_name").As("extension_table_name").AddParameter(":table_name", Destination.TableFulleName);
-        sq.Select.Add().Column(bridge, Destination.SequenceConfig.Column).As("id");
-
-        var q = sq.ToInsertQuery(tbl, new());
+        var q = InsertQueryBuilder.BuildInsertExtFromBridge(Datasource, BridgeName, SystemConfig);
         return ExecuteQuery(q);
     }
 
     private int InsertKeyMap()
     {
-        /*
-         * insert into map (destination_id, datasource_id)
-         * select 
-         *     destination_id
-         *     , datasource_id
-         * from tmp bridge
-         */
-        var sq = BuildSelectSequenceFromBridge();
-        var t = sq.FromClause;
-
-        //select
-        Datasource.KeyColumnsConfig.ForEach(x => sq.Select(t, x.Key));
-
-        var q = sq.ToInsertQuery(MapTableName, new());
+        var q = InsertQueryBuilder.BuildInsertKeymapFromBridge(Datasource, BridgeName, SystemConfig);
         return ExecuteQuery(q);
     }
 
     private int InsertDestination()
     {
-        /*
-         * insert into destination (destination_id, value)
-         * select 
-         *     destination_id
-         *     , value
-         * from tmp bridge
-         */
-        var sq = BuildSelectSequenceFromBridge();
-        var bridge = sq.FromClause;
-
-        //select
         var cols = BridgeQuery.GetSelectItems().Select(x => x.ColumnName).ToList();
-        Destination.GetInsertColumns().Where(x => cols.Contains(x)).ToList().ForEach(x => sq.Select(bridge, x));
-
-        var q = sq.ToInsertQuery(Destination.TableName, new());
+        var q = InsertQueryBuilder.BuildInsertDestinationFromBridge(Datasource, BridgeName, cols);
         return ExecuteQuery(q);
     }
 }

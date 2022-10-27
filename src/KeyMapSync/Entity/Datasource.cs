@@ -17,6 +17,16 @@ public class Datasource
 
     public long DestinationId { get; set; }
 
+    internal Datasource? BaseDatasource { get; set; } = null;
+
+    internal bool IsRoot => (BaseDatasource == null) ? true : false;
+
+    internal Datasource GetRootDatasource()
+    {
+        if (BaseDatasource == null) return this;
+        return BaseDatasource.GetRootDatasource();
+    }
+
     /// <summary>
     /// Data source forwarding destination.
     /// </summary>
@@ -81,7 +91,7 @@ public class Datasource
 
     public long[] ExtensionDatasourceIds { get; set; } = Array.Empty<long>();
 
-    public bool IsRoot => (string.IsNullOrEmpty(MapName)) ? false : true;
+    //public bool IsRoot => (string.IsNullOrEmpty(MapName)) ? false : true;
 
     public bool HasKeymap => (string.IsNullOrEmpty(MapName)) ? false : true;
 }

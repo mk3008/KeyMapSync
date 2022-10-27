@@ -90,7 +90,7 @@ delete from sales where product_name = 'coffee'
     {
         var logger = (string s) => Output.WriteLine(s);
 
-        var injector = (SelectQuery q, Datasource _, string _) =>
+        var injector = (SelectQuery q, Datasource _) =>
         {
             var t = q.FromClause;
             q.Where.Add().Column(t, "price").Comparison("<>", 0);
@@ -139,7 +139,7 @@ delete from sales where product_name = 'coffee'
     {
         var logger = (string s) => Output.WriteLine(s);
 
-        var injector = (SelectQuery q, Datasource _, string _) =>
+        var injector = (SelectQuery q, Datasource _) =>
         {
             var t = q.FromClause;
             q.Where.Add().Column(t, "price").Comparison("<>", 0);
