@@ -85,7 +85,7 @@ public class InsertSynchronizer
 
     private Datasource Datasource { get; init; }
 
-    private string BridgeName { get; set; }
+    internal string BridgeName { get; set; }
 
     private SelectQuery BridgeQuery { get; set; }
 

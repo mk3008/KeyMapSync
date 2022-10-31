@@ -13,7 +13,7 @@ namespace KeyMapSync;
 
 internal class RenewQueryBuilder
 {
-    internal static Query BuildSelectRenewalDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
+    internal static Query BuildSelectRenewDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
     {
         /*
          * select bridge.renewal_id as destination_id, b.*
@@ -49,167 +49,167 @@ internal class RenewQueryBuilder
         return q;
     }
 
-    internal static Query BuildSelectOffsetDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
-    {
-        /*
-         * select bridge.offset_id as destination_id, e.value1, e.value2 * -1 as value2
-         * from bridge
-         * inner join destination expect on bridge.destination_id = expect.destination_id
-         * inner join extension1 expect_ext1 on expect.? = expect_ext1.?
-         */
+    //internal static Query BuildSelectOffsetDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
+    //{
+    //    /*
+    //     * select bridge.offset_id as destination_id, e.value1, e.value2 * -1 as value2
+    //     * from bridge
+    //     * inner join destination expect on bridge.destination_id = expect.destination_id
+    //     * inner join extension1 expect_ext1 on expect.? = expect_ext1.?
+    //     */
 
-        //from
-        var sq = new SelectQuery();
-        var bridge = sq.From(bridgeName).As("bridge");
-        var e = bridge.InnerJoin(ds.Destination.TableName).As("e").On(ds.Destination.SequenceConfig.Column);
+    //    //from
+    //    var sq = new SelectQuery();
+    //    var bridge = sq.From(bridgeName).As("bridge");
+    //    var e = bridge.InnerJoin(ds.Destination.TableName).As("e").On(ds.Destination.SequenceConfig.Column);
 
-        var addSelectColumn = () =>
-        {
-            var dscols = SqlParser.Parse(ds.Query).Select.GetColumnNames();
-            var cols = ds.Destination.GetInsertColumns().Where(x => dscols.Contains(x)).ToList();
-            cols.ForEach(x =>
-            {
-                if (ds.Destination.SignInversionColumns.Contains(x))
-                {
-                    sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
-                }
-                else
-                {
-                    sq.Select.Add().Column(e.AliasName, x).As(x);
-                }
-            });
-        };
+    //    var addSelectColumn = () =>
+    //    {
+    //        var dscols = SqlParser.Parse(ds.Query).Select.GetColumnNames();
+    //        var cols = ds.Destination.GetInsertColumns().Where(x => dscols.Contains(x)).ToList();
+    //        cols.ForEach(x =>
+    //        {
+    //            if (ds.Destination.SignInversionColumns.Contains(x))
+    //            {
+    //                sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
+    //            }
+    //            else
+    //            {
+    //                sq.Select.Add().Column(e.AliasName, x).As(x);
+    //            }
+    //        });
+    //    };
 
-        var addSelectHeaderColumn = () =>
-        {
-            //header
-            var header = ds.Destination.HeaderDestination;
-            if (header == null) return;
-            var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
-            var dscols = sq.GetSelectItems().Select(x => x.Name);
-            header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
-                .ForEach(x => sq.Select.Add().Column(h, x));
-        };
+    //    var addSelectHeaderColumn = () =>
+    //    {
+    //        //header
+    //        var header = ds.Destination.HeaderDestination;
+    //        if (header == null) return;
+    //        var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
+    //        var dscols = sq.GetSelectItems().Select(x => x.Name);
+    //        header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
+    //            .ForEach(x => sq.Select.Add().Column(h, x));
+    //    };
 
-        //select
-        sq.Select(bridge, ds.Destination.GetOffsetIdColumnName(config.OffsetConfig)).As(ds.Destination.SequenceConfig.Column);
-        addSelectColumn();
-        addSelectHeaderColumn();
-        var q = sq.ToQuery();
-        return q;
-    }
+    //    //select
+    //    sq.Select(bridge, ds.Destination.GetOffsetIdColumnName(config.OffsetConfig)).As(ds.Destination.SequenceConfig.Column);
+    //    addSelectColumn();
+    //    addSelectHeaderColumn();
+    //    var q = sq.ToQuery();
+    //    return q;
+    //}
 
-    internal static Query BuildSelectOffsetExtensionFromBridge(Datasource ds, string bridgeName, Destination extension, SystemConfig config)
-    {
-        var table = ds.Destination.GetExtendTableName(config.ExtendConfig);
+    //internal static Query BuildSelectOffsetExtensionFromBridge(Datasource ds, string bridgeName, Destination extension, SystemConfig config)
+    //{
+    //    var table = ds.Destination.GetExtendTableName(config.ExtendConfig);
 
-        //extend
-        var sq = new SelectQuery();
-        var e = sq.From(extension.TableFulleName).As("e");
-        var ext = e.InnerJoin(table).As("ext").On(extension.SequenceConfig.Column, "id");
-        ext.InnerJoin(bridgeName).As("bridge").On(ds.Destination.SequenceConfig.Column);
+    //    //extend
+    //    var sq = new SelectQuery();
+    //    var e = sq.From(extension.TableFulleName).As("e");
+    //    var ext = e.InnerJoin(table).As("ext").On(extension.SequenceConfig.Column, "id");
+    //    ext.InnerJoin(bridgeName).As("bridge").On(ds.Destination.SequenceConfig.Column);
 
-        var addSelectColumn = () =>
-        {
-            var hseq = extension.HeaderDestination?.SequenceConfig.Column;
+    //    var addSelectColumn = () =>
+    //    {
+    //        var hseq = extension.HeaderDestination?.SequenceConfig.Column;
 
-            var cols = extension.GetInsertColumns().Where(x => x != hseq).ToList();
-            cols.ForEach(x =>
-            {
-                if (extension.SignInversionColumns.Contains(x))
-                {
-                    sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
-                }
-                else
-                {
-                    sq.Select.Add().Column(e.AliasName, x).As(x);
-                }
-            });
-        };
+    //        var cols = extension.GetInsertColumns().Where(x => x != hseq).ToList();
+    //        cols.ForEach(x =>
+    //        {
+    //            if (extension.SignInversionColumns.Contains(x))
+    //            {
+    //                sq.Select.Add().Value($"{e.AliasName}.{x} * -1").As(x);
+    //            }
+    //            else
+    //            {
+    //                sq.Select.Add().Column(e.AliasName, x).As(x);
+    //            }
+    //        });
+    //    };
 
-        var addSelectHeaderColumn = () =>
-        {
-            //header
-            var header = extension.HeaderDestination;
-            if (header == null) return;
-            var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
-            var dscols = sq.GetSelectItems().Select(x => x.Name);
-            header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
-                .ForEach(x => sq.Select.Add().Column(h, x));
-        };
+    //    var addSelectHeaderColumn = () =>
+    //    {
+    //        //header
+    //        var header = extension.HeaderDestination;
+    //        if (header == null) return;
+    //        var h = e.InnerJoin(header.TableFulleName).As("h").On(header.SequenceConfig.Column);
+    //        var dscols = sq.GetSelectItems().Select(x => x.Name);
+    //        header.GetInsertColumns().Where(x => !dscols.Contains(x)).ToList()
+    //            .ForEach(x => sq.Select.Add().Column(h, x));
+    //    };
 
-        //select
-        addSelectColumn();
-        addSelectHeaderColumn();
+    //    //select
+    //    addSelectColumn();
+    //    addSelectHeaderColumn();
 
-        var q = sq.ToQuery();
+    //    var q = sq.ToQuery();
 
-        return q;
-    }
+    //    return q;
+    //}
 
-    internal static Query BuildSelectOffsetDestinationIdsFromBridge(Datasource ds, string bridgeName, SystemConfig config)
-    {
-        var table = ds.Destination.GetExtendTableName(config.ExtendConfig);
+    //internal static Query BuildSelectOffsetDestinationIdsFromBridge(Datasource ds, string bridgeName, SystemConfig config)
+    //{
+    //    var table = ds.Destination.GetExtendTableName(config.ExtendConfig);
 
-        //extend
-        var sq = new SelectQuery();
-        var e = sq.From(table).As("e");
-        var b = e.InnerJoin(bridgeName).As("b").On(ds.Destination.SequenceConfig.Column);
-        sq.Distinct();
-        sq.Select.Add().Column(e, "destination_id");
-        var q = sq.ToQuery();
+    //    //extend
+    //    var sq = new SelectQuery();
+    //    var e = sq.From(table).As("e");
+    //    var b = e.InnerJoin(bridgeName).As("b").On(ds.Destination.SequenceConfig.Column);
+    //    sq.Distinct();
+    //    sq.Select.Add().Column(e, "destination_id");
+    //    var q = sq.ToQuery();
 
-        return q;
-    }
+    //    return q;
+    //}
 
-    internal static Query BuildInsertOffsetMap(Datasource ds, string bridgeName, SystemConfig config)
-    {
-        /*
-          * select destination_id, offset_id, renewal_id, remarks
-          * from bridge
-          */
+    //internal static Query BuildInsertOffsetMap(Datasource ds, string bridgeName, SystemConfig config)
+    //{
+    //    /*
+    //      * select destination_id, offset_id, renewal_id, remarks
+    //      * from bridge
+    //      */
 
-        var offset = ds.Destination.GetOffsetTableName(config.OffsetConfig);
+    //    var offset = ds.Destination.GetOffsetTableName(config.OffsetConfig);
 
-        //from bridge
-        var sq = new SelectQuery();
-        var bridge = sq.From(bridgeName).As("bridge");
+    //    //from bridge
+    //    var sq = new SelectQuery();
+    //    var bridge = sq.From(bridgeName).As("bridge");
 
-        //select destination_id, offset_id, renewal_id, remarks
-        sq.Select(bridge, ds.Destination.SequenceConfig.Column);
-        sq.Select(bridge, ds.Destination.GetOffsetIdColumnName(config.OffsetConfig));
-        sq.Select(bridge, ds.Destination.GetRenewIdColumnName(config.OffsetConfig));
-        sq.Select(bridge, config.OffsetConfig.OffsetRemarksColumn);
+    //    //select destination_id, offset_id, renewal_id, remarks
+    //    sq.Select(bridge, ds.Destination.SequenceConfig.Column);
+    //    sq.Select(bridge, ds.Destination.GetOffsetIdColumnName(config.OffsetConfig));
+    //    sq.Select(bridge, ds.Destination.GetRenewIdColumnName(config.OffsetConfig));
+    //    sq.Select(bridge, config.OffsetConfig.OffsetRemarksColumn);
 
-        var q = sq.ToInsertQuery(offset, new());
-        return q;
-    }
+    //    var q = sq.ToInsertQuery(offset, new());
+    //    return q;
+    //}
 
-    internal static Query BuildDeleteKeyMap(Datasource ds, string bridgeName, SystemConfig config)
-    {
-        /*
-         * delete from keymap
-         * where 
-         *   exists (select * from bridge where bridge.destination_id = map.destination_id)
-         */
+    //internal static Query BuildDeleteKeyMap(Datasource ds, string bridgeName, SystemConfig config)
+    //{
+    //    /*
+    //     * delete from keymap
+    //     * where 
+    //     *   exists (select * from bridge where bridge.destination_id = map.destination_id)
+    //     */
 
-        var map = ds.GetKeymapTableName(config.KeyMapConfig);
-        if (map == null) throw new InvalidProgramException("keymaptable is not found.");
+    //    var map = ds.GetKeymapTableName(config.KeyMapConfig);
+    //    if (map == null) throw new InvalidProgramException("keymaptable is not found.");
 
-        var w = new ConditionClause("where");
-        w.ConditionGroup.Add().Exists(x =>
-        {
-            x.SelectAll();
-            var bridge = x.From(bridgeName).As("bridge");
-            var id = ds.Destination.SequenceConfig.Column;
-            x.Where.Add().Column(bridge, id).Equal(map, id);
-        });
+    //    var w = new ConditionClause("where");
+    //    w.ConditionGroup.Add().Exists(x =>
+    //    {
+    //        x.SelectAll();
+    //        var bridge = x.From(bridgeName).As("bridge");
+    //        var id = ds.Destination.SequenceConfig.Column;
+    //        x.Where.Add().Column(bridge, id).Equal(map, id);
+    //    });
 
-        var q = w.ToQuery();
-        q.CommandText = $"delete from {map} {q.CommandText}";
+    //    var q = w.ToQuery();
+    //    q.CommandText = $"delete from {map} {q.CommandText}";
 
-        return q;
-    }
+    //    return q;
+    //}
 
     internal static SelectQuery BuildSelectBridgeQuery(Datasource ds, SystemConfig config, Action<SelectQuery, Datasource>? injector)
     {
@@ -398,7 +398,7 @@ internal class RenewQueryBuilder
     internal static Datasource BuildRenewDatasource(Datasource ds, string bridgeName, SystemConfig config)
     {
         //virtual datasource
-        var q = BuildSelectRenewalDatasourceFromBridge(ds, bridgeName, config);
+        var q = BuildSelectRenewDatasourceFromBridge(ds, bridgeName, config);
 
         var datasource = new Datasource()
         {
@@ -414,35 +414,35 @@ internal class RenewQueryBuilder
         return datasource;
     }
 
-    internal static Datasource BuildOffsetDatasrouce(Datasource ds, string bridgeName, SystemConfig config)
-    {
-        //virtual datasource
-        var q = BuildSelectOffsetDatasourceFromBridge(ds, bridgeName, config);
+    //internal static Datasource BuildOffsetDatasrouce(Datasource ds, string bridgeName, SystemConfig config)
+    //{
+    //    //virtual datasource
+    //    var q = BuildSelectOffsetDatasourceFromBridge(ds, bridgeName, config);
 
-        var datasource = new Datasource()
-        {
-            DatasourceId = ds.DatasourceId,
-            DatasourceName = ds.DatasourceName,
-            Destination = ds.Destination,
-            DestinationId = ds.Destination.DestinationId,
-            Query = q.CommandText
-        };
-        return datasource;
-    }
+    //    var datasource = new Datasource()
+    //    {
+    //        DatasourceId = ds.DatasourceId,
+    //        DatasourceName = ds.DatasourceName,
+    //        Destination = ds.Destination,
+    //        DestinationId = ds.Destination.DestinationId,
+    //        Query = q.CommandText
+    //    };
+    //    return datasource;
+    //}
 
-    internal static Datasource BuildOffsetExtensionDatasrouce(Datasource ds, Destination extension, string bridgeName, SystemConfig config)
-    {
-        //virtual datasource
-        var q = BuildSelectOffsetExtensionFromBridge(ds, bridgeName, extension, config);
+    //internal static Datasource BuildOffsetExtensionDatasrouce(Datasource ds, Destination extension, string bridgeName, SystemConfig config)
+    //{
+    //    //virtual datasource
+    //    var q = BuildSelectOffsetExtensionFromBridge(ds, bridgeName, extension, config);
 
-        var datasource = new Datasource()
-        {
-            DatasourceId = ds.DatasourceId,
-            DatasourceName = ds.DatasourceName,
-            Destination = ds.Destination,
-            DestinationId = ds.Destination.DestinationId,
-            Query = q.CommandText
-        };
-        return datasource;
-    }
+    //    var datasource = new Datasource()
+    //    {
+    //        DatasourceId = ds.DatasourceId,
+    //        DatasourceName = ds.DatasourceName,
+    //        Destination = ds.Destination,
+    //        DestinationId = ds.Destination.DestinationId,
+    //        Query = q.CommandText
+    //    };
+    //    return datasource;
+    //}
 }

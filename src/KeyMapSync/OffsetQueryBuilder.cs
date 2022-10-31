@@ -64,6 +64,12 @@ internal class OffsetQueryBuilder
 
     internal static Query BuildSelectOffsetExtensionFromBridge(Datasource ds, string bridgeName, Destination extension, SystemConfig config)
     {
+        /*
+         * select e.value1, e.value2 * -1 as value2
+         * from extensions as e
+         * inner join desitination_ext as ext on e.extension_id = ext.id
+         * inner join bridge on ext.destination_id = bridge.destination_id
+         */
         var table = ds.Destination.GetExtendTableName(config.ExtendConfig);
 
         //extend
@@ -88,6 +94,8 @@ internal class OffsetQueryBuilder
                     sq.Select.Add().Column(e.AliasName, x).As(x);
                 }
             });
+
+            sq.Select.Add().Column(ext, "id");
         };
 
         var addSelectHeaderColumn = () =>
@@ -148,7 +156,7 @@ internal class OffsetQueryBuilder
         return q;
     }
 
-    internal static Query BuildDeleteKeyMap(Datasource ds, string bridgeName, SystemConfig config)
+    internal static Query BuildDeleteKeyMapFromBridge(Datasource ds, string bridgeName, SystemConfig config)
     {
         /*
          * delete from keymap
@@ -301,5 +309,28 @@ internal class OffsetQueryBuilder
             Query = q.CommandText
         };
         return datasource;
+    }
+
+    internal static Query BuildInsertOffsetMapExtension(Datasource ds, string bridgeName, SystemConfig config)
+    {
+        /*
+          * select id as destination_id, destination_id as offset_id, null as renewal_id, 'offset' as remarks
+          * from bridge
+          */
+
+        var offset = ds.Destination.GetOffsetTableName(config.OffsetConfig);
+
+        //from bridge
+        var sq = new SelectQuery();
+        var bridge = sq.From(bridgeName).As("bridge");
+
+        //select destination_id, offset_id, renewal_id, remarks
+        sq.Select.Add().Column(bridge, "id").As(ds.Destination.SequenceConfig.Column);
+        sq.Select.Add().Column(bridge, ds.Destination.SequenceConfig.Column).As(ds.Destination.GetOffsetIdColumnName(config.OffsetConfig));
+        sq.Select.Add().Value("null::bigint").As(ds.Destination.GetRenewIdColumnName(config.OffsetConfig));
+        sq.Select.Add().Value("'offset'").As(config.OffsetConfig.OffsetRemarksColumn);
+
+        var q = sq.ToInsertQuery(offset, new());
+        return q;
     }
 }

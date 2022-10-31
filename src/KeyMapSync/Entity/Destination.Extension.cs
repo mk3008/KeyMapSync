@@ -17,7 +17,7 @@ public static class DestinationExtension
         => string.Format(config.TableNameFormat, source.TableName);
 
     public static string GetOffsetIdColumnName(this Destination source, OffsetConfig config)
-        => $"{config.OffsetColumnPrefix}{source.SequenceConfig.Column}";
+        => $"{config.CancelColumnPrefix}{source.SequenceConfig.Column}";
 
     public static string GetRenewIdColumnName(this Destination source, OffsetConfig config)
         => $"{config.RenewColumnPrefix}{source.SequenceConfig.Column}";

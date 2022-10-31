@@ -18,7 +18,7 @@ public class OffsetConfig
     /// Column prefix for offsetting.
     /// </summary>
     [Required]
-    public string OffsetColumnPrefix { get; set; } = "offset_";
+    public string CancelColumnPrefix { get; set; } = "cancel_";
 
     /// <summary>
     /// Redesigned column prefix.

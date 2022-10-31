@@ -24,7 +24,7 @@ public class RenewSynchronizer
         var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"_{tmp}";
 
-        IsRoot = true;
+        //IsRoot = true;
 
         BridgeQuery = RenewQueryBuilder.BuildSelectBridgeQuery(Datasource, SystemConfig, Injector);
     }
@@ -37,7 +37,7 @@ public class RenewSynchronizer
 
     private IDBMS Dbms { get; init; }
 
-    private bool IsRoot { get; init; }
+    //private bool IsRoot { get; init; }
 
     internal IDbConnection Connection { get; init; }
 
@@ -53,19 +53,19 @@ public class RenewSynchronizer
 
     private KeyMapConfig KeyMapConfig => SystemConfig.KeyMapConfig;
 
-    private string MapTableName => Datasource.GetKeymapTableName(KeyMapConfig);
+    //private string MapTableName => Datasource.GetKeymapTableName(KeyMapConfig);
 
-    private SyncConfig SyncConfig => SystemConfig.SyncConfig;
+    //private SyncConfig SyncConfig => SystemConfig.SyncConfig;
 
-    private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
+    //private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
     private OffsetConfig OffsetConfig => SystemConfig.OffsetConfig;
 
-    private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
+    //private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
 
-    private string ExtTableName => Destination.GetExtendTableName(ExtendConfig);
+    //private string ExtTableName => Destination.GetExtendTableName(ExtendConfig);
 
     public Result Execute()
     {
@@ -150,7 +150,7 @@ public class RenewSynchronizer
     {
         var offset = Destination.GetOffsetTableName(OffsetConfig);
 
-        var q = RenewQueryBuilder.BuildInsertOffsetMap(Datasource, BridgeName, SystemConfig);
+        var q = OffsetQueryBuilder.BuildInsertOffsetMap(Datasource, BridgeName, SystemConfig);
         var cnt = ExecuteQuery(q);
         return new Result() { Table = offset, Count = cnt };
     }
@@ -159,7 +159,7 @@ public class RenewSynchronizer
     {
         var map = Datasource.GetKeymapTableName(KeyMapConfig);
 
-        var q = RenewQueryBuilder.BuildDeleteKeyMap(Datasource, BridgeName, SystemConfig);
+        var q = OffsetQueryBuilder.BuildDeleteKeyMapFromBridge(Datasource, BridgeName, SystemConfig);
         var cnt = ExecuteQuery(q);
         return new Result() { Table = map, Count = cnt, Command = "delete" };
     }
@@ -167,7 +167,7 @@ public class RenewSynchronizer
     private Result InsertOffset(long tranid)
     {
         //virtual datasource
-        var ds = RenewQueryBuilder.BuildOffsetDatasrouce(Datasource, BridgeName, SystemConfig);
+        var ds = OffsetQueryBuilder.BuildOffsetDatasrouce(Datasource, BridgeName, SystemConfig);
         var s = new InsertSynchronizer(this, ds) { Logger = Logger };
         var r = s.Execute(tranid);
         r.Caption = "insert offset";
@@ -178,7 +178,7 @@ public class RenewSynchronizer
         extids.ForEach(x =>
         {
             var ext = rep.FindById(x);
-            var d = RenewQueryBuilder.BuildOffsetExtensionDatasrouce(Datasource, ext, BridgeName, SystemConfig);
+            var d = OffsetQueryBuilder.BuildOffsetExtensionDatasrouce(Datasource, ext, BridgeName, SystemConfig);
             var s = new InsertSynchronizer(this, d, $"E{cnt}") { Logger = Logger };
             r.Add(s.Execute(tranid));
             cnt++;
@@ -188,21 +188,21 @@ public class RenewSynchronizer
 
     private List<long> GetOffsetExtentDestinations()
     {
-        var q = RenewQueryBuilder.BuildSelectOffsetDestinationIdsFromBridge(Datasource, BridgeName, SystemConfig);
+        var q = OffsetQueryBuilder.BuildSelectOffsetDestinationIdsFromBridge(Datasource, BridgeName, SystemConfig);
         return Connection.Query<long>(q).ToList();
     }
 
-    private string GetOffsetExtensionQuery(Destination extension)
-    {
-        var q = RenewQueryBuilder.BuildSelectOffsetExtensionFromBridge(Datasource, BridgeName, extension, SystemConfig);
-        return q.CommandText;
-    }
+    //private string GetOffsetExtensionQuery(Destination extension)
+    //{
+    //    var q = OffsetQueryBuilder.BuildSelectOffsetExtensionFromBridge(Datasource, BridgeName, extension, SystemConfig);
+    //    return q.CommandText;
+    //}
 
-    private string GetSelectOffsetDatasourceQuery()
-    {
-        var q = RenewQueryBuilder.BuildSelectOffsetDatasourceFromBridge(Datasource, BridgeName, SystemConfig);
-        return q.CommandText;
-    }
+    //private string GetSelectOffsetDatasourceQuery()
+    //{
+    //    var q = OffsetQueryBuilder.BuildSelectOffsetDatasourceFromBridge(Datasource, BridgeName, SystemConfig);
+    //    return q.CommandText;
+    //}
 
     private Result InsertRenew(long tranid)
     {

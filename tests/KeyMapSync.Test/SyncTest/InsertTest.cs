@@ -116,9 +116,11 @@ delete from sales where product_name = 'coffee'
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
 
             logger.Invoke("*create table");
+            sync.AllowLogging = false;
             sync.CreateTable(cn, d);
 
             logger.Invoke("*insert");
+            sync.AllowLogging = true;
             var result = sync.Insert(cn, d, injector: injector);
 
             //result
@@ -162,9 +164,11 @@ delete from sales where product_name = 'coffee'
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
 
             logger.Invoke("*create table");
+            sync.AllowLogging = false;
             sync.CreateTable(cn, d);
 
             logger.Invoke("*renew");
+            sync.AllowLogging = true;
             var result = sync.Renew(cn, d, injector: injector);
 
             //result
@@ -201,9 +205,11 @@ delete from sales where product_name = 'coffee'
             var sync = new Synchronizer(sysconfig, db) { Logger = logger };
 
             logger.Invoke("*create table");
+            sync.AllowLogging = false;
             sync.CreateTable(cn, d);
 
             logger.Invoke("*offset");
+            sync.AllowLogging = true;
             var result = sync.Offset(cn, d, injector: injector);
 
             //result

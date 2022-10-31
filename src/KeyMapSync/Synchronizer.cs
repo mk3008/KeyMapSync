@@ -19,27 +19,33 @@ public class Synchronizer
 
     public Action<string>? Logger { get; set; } = null;
 
+    public bool AllowLogging { get; set; } = true;
+
     public void CreateTable(IDbConnection connection, Datasource datasource)
     {
-        var exe = new SystemTableCreator(SystemConfig, Dbms, connection) { Logger = Logger };
+        var exe = new SystemTableCreator(SystemConfig, Dbms, connection);
+        if (AllowLogging) exe.Logger = Logger;
         exe.Execute(datasource);
     }
 
     public Result Insert(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
-        var exe = new InsertSynchronizer(SystemConfig, connection, datasource, injector) { Logger = Logger, Argument = argument };
+        var exe = new InsertSynchronizer(SystemConfig, connection, datasource, injector) { Argument = argument };
+        if (AllowLogging) exe.Logger = Logger;
         return exe.Execute();
     }
 
     public Result Renew(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
-        var exe = new RenewSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
+        var exe = new RenewSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Argument = argument }; ;
+        if (AllowLogging) exe.Logger = Logger;
         return exe.Execute();
     }
 
     public Result Offset(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
-        var exe = new OffsetSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
+        var exe = new OffsetSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Argument = argument }; ;
+        if (AllowLogging) exe.Logger = Logger;
         return exe.Execute();
     }
 }
