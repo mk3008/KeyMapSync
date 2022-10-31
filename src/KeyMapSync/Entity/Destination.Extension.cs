@@ -19,8 +19,8 @@ public static class DestinationExtension
     public static string GetOffsetIdColumnName(this Destination source, OffsetConfig config)
         => $"{config.OffsetColumnPrefix}{source.SequenceConfig.Column}";
 
-    public static string GetRenewalIdColumnName(this Destination source, OffsetConfig config)
-        => $"{config.RenewalColumnPrefix}{source.SequenceConfig.Column}";
+    public static string GetRenewIdColumnName(this Destination source, OffsetConfig config)
+        => $"{config.RenewColumnPrefix}{source.SequenceConfig.Column}";
 
     public static DbTable GetSyncDbTable(this Destination source, SyncConfig config)
     {
@@ -43,7 +43,7 @@ public static class DestinationExtension
     {
         var tableName = source.GetOffsetTableName(config);
         var offsetColumn = source.GetOffsetIdColumnName(config);
-        var renewColumn = source.GetRenewalIdColumnName(config);
+        var renewColumn = source.GetRenewIdColumnName(config);
 
         var tbl = new DbTable
         {
@@ -56,7 +56,7 @@ public static class DestinationExtension
         tbl.AddDbColumn(source.SequenceConfig.Column);
         tbl.AddDbColumn(offsetColumn);
         tbl.AddDbColumn(renewColumn, isNullable: true);
-        tbl.AddDbColumn(config.OffsetRemarksColumn, DbColumn.Types.Text);
+        tbl.AddDbColumn(config.OffsetRemarksColumn, DbColumnType.Text);
 
         return tbl;
     }
@@ -70,11 +70,11 @@ public static class DestinationExtension
         var name = source.GetExtendTableName(config);
         var seq = source.SequenceConfig;
 
-        var lst = new Dictionary<string, DbColumn.Types>();
-        lst.Add(seq.Column, DbColumn.Types.Numeric);
-        lst.Add("destination_id", DbColumn.Types.Numeric);
-        lst.Add("extension_table_name", DbColumn.Types.Text);
-        lst.Add("id", DbColumn.Types.Numeric);
+        var lst = new Dictionary<string, DbColumnType>();
+        lst.Add(seq.Column, DbColumnType.Numeric);
+        lst.Add("destination_id", DbColumnType.Numeric);
+        lst.Add("extension_table_name", DbColumnType.Text);
+        lst.Add("id", DbColumnType.Numeric);
 
         var t = new DbTable
         {

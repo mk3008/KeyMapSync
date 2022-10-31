@@ -30,34 +30,34 @@ public static class IRepositoryExtension
         return source.Connection.Query<string>(sql, new { schema, table }).ToList();
     }
 
-    public static Dictionary<string, DbColumn.Types> GetKeyColumns(this IRepositry source, string? schema, string table)
+    public static Dictionary<string, DbColumnType> GetKeyColumns(this IRepositry source, string? schema, string table)
     {
         var q = source.Connection.Query(source.Database.GetKeyColumnsSql(), new { schema, table }).ToList();
-        var dic = new Dictionary<string, DbColumn.Types>();
+        var dic = new Dictionary<string, DbColumnType>();
 
         q.ForEach(x =>
         {
-            if (x.data_type == "smallint") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "int2") dic[x.column_name] = DbColumn.Types.Numeric;
+            if (x.data_type == "smallint") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "int2") dic[x.column_name] = DbColumnType.Numeric;
 
-            else if (x.data_type == "integer") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "int") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "int4") dic[x.column_name] = DbColumn.Types.Numeric;
+            else if (x.data_type == "integer") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "int") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "int4") dic[x.column_name] = DbColumnType.Numeric;
 
-            else if (x.data_type == "bigint") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "int8") dic[x.column_name] = DbColumn.Types.Numeric;
+            else if (x.data_type == "bigint") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "int8") dic[x.column_name] = DbColumnType.Numeric;
 
-            else if (x.data_type == "serial") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "serial4") dic[x.column_name] = DbColumn.Types.Numeric;
+            else if (x.data_type == "serial") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "serial4") dic[x.column_name] = DbColumnType.Numeric;
 
-            else if (x.data_type == "bigserial") dic[x.column_name] = DbColumn.Types.Numeric;
-            else if (x.data_type == "serial8") dic[x.column_name] = DbColumn.Types.Numeric;
+            else if (x.data_type == "bigserial") dic[x.column_name] = DbColumnType.Numeric;
+            else if (x.data_type == "serial8") dic[x.column_name] = DbColumnType.Numeric;
 
-            else if (x.data_type == "date") dic[x.column_name] = DbColumn.Types.Date;
+            else if (x.data_type == "date") dic[x.column_name] = DbColumnType.Date;
 
-            else if (x.data_type == "timestamp") dic[x.column_name] = DbColumn.Types.Timestamp;
+            else if (x.data_type == "timestamp") dic[x.column_name] = DbColumnType.Timestamp;
 
-            else dic[x.column_name] = DbColumn.Types.Text;
+            else dic[x.column_name] = DbColumnType.Text;
         });
 
         return dic;

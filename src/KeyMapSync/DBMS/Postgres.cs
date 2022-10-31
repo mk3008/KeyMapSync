@@ -13,10 +13,10 @@ public partial class Postgres : IDBMS
 {
     public string ToCreateTableSql(DbTable tbl)
     {
-        var types = new Dictionary<DbColumn.Types, string>();
-        types[DbColumn.Types.Numeric] = " int8";
-        types[DbColumn.Types.Text] = " text";
-        types[DbColumn.Types.Timestamp] = " timestamp";
+        var types = new Dictionary<DbColumnType, string>();
+        types[DbColumnType.Numeric] = " int8";
+        types[DbColumnType.Text] = " text";
+        types[DbColumnType.Timestamp] = " timestamp";
 
         var nulls = new Dictionary<bool, string>();
         nulls[true] = "";
@@ -26,10 +26,10 @@ public partial class Postgres : IDBMS
         seqs[true] = " serial8";
         seqs[false] = "";
 
-        var defs = new Dictionary<DbColumn.Types, string>();
-        defs[DbColumn.Types.Numeric] = "";
-        defs[DbColumn.Types.Text] = "";
-        defs[DbColumn.Types.Timestamp] = " default current_timestamp";
+        var defs = new Dictionary<DbColumnType, string>();
+        defs[DbColumnType.Numeric] = "";
+        defs[DbColumnType.Text] = "";
+        defs[DbColumnType.Timestamp] = " default current_timestamp";
 
         var cols = tbl.DbColumns.Select(x =>
         {
@@ -102,31 +102,31 @@ where
 
         return sql;
         //var q = Connection.Query(sql, new { schema, table }).ToList();
-        //var dic = new Dictionary<string, DbColumn.Types>();
+        //var dic = new Dictionary<string, Types>();
 
         //q.ForEach(x =>
         //{
-        //    if (x.data_type == "smallint") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "int2") dic[x.column_name] = DbColumn.Types.Numeric;
+        //    if (x.data_type == "smallint") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "int2") dic[x.column_name] = Types.Numeric;
 
-        //    else if (x.data_type == "integer") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "int") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "int4") dic[x.column_name] = DbColumn.Types.Numeric;
+        //    else if (x.data_type == "integer") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "int") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "int4") dic[x.column_name] = Types.Numeric;
 
-        //    else if (x.data_type == "bigint") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "int8") dic[x.column_name] = DbColumn.Types.Numeric;
+        //    else if (x.data_type == "bigint") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "int8") dic[x.column_name] = Types.Numeric;
 
-        //    else if (x.data_type == "serial") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "serial4") dic[x.column_name] = DbColumn.Types.Numeric;
+        //    else if (x.data_type == "serial") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "serial4") dic[x.column_name] = Types.Numeric;
 
-        //    else if (x.data_type == "bigserial") dic[x.column_name] = DbColumn.Types.Numeric;
-        //    else if (x.data_type == "serial8") dic[x.column_name] = DbColumn.Types.Numeric;
+        //    else if (x.data_type == "bigserial") dic[x.column_name] = Types.Numeric;
+        //    else if (x.data_type == "serial8") dic[x.column_name] = Types.Numeric;
 
-        //    else if (x.data_type == "date") dic[x.column_name] = DbColumn.Types.Date;
+        //    else if (x.data_type == "date") dic[x.column_name] = Types.Date;
 
-        //    else if (x.data_type == "timestamp") dic[x.column_name] = DbColumn.Types.Timestamp;
+        //    else if (x.data_type == "timestamp") dic[x.column_name] = Types.Timestamp;
 
-        //    else dic[x.column_name] = DbColumn.Types.Text;
+        //    else dic[x.column_name] = Types.Text;
         //});
 
         //return dic;

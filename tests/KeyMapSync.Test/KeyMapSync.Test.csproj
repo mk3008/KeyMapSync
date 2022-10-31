@@ -54,8 +54,8 @@
 		<PackageReference Include="Dapper" Version="2.0.123" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.8.3" />
 		<PackageReference Include="Npgsql" Version="5.0.1.1" />
-		<PackageReference Include="SqModel" Version="0.7.5" />
-		<PackageReference Include="SqModel.Dapper" Version="0.1.0" />
+		<PackageReference Include="SqModel" Version="0.7.6" />
+		<PackageReference Include="SqModel.Dapper" Version="0.1.1" />
 		<PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.7" />
 		<PackageReference Include="xunit" Version="2.4.1" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
@@ -93,7 +93,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="DBTest\" />
-	  <Folder Include="Model\Postgres\" />
+		<Folder Include="DBTest\" />
+		<Folder Include="Model\Postgres\" />
 	</ItemGroup>
 </Project>

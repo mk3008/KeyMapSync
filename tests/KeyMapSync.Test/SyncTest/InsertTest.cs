@@ -128,10 +128,49 @@ delete from sales where product_name = 'coffee'
     }
 
     [Fact]
-    public void TestOffsetWithUpdateDat()
+    public void TestRenewWithUpdateDat()
     {
         SetOffsetData();
-        TestOffset();
+        TestRenew();
+    }
+
+    [Fact]
+    public void TestRenew()
+    {
+        var logger = (string s) => Output.WriteLine(s);
+
+        var injector = (SelectQuery q, Datasource _) =>
+        {
+            var t = q.FromClause;
+            q.Where.Add().Column(t, "price").Comparison("<>", 0);
+        };
+
+        DbExecute(cn =>
+        {
+            var db = new Postgres();
+
+            logger.Invoke("load sysconfig");
+            var sysconfig = (new SystemConfigRepository(db, cn)).Load();//{ Logger = logger }
+
+            logger.Invoke("load datasource");
+            var rep = (new DatasourceRepository(new Postgres(), cn)); // { Logger = logger }
+            var d = rep.FindByName("sale_slip_details <- sales", "public", "sale_slip_details");
+
+            if (d == null) throw new Exception($"Datasource is not found.");
+
+            logger.Invoke("sync datasource");
+            var sync = new Synchronizer(sysconfig, db) { Logger = logger };
+
+            logger.Invoke("*create table");
+            sync.CreateTable(cn, d);
+
+            logger.Invoke("*renew");
+            var result = sync.Renew(cn, d, injector: injector);
+
+            //result
+            var text = JsonSerializer.ToJsonString(result, StandardResolver.ExcludeNull);
+            logger($"result : {text}");
+        });
     }
 
     [Fact]

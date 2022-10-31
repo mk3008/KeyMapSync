@@ -26,6 +26,21 @@ public class InsertSynchronizer
         BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, null);
     }
 
+    internal InsertSynchronizer(RenewSynchronizer owner, Datasource datasource, string temporarySufix = "", bool isRoot = false)
+    {
+        Connection = owner.Connection;
+        SystemConfig = owner.SystemConfig;
+        Datasource = datasource;
+        Injector = null;
+
+        var tmp = BridgeNameBuilder.GetName(datasource.TableName).Substring(0, 4);
+        BridgeName = $"{owner.BridgeName}_{tmp}{temporarySufix}";
+
+        IsRoot = isRoot;
+
+        BridgeQuery = InsertQueryBuilder.BuildSelectValueFromDatasource(datasource, SystemConfig, IsRoot, null);
+    }
+
     private InsertSynchronizer(InsertSynchronizer owner, Datasource datasource, Action<SelectQuery, Datasource> injector)
     {
         Connection = owner.Connection;

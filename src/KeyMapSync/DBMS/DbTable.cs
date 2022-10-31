@@ -17,7 +17,7 @@ public class DbTable
 
     public List<string> GetInsertColumns() => DbColumns.Where(x => !Primarykeys.Contains(x.Column)).Select(x => x.Column).ToList();
 
-    public void AddDbColumn(string columnName, Types type = Types.Numeric, bool isNullable = false)
+    public void AddDbColumn(string columnName, DbColumnType type = DbColumnType.Numeric, bool isNullable = false)
     {
         DbColumns.Add(new DbColumn { Column = columnName, ColumnType = type, IsNullable = isNullable });
     }
@@ -27,15 +27,18 @@ public class DbColumn
 {
     public string Column { get; set; } = string.Empty;
 
-    public Types ColumnType { get; set; } = Types.Numeric;
+    public DbColumnType ColumnType { get; set; } = DbColumnType.Numeric;
 
     public bool IsNullable { get; set; } = false;
+}
 
-    public enum Types
-    {
-        Numeric = 0,
-        Text = 1,
-        Timestamp = 2,
-        Date = 3,
-    }
+public enum DbColumnType
+{
+    Numeric = 0,
+    Text = 1,
+    Timestamp = 2,
+    Date = 3,
+    Bool = 4,
+
+    NumericArray = 5,
 }

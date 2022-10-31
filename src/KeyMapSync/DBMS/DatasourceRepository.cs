@@ -17,6 +17,67 @@ using Utf8Json;
 
 namespace KeyMapSync.DBMS;
 
+public class DatasourceConfig
+{
+    public string SchemaName { get; set; } = "public";
+
+    public string TableName { get; set; } = "kms_datasources";
+
+    public string IdColumnName { get; set; } = "datasource_id";
+
+    public string NameColumnName { get; set; } = "datasource_name";
+
+    public string DestinationIdColumnName { get; set; } = "destination_id";
+
+    public string CreateTimestampColumnName { get; set; } = "created_at";
+
+    public string UpdateTimestampColumnName { get; set; } = "updated_at";
+
+    public string TimestampCommand { get; set; } = "clock_timestamp()";
+
+    public Dictionary<string, DbColumnType> Columns => new()
+    {
+        { "datasource_id", DbColumnType.Numeric },
+        { "datasource_name", DbColumnType.Text },
+        { "destination_id", DbColumnType.Numeric },
+        { "description", DbColumnType.Text },
+        { "query", DbColumnType.Text },
+        { "extension_datasource_ids", DbColumnType.NumericArray },
+        { "disable", DbColumnType.Bool },
+        { "created_at", DbColumnType.Timestamp },
+        { "updated_at", DbColumnType.Timestamp },
+    };
+}
+
+public class RootDatasourceConfig
+{
+    public string SchemaName { get; set; } = "public";
+
+    public string TableName { get; set; } = "kms_root_datasources";
+
+    public string IdColumnName { get; set; } = "datasource_id";
+
+    public string CreateTimestampColumnName { get; set; } = "created_at";
+
+    public string UpdateTimestampColumnName { get; set; } = "updated_at";
+
+    public string GroupColumnName { get; set; } = "group_name";
+
+    public string TimestampCommand { get; set; } = "clock_timestamp()";
+
+    public Dictionary<string, DbColumnType> Columns => new()
+    {
+        { "datasource_id", DbColumnType.Numeric },
+        { "group_name", DbColumnType.Text },
+        { "map_name", DbColumnType.Text },
+        { "schema_name", DbColumnType.Text },
+        { "table_name", DbColumnType.Text },
+        { "key_columns_config", DbColumnType.Text },
+        { "created_at", DbColumnType.Timestamp },
+        { "updated_at", DbColumnType.Timestamp },
+    };
+}
+
 public class DatasourceRepository : IRepositry
 {
     public DatasourceRepository(IDBMS dbms, IDbConnection connection)
@@ -114,20 +175,12 @@ from
         return lst.FirstOrDefault();
     }
 
-    //public List<Datasource> FindByParentId(long parentid, bool includeDisable = false)
-    //{
-    //    var lst = Find(includeDisable, (sq, t) =>
-    //    {
-    //        sq.Where.Add().Column("e", "parent_datasource_id").Equal(":id").AddParameter(":id", parentid);
-    //    });
-    //    return lst;
-    //}
-
-    public List<Datasource> FindByGroup(string group, bool includeDisable = false)
+    public List<Datasource> FindByGroup(string group, Destination dest, bool includeDisable = false)
     {
         var lst = Find(includeDisable, (sq, t) =>
         {
             sq.Where.Add().Column("r", "group_name").Equal(":group").AddParameter(":group", group);
+            sq.Where.Add().Column("d", "destination_id").Equal(":dest_id").AddParameter(":dest_id", dest.DestinationId);
         });
         return lst;
     }

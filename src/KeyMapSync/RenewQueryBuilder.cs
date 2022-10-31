@@ -7,11 +7,48 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SqModel.Expression;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace KeyMapSync;
 
-internal class OffsetQueryBuilder
+internal class RenewQueryBuilder
 {
+    internal static Query BuildSelectRenewalDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
+    {
+        /*
+         * select bridge.renewal_id as destination_id, b.*
+         * from bridge
+         * where renewal_id is not null
+         */
+
+        //from
+        var sq = new SelectQuery();
+        var bridge = sq.From(bridgeName).As("bridge");
+
+        var addSelectColumn = () =>
+        {
+            var dscols = SqlParser.Parse(ds.Query).Select.GetColumnNames();
+            dscols.ForEach(x =>
+            {
+                sq.Select.Add().Column(bridge, x);
+            });
+        };
+
+        //select
+        var renewIdName = ds.Destination.GetRenewIdColumnName(config.OffsetConfig);
+        sq.Select(bridge, renewIdName).As(ds.Destination.SequenceConfig.Column);
+        addSelectColumn();
+
+        //select
+        //sq.SelectAll(bridge);
+
+        //where
+        sq.Where.Add().Column(bridge, renewIdName).IsNotNull();
+
+        var q = sq.ToQuery();
+        return q;
+    }
+
     internal static Query BuildSelectOffsetDatasourceFromBridge(Datasource ds, string bridgeName, SystemConfig config)
     {
         /*
@@ -242,33 +279,139 @@ internal class OffsetQueryBuilder
          * e as (
          *     expect query
          * ), 
-         * select e.destination_id, offset_id, null as renewal_id, d.*, remarks
+         * select e.destination_id, offset_id, renewal_id, d.*, remarks
          * from e
          * left join datasource d on e.datasource_ids = d.datasource_ids
+         * where deleted or changed
          */
         var sq = expectquery.PushToCommonTable("expect");
         var e = sq.From("expect").As("e");
         var seq = ds.Destination.SequenceConfig;
 
-        //var d = e.LeftJoin(SqlParser.Parse(ds.Query)).As("d").On(x =>
-        //{
-        //    ds.KeyColumnsConfig.ForEach(col => x.Add().Equal(col.Key));
-        //});
+        var d = e.LeftJoin(SqlParser.Parse(ds.Query)).As("d").On(x =>
+        {
+            ds.KeyColumnsConfig.ForEach(col => x.Add().Equal(col.Key));
+        });
 
-        //var dscols = SqlParser.Parse(ds.Query).Select.GetColumnNames();
-        //var ignores = ds.Destination.InspectionIgnoreColumns;
-        //var cols = ds.Destination.GetInsertColumns().ToList()
-        //    .Where(x => dscols.Contains(x))
-        //    .Where(x => !ignores.Contains(x)).ToList();
+        var dscols = SqlParser.Parse(ds.Query).Select.GetColumnNames();
+        var ignores = ds.Destination.InspectionIgnoreColumns;
+        var cols = ds.Destination.GetInsertColumns().ToList()
+            .Where(x => dscols.Contains(x))
+            .Where(x => !ignores.Contains(x)).ToList();
+
+        var whereDeleted = (ConditionGroup g) =>
+        {
+            g.Add().Or().Column(d, ds.KeyColumnsConfig.First().Key).IsNull();
+        };
+
+        var whereChanged = (ConditionGroup g) =>
+        {
+            //value change
+            //  epect.value <> d.value or not(expect.value is null and d.value is null)
+            cols.ForEach(col =>
+            {
+                g.Add().Or().Column(e, col).NotEqual(d, col);
+                g.AddGroup(g2 =>
+                {
+                    g2.Or().Not();
+                    g2.Add().And().Column(e, col).IsNull();
+                    g2.Add().And().Column(d, col).IsNull();
+                });
+            });
+        };
+
+        var selectOffsetId = (SelectItem item) =>
+        {
+            item.CaseWhen(w =>
+            {
+                w.Add().WhenGroup(g =>
+                {
+                    whereDeleted(g);
+                    whereChanged(g);
+                }).Then(seq.Command);
+                w.Add().ElseNull();
+            }).As(ds.Destination.GetOffsetIdColumnName(config.OffsetConfig));
+        };
+
+        var selectRenewalId = (SelectItem item) =>
+        {
+            item.CaseWhen(w =>
+            {
+                w.Add().WhenGroup(g =>
+                {
+                    whereChanged(g);
+                }).Then(seq.Command);
+                w.Add().ElseNull();
+            }).As(ds.Destination.GetRenewIdColumnName(config.OffsetConfig));
+        };
+
+        var selectRemarks = (SelectItem item) =>
+        {
+            item.Concat("concat", ",", lst =>
+            {
+                //case when datasource_id is null then 'deleted' end
+                lst.Add().CaseWhen(w =>
+                {
+                    w.Add().When(x => x.Column(d, ds.KeyColumnsConfig.First().Key).IsNull()).Then("'deleted'");
+                });
+
+                //case when a.val <> b.val or not(a.val is null and b.val is null) then 'val is changed' end
+                cols.ForEach(col =>
+                {
+                    lst.Add().CaseWhen(w =>
+                    {
+                        w.Add().WhenGroup(g =>
+                        {
+                            g.Add().Or().Column(e, col).NotEqual(d, col);
+                            g.AddGroup(g2 =>
+                            {
+                                g2.Or().Not();
+                                g2.Add().And().Column(e, col).IsNull();
+                                g2.Add().And().Column(d, col).IsNull();
+                            });
+                        }).Then($"'{col} is changed,'");
+                    });
+                });
+            }).As(config.OffsetConfig.OffsetRemarksColumn);
+        };
 
         //select expect.destination_id, offset_id, renewal_id, actual.*, remarks
         sq.Select(e, seq.Column);
-        sq.Select.Add().Value(seq.Command).As(ds.Destination.GetOffsetIdColumnName(config.OffsetConfig));
-        sq.Select.Add().Value("null::bigint").As(ds.Destination.GetRenewIdColumnName(config.OffsetConfig));
-        //sq.SelectAll(d);
-        sq.Select.Add().Value("'offset'").As(config.OffsetConfig.OffsetRemarksColumn);
+        selectOffsetId(sq.Select.Add());
+        selectRenewalId(sq.Select.Add());
+        sq.SelectAll(d);
+        selectRemarks(sq.Select.Add());
+
+        //where deleted or changed
+        sq.Where.Add().CaseWhen(w =>
+        {
+            w.Add().WhenGroup(g =>
+            {
+                whereDeleted(g);
+                whereChanged(g);
+            }).Then(true);
+        });
 
         return sq;
+    }
+
+    internal static Datasource BuildRenewDatasource(Datasource ds, string bridgeName, SystemConfig config)
+    {
+        //virtual datasource
+        var q = BuildSelectRenewalDatasourceFromBridge(ds, bridgeName, config);
+
+        var datasource = new Datasource()
+        {
+            DatasourceId = ds.DatasourceId,
+            DatasourceName = ds.DatasourceName,
+            Destination = ds.Destination,
+            DestinationId = ds.Destination.DestinationId,
+            Query = q.CommandText,
+            Extensions = ds.Extensions,
+            KeyColumnsConfig = ds.KeyColumnsConfig,
+            MapName = ds.MapName,
+        };
+        return datasource;
     }
 
     internal static Datasource BuildOffsetDatasrouce(Datasource ds, string bridgeName, SystemConfig config)

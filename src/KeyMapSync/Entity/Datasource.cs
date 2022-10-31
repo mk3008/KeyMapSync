@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using KeyMapSync.DBMS;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
-using static KeyMapSync.DBMS.DbColumn;
 
 namespace KeyMapSync.Entity;
 
@@ -80,7 +80,7 @@ public class Datasource
     /// {"ec_shop_sales_id", "ex_shop_sales_dtail_id"}
     /// </example>
     //[ListRequired]
-    public Dictionary<string, Types> KeyColumnsConfig { get; set; } = new();
+    public Dictionary<string, DbColumnType> KeyColumnsConfig { get; set; } = new();
 
     /// <summary>
     /// Extended data source. 

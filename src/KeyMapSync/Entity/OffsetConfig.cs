@@ -24,7 +24,7 @@ public class OffsetConfig
     /// Redesigned column prefix.
     /// </summary>
     [Required]
-    public string RenewalColumnPrefix { get; set; } = "renewal_";
+    public string RenewColumnPrefix { get; set; } = "renew_";
 
     /// <summary>
     /// A column that records the reasons for offsetting.

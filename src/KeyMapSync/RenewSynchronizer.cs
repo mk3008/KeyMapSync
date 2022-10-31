@@ -1,21 +1,19 @@
 ﻿using KeyMapSync.DBMS;
 using KeyMapSync.Entity;
 using SqModel;
+using SqModel.Analysis;
 using SqModel.Dapper;
-using System;
-using System.Collections.Generic;
+using SqModel.Expression;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection.PortableExecutable;
 using Utf8Json;
 using Utf8Json.Resolvers;
 
 namespace KeyMapSync;
 
-public class OffsetSynchronizer
+public class RenewSynchronizer
 {
-    public OffsetSynchronizer(SystemConfig config, IDbConnection connection, IDBMS dbms, Datasource datasource, Action<SelectQuery, Datasource>? injector = null)
+    public RenewSynchronizer(SystemConfig config, IDbConnection connection, IDBMS dbms, Datasource datasource, Action<SelectQuery, Datasource>? injector = null)
     {
         SystemConfig = config;
         Connection = connection;
@@ -26,9 +24,9 @@ public class OffsetSynchronizer
         var tmp = BridgeNameBuilder.GetName(String.Concat(Destination.TableFulleName, '_', datasource.DatasourceName)).Substring(0, 4);
         BridgeName = $"_{tmp}";
 
-        //IsRoot = true;
+        IsRoot = true;
 
-        BridgeQuery = OffsetQueryBuilder.BuildSelectBridgeQuery(Datasource, SystemConfig, Injector);
+        BridgeQuery = RenewQueryBuilder.BuildSelectBridgeQuery(Datasource, SystemConfig, Injector);
     }
 
     public SystemConfig SystemConfig { get; init; }
@@ -39,7 +37,7 @@ public class OffsetSynchronizer
 
     private IDBMS Dbms { get; init; }
 
-    //private bool IsRoot { get; init; }
+    private bool IsRoot { get; init; }
 
     internal IDbConnection Connection { get; init; }
 
@@ -55,19 +53,19 @@ public class OffsetSynchronizer
 
     private KeyMapConfig KeyMapConfig => SystemConfig.KeyMapConfig;
 
-    //private string MapTableName => Datasource.GetKeymapTableName(KeyMapConfig);
+    private string MapTableName => Datasource.GetKeymapTableName(KeyMapConfig);
 
-    //private SyncConfig SyncConfig => SystemConfig.SyncConfig;
+    private SyncConfig SyncConfig => SystemConfig.SyncConfig;
 
-    //private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
+    private string SyncTableName => Destination.GetSyncTableName(SyncConfig);
 
     private CommandConfig CommandConfig => SystemConfig.CommandConfig;
 
     private OffsetConfig OffsetConfig => SystemConfig.OffsetConfig;
 
-    //private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
+    private ExtendConfig ExtendConfig => SystemConfig.ExtendConfig;
 
-    //private string ExtTableName => Destination.GetExtendTableName(ExtendConfig);
+    private string ExtTableName => Destination.GetExtendTableName(ExtendConfig);
 
     public Result Execute()
     {
@@ -78,7 +76,7 @@ public class OffsetSynchronizer
 
         //main
         var result = Execute(tranid);
-        result.Caption = $"offset";
+        result.Caption = $"renew";
         result.TransactionId = tranid;
 
         //kms_transaction end
@@ -103,6 +101,9 @@ public class OffsetSynchronizer
         //nest
         //offset
         result.Add(InsertOffset(tranid));
+
+        //renew
+        result.Add(InsertRenew(tranid));
 
         return result;
     }
@@ -189,5 +190,27 @@ public class OffsetSynchronizer
     {
         var q = RenewQueryBuilder.BuildSelectOffsetDestinationIdsFromBridge(Datasource, BridgeName, SystemConfig);
         return Connection.Query<long>(q).ToList();
+    }
+
+    private string GetOffsetExtensionQuery(Destination extension)
+    {
+        var q = RenewQueryBuilder.BuildSelectOffsetExtensionFromBridge(Datasource, BridgeName, extension, SystemConfig);
+        return q.CommandText;
+    }
+
+    private string GetSelectOffsetDatasourceQuery()
+    {
+        var q = RenewQueryBuilder.BuildSelectOffsetDatasourceFromBridge(Datasource, BridgeName, SystemConfig);
+        return q.CommandText;
+    }
+
+    private Result InsertRenew(long tranid)
+    {
+        //virtual datasource
+        var ds = RenewQueryBuilder.BuildRenewDatasource(Datasource, BridgeName, SystemConfig);
+        var s = new InsertSynchronizer(this, ds, "r", true) { Logger = Logger };
+        var r = s.Execute(tranid);
+        r.Caption = "insert renew";
+        return r;
     }
 }

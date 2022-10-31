@@ -31,6 +31,12 @@ public class Synchronizer
         return exe.Execute();
     }
 
+    public Result Renew(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
+    {
+        var exe = new RenewSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
+        return exe.Execute();
+    }
+
     public Result Offset(IDbConnection connection, Datasource datasource, string argument = "", Action<SelectQuery, Datasource>? injector = null)
     {
         var exe = new OffsetSynchronizer(SystemConfig, connection, Dbms, datasource, injector) { Logger = Logger, Argument = argument }; ;
